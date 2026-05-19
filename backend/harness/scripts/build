@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v cmd.exe >/dev/null 2>&1 && command -v mvn.cmd >/dev/null 2>&1; then
+  cmd.exe /c mvn.cmd test
+else
+  mvn test
+fi

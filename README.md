@@ -119,13 +119,25 @@ AI Health Coach는 사용자가 복잡한 입력 폼 없이 자연어 대화로 
 
 ## 5. 프로젝트 구조
 
-> 아직 구현 전이므로 추후 작성 예정입니다.
+현재 프로젝트는 프론트엔드와 백엔드를 함께 관리하는 모노레포 구조입니다.
 
 ```text
 AIHealthCoach/
 ├── frontend/
+│   ├── docs/
+│   └── harness/
 ├── backend/
-├── docs/
+│   ├── docs/
+│   ├── harness/
+│   ├── src/
+│   │   ├── main/
+│   │   └── test/
+│   └── pom.xml
+├── scripts/
+│   ├── check
+│   └── check.ps1
+├── AGENTS.md
+├── PROJECT_PROFILE.md
 └── README.md
 ```
 
