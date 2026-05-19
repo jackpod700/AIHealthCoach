@@ -5,13 +5,15 @@
 - 프로젝트명: **AI Health Coach**
 - 유형: 프론트엔드와 백엔드를 함께 관리하는 모노레포
 - 목적: AI 챗봇을 이용해 식단, 운동, 수분 등 건강 기록을 자연어로 관리하고 맞춤형 건강 코칭을 제공하는 서비스
-- 상태: 초기 하네스 및 백엔드 기본 프로젝트 구성 단계
+- 상태: 초기 하네스, 프론트엔드, 백엔드 기본 프로젝트 구성 단계
 
 ## 기술 스택
 
 ### Frontend
 
-- 언어: JavaScript / TypeScript 예정
+- 언어: **JavaScript**
+- 빌드 도구: **Vite**
+- 패키지 매니저: **npm**
 - 프레임워크: **Vue.js**
 - UI 라이브러리: **PrimeVue**
 - 상태 관리: **Pinia**
@@ -94,6 +96,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check.ps1
 
 - `frontend/harness/scripts/build`
 - `backend/harness/scripts/build`
+
+프론트엔드 `build` 스크립트는 npm 의존성 설치 후 Vite 빌드를 실행합니다.
+백엔드 `build` 스크립트는 Maven 테스트를 실행합니다.
 
 프론트엔드 또는 백엔드에 테스트, 린트, 포맷, 빌드 명령이 추가되면 각 영역의 `harness/scripts/` 아래에 검증 스크립트를 추가합니다. 루트의 `scripts/check`와 `scripts/check.ps1`은 해당 디렉터리의 모든 파일 스크립트를 순서대로 실행합니다.
 

@@ -1,0 +1,10 @@
+#!/usr/bin/env sh
+set -eu
+
+if command -v cmd.exe >/dev/null 2>&1 && command -v npm.cmd >/dev/null 2>&1; then
+  cmd.exe /c npm.cmd ci
+  cmd.exe /c npm.cmd run build
+else
+  npm ci
+  npm run build
+fi

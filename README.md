@@ -125,7 +125,10 @@ AI Health Coach는 사용자가 복잡한 입력 폼 없이 자연어 대화로 
 AIHealthCoach/
 ├── frontend/
 │   ├── docs/
-│   └── harness/
+│   ├── harness/
+│   ├── src/
+│   ├── index.html
+│   └── package.json
 ├── backend/
 │   ├── docs/
 │   ├── harness/
