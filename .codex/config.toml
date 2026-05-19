@@ -1,0 +1,8 @@
+[harness]
+version = "0.1.0"
+verification_command = "./scripts/check"
+
+[workflow]
+prefer_plan_for_complex_tasks = true
+prefer_small_changes = true
+update_docs_when_behavior_changes = true

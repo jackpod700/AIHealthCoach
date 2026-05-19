@@ -1,0 +1,54 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+run_script() {
+  script_path=$1
+  label=$2
+  working_dir=$3
+
+  if [ ! -f "$script_path" ]; then
+    return 0
+  fi
+
+  printf '\n[%s] running %s\n' "$label" "$script_path"
+
+  (
+    cd "$working_dir"
+
+    if [ -x "$script_path" ]; then
+      "$script_path"
+    else
+      sh "$script_path"
+    fi
+  )
+}
+
+run_harness_scripts() {
+  label=$1
+  project_dir=$2
+  scripts_dir="$project_dir/harness/scripts"
+  found=0
+
+  if [ ! -d "$scripts_dir" ]; then
+    printf '\n[%s] skip: %s not found\n' "$label" "$scripts_dir"
+    return 0
+  fi
+
+  for script_path in "$scripts_dir"/*; do
+    if [ -f "$script_path" ]; then
+      found=1
+      run_script "$script_path" "$label" "$project_dir"
+    fi
+  done
+
+  if [ "$found" -eq 0 ]; then
+    printf '\n[%s] skip: no scripts found in %s\n' "$label" "$scripts_dir"
+  fi
+}
+
+run_harness_scripts "frontend" "$ROOT_DIR/frontend"
+run_harness_scripts "backend" "$ROOT_DIR/backend"
+
+printf '\nAll checks passed.\n'
