@@ -117,7 +117,27 @@ AI Health Coach는 사용자가 복잡한 입력 폼 없이 자연어 대화로 
   - 프론트엔드, 백엔드, 데이터베이스 실행 환경을 분리해 관리
   - 로컬 개발 환경과 배포 환경의 차이를 줄이는 데 활용
 
-## 5. 프로젝트 구조
+## 5. Docker 실행 방법
+
+루트 디렉터리에서 다음 명령어로 프론트엔드, 백엔드, PostgreSQL을 한 번에 실행할 수 있습니다.
+
+```bash
+docker compose up --build
+```
+
+실행 후 접속 주소는 다음과 같습니다.
+
+- Frontend: `http://localhost:5173`
+- Backend Health Check: `http://localhost:8080/api/health`
+- PostgreSQL: `localhost:5432`
+
+컨테이너를 종료하려면 다음 명령어를 사용합니다.
+
+```bash
+docker compose down
+```
+
+## 6. 프로젝트 구조
 
 현재 프로젝트는 프론트엔드와 백엔드를 함께 관리하는 모노레포 구조입니다.
 
@@ -128,6 +148,8 @@ AIHealthCoach/
 │   ├── harness/
 │   ├── src/
 │   ├── index.html
+│   ├── Dockerfile
+│   ├── nginx.conf
 │   └── package.json
 ├── backend/
 │   ├── docs/
@@ -135,16 +157,18 @@ AIHealthCoach/
 │   ├── src/
 │   │   ├── main/
 │   │   └── test/
+│   ├── Dockerfile
 │   └── pom.xml
 ├── scripts/
 │   ├── check
 │   └── check.ps1
+├── docker-compose.yml
 ├── AGENTS.md
 ├── PROJECT_PROFILE.md
 └── README.md
 ```
 
-## 6. 아키텍처
+## 7. 아키텍처
 
 > 아직 구현 전이므로 추후 작성 예정입니다.
 
@@ -163,7 +187,7 @@ AIHealthCoach/
   ↔ 맞춤형 코칭 응답 생성
 ```
 
-## 7. 화면 예시
+## 8. 화면 예시
 
 > 아직 구현 전이므로 추후 화면 캡처 또는 GIF를 추가할 예정입니다.
 

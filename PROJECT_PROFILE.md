@@ -54,7 +54,7 @@
 ### Infrastructure
 
 - 클라우드: **AWS** 예정
-- 컨테이너: **Docker** 예정
+- 컨테이너: **Docker**
 - 역할:
   - 로컬 개발 환경 표준화
   - 프론트엔드, 백엔드, 데이터베이스 실행 환경 분리
@@ -78,6 +78,18 @@ PowerShell 실행 정책 때문에 스크립트 실행이 막히는 경우:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check.ps1
+```
+
+### Docker 통합 실행
+
+```bash
+docker compose up --build
+```
+
+### Docker 통합 종료
+
+```bash
+docker compose down
 ```
 
 ## 하네스 동작 방식
@@ -109,10 +121,13 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\check.ps1
 - 프로젝트 소개 문서: `README.md`
 - 작업 요청 템플릿: `TASK_TEMPLATE.md`
 - 루트 검증 스크립트: `scripts/check`, `scripts/check.ps1`
+- Docker Compose 설정: `docker-compose.yml`
 - 프론트엔드 영역: `frontend/`
+- 프론트엔드 Docker 설정: `frontend/Dockerfile`, `frontend/nginx.conf`
 - 프론트엔드 하네스 스크립트: `frontend/harness/scripts/`
 - 프론트엔드 문서: `frontend/docs/`
 - 백엔드 영역: `backend/`
+- 백엔드 Docker 설정: `backend/Dockerfile`
 - 백엔드 하네스 스크립트: `backend/harness/scripts/`
 - 백엔드 문서: `backend/docs/`
 - Codex 설정: `.codex/config.toml`
