@@ -18,5 +18,11 @@ public class ChatServiceImpl implements ChatService{
     public List<ChatMessage> findMessagesByUserId(int userId) {
         return chatDao.findMessagesByUserId(userId);
     }
+
+    @Override
+    public ChatMessage insert(ChatMessage message) {
+        chatDao.insert(message);
+        return message;
+    }
     
 }

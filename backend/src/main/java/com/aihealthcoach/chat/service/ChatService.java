@@ -6,4 +6,6 @@ import com.aihealthcoach.chat.entity.ChatMessage;
 
 public interface ChatService {
     public List<ChatMessage> findMessagesByUserId(int userId);
+
+    public ChatMessage insert(ChatMessage message);
 }

@@ -13,6 +13,9 @@ import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 
 @RestController
@@ -23,8 +26,13 @@ public class ChatController {
     private final ChatService chatService;
 
     @GetMapping("/messages")
-    public ResponseEntity<List<ChatMessage>> getMethodName(@RequestParam int userId) {
+    public ResponseEntity<List<ChatMessage>> getMessage(@RequestParam int userId) {
         return ResponseEntity.ok(chatService.findMessagesByUserId(userId));
+    }
+
+    @PostMapping("/messages")
+    public ResponseEntity<?> insertMessage(@RequestBody ChatMessage message){
+        return ResponseEntity.ok(chatService.insert(message));
     }
     
 }

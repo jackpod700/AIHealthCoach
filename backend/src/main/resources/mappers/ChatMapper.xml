@@ -21,4 +21,9 @@
         FROM chat_messages m, chat_sessions s
         WHERE s.user_id=#{userId} AND m.session_id=s.id
     </select>
+
+    <insert id="insert" parameterType="com.aihealthcoach.chat.entity.ChatMessage">
+        INSERT INTO chat_messages (session_id, role, content, created_at)
+        VALUES (#{sessionId}, #{role}, #{content}, NOW())
+    </insert>
 </mapper>
