@@ -9,7 +9,7 @@ import com.aihealthcoach.chat.entity.ChatMessage;
 
 @Mapper
 public interface ChatMapper {
-    List<ChatMessage> findMessagesByUserId(int userId);
+    List<ChatMessage> findMessagesByUserId(Long userId);
 
     @Options(useGeneratedKeys = true, keyProperty = "id")
     void insert(ChatMessage message);

@@ -15,7 +15,7 @@ public class ChatServiceImpl implements ChatService{
     private ChatMapper chatDao;
 
     @Override
-    public List<ChatMessage> findMessagesByUserId(int userId) {
+    public List<ChatMessage> findMessagesByUserId(Long userId) {
         return chatDao.findMessagesByUserId(userId);
     }
 

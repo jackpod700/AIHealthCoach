@@ -31,7 +31,7 @@ public class ChatController {
     private final AiChatService aiChatService;
 
     @GetMapping("/messages")
-    public ResponseEntity<List<ChatMessage>> getMessage(@RequestParam int userId) {
+    public ResponseEntity<List<ChatMessage>> getMessage(@RequestParam Long userId) {
         return ResponseEntity.ok(chatService.findMessagesByUserId(userId));
     }
 

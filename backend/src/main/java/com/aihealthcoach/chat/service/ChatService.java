@@ -5,7 +5,7 @@ import java.util.List;
 import com.aihealthcoach.chat.entity.ChatMessage;
 
 public interface ChatService {
-    public List<ChatMessage> findMessagesByUserId(int userId);
+    public List<ChatMessage> findMessagesByUserId(Long userId);
 
     public ChatMessage insert(ChatMessage message);
 }
