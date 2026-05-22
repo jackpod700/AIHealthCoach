@@ -1,8 +1,10 @@
 package com.aihealthcoach.user.mapper;
 
+import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface UserMapper {
@@ -10,5 +12,5 @@ public interface UserMapper {
     void insertUser(User user);
     void insertUserProfile(UserProfile userProfile);
     UserProfile findUserProfileByUserId(Long id);
-    void updateUserProfile(UserProfile userProfile);
+    void updateUserProfile(@Param("userId") Long userId, @Param("request") UserProfileUpdateRequest request);
 }

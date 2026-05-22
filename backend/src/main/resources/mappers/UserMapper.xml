@@ -59,14 +59,23 @@
         WHERE   user_id = #{userId}
     </select>
 
-    <update id="updateUserProfile" parameterType="com.aihealthcoach.user.entity.UserProfile">
+    <update id="updateUserProfile">
         UPDATE user_profiles
-        SET
-            height_cm = #{heightCm},
-            current_weight_kg = #{currentWeightKg},
-            target_weight_kg = #{targetWeightKg},
-            goal_type = #{goalType},
+        <set>
+            <if test="request.heightCm != null">
+                height_cm = #{request.heightCm},
+            </if>
+            <if test="request.currentWeightKg != null">
+                current_weight_kg = #{request.currentWeightKg},
+            </if>
+            <if test="request.targetWeightKg != null">
+                target_weight_kg = #{request.targetWeightKg},
+            </if>
+            <if test="request.goalType != null">
+                goal_type = #{request.goalType},
+            </if>
             updated_at = NOW()
+        </set>
         WHERE user_id = #{userId}
     </update>
 </mapper>

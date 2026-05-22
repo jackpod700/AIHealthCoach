@@ -99,23 +99,7 @@ public class UserServiceImpl implements UserService {
             throw UserException.profileNotFound();
         }
 
-        if (request.getHeightCm() != null){
-            userProfile.setHeightCm(request.getHeightCm());
-        }
-
-        if (request.getCurrentWeightKg() != null){
-            userProfile.setCurrentWeightKg(request.getCurrentWeightKg());
-        }
-
-        if (request.getTargetWeightKg() != null){
-            userProfile.setTargetWeightKg(request.getTargetWeightKg());
-        }
-
-        if (request.getGoalType() != null){
-            userProfile.setGoalType(request.getGoalType());
-        }
-
-        userDao.updateUserProfile(userProfile);
+        userDao.updateUserProfile(userId, request);
 
         UserProfile updatedProfile = userDao.findUserProfileByUserId(userId);
 
