@@ -13,6 +13,7 @@ import com.aihealthcoach.chat.service.ChatService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -37,18 +38,12 @@ public class ChatController {
     }
 
     @PostMapping("/messages")
-    public ResponseEntity<ChatMessageResponse> insertMessage(@RequestBody ChatMessageRequest message){
-        return ResponseEntity.ok(chatService.insert(message));
-    }
-
-    @PostMapping("/ai")
-    public ResponseEntity<AiChatResponse> chat(@Valid @RequestBody AiChatRequest request) {
-        String aiMessage = aiChatService.generateReply(request.message());
-
-        return ResponseEntity.ok(AiChatResponse.builder()
-                .userMessage(request.message())
-                .aiMessage(aiMessage)
-                .build());
+    public ResponseEntity<List<ChatMessageResponse>> insertMessage(@RequestBody ChatMessageRequest message){
+        List<ChatMessageResponse> messages = new ArrayList<>();
+        messages.add(chatService.insert(message));
+        messages.add(aiChatService.generateReply(message));
+        
+        return ResponseEntity.ok(messages);
     }
     
 }
