@@ -3,12 +3,7 @@ VALUES
     (1, 'test@example.com', '{noop}password123', '테스트유저', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO chat_sessions (id, user_id, created_at, updated_at)
-VALUES
-    (1, 1, NOW(), NOW())
-ON CONFLICT (id) DO NOTHING;
-
-INSERT INTO chat_messages (id, session_id, role, content, created_at)
+INSERT INTO chat_messages (id, user_id, role, content, created_at)
 VALUES
     (1, 1, 'USER', '아침에 그릭요거트랑 블루베리 먹었어.', NOW() - INTERVAL '85 seconds'),
     (2, 1, 'ASSISTANT', '아침 식사로 기록할게요. 예상 칼로리는 약 342kcal입니다.', NOW() - INTERVAL '80 seconds'),
@@ -31,5 +26,4 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
-SELECT setval('chat_sessions_id_seq', COALESCE((SELECT MAX(id) FROM chat_sessions), 1));
 SELECT setval('chat_messages_id_seq', COALESCE((SELECT MAX(id) FROM chat_messages), 1));

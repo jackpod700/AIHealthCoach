@@ -5,6 +5,8 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
+import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
 
@@ -15,14 +17,15 @@ public class ChatServiceImpl implements ChatService{
     private ChatMapper chatDao;
 
     @Override
-    public List<ChatMessage> findMessagesByUserId(Long userId) {
-        return chatDao.findMessagesByUserId(userId);
+    public List<ChatMessageResponse> findMessagesByUserId(Long userId) {
+        List<ChatMessage> messages = chatDao.findMessagesByUserId(userId);
+        return messages.stream().map(ChatMessageResponse::fromEntity).toList();
     }
 
     @Override
-    public ChatMessage insert(ChatMessage message) {
-        chatDao.insert(message);
-        return message;
+    public ChatMessageResponse insert(ChatMessageRequest message) {
+        ChatMessage savedMessage = chatDao.insertMessage(message.toEntity());
+        return ChatMessageResponse.fromEntity(savedMessage);
     }
     
 }

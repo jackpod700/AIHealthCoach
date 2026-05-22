@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 public class ChatMessage {
     private Long id;
-    private Long sessionId;
+    private Long userId;
     private String role;
     private String content;
     private LocalDateTime createdAt;
