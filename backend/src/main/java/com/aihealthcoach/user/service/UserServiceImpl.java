@@ -11,6 +11,7 @@ import com.aihealthcoach.user.dto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
+import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
 
 @Service
@@ -27,7 +28,7 @@ public class UserServiceImpl implements UserService {
         User existingUser = userDao.findUserByEmail(request.getEmail());
 
         if (existingUser != null){
-            throw new IllegalArgumentException("이미 가입된 이메일입니다.");
+            throw UserException.duplicateEmail();
         }
 
         User newUser = User.builder()
@@ -58,11 +59,11 @@ public class UserServiceImpl implements UserService {
         User existingUser = userDao.findUserByEmail(request.getEmail());
 
         if (existingUser == null){
-            throw new IllegalArgumentException("가입되지 않은 이메일입니다.");
+            throw UserException.userNotFound();
         }
 
         if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
-            throw new IllegalArgumentException("비밀번호가 올바르지 않습니다.");
+            throw UserException.invalidPassword();
         }
         
         return LoginResponse.builder()
@@ -77,7 +78,7 @@ public class UserServiceImpl implements UserService {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
         if (userProfile == null){
-            throw new IllegalArgumentException("유저 프로필이 존재하지 않는 userId 입니다.");
+            throw UserException.profileNotFound();
         }
 
         return UserProfileResponse.builder()
@@ -95,7 +96,7 @@ public class UserServiceImpl implements UserService {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
         if (userProfile == null){
-            throw new IllegalArgumentException("유저 프로필이 존재하지 않는 userId 입니다.");
+            throw UserException.profileNotFound();
         }
 
         userProfile.setHeightCm(request.getHeightCm());
