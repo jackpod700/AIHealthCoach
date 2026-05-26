@@ -8,11 +8,14 @@ import com.aihealthcoach.user.dto.LoginResponse;
 import com.aihealthcoach.user.dto.SignupRequest;
 import com.aihealthcoach.user.dto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,15 +41,31 @@ public class UserController {
     }
 
     @GetMapping("/{userId}/profile")
-    public ResponseEntity<UserProfileResponse> findProfile(@PathVariable Long userId){
+    public ResponseEntity<UserProfileResponse> findProfile(
+        @PathVariable Long userId,
+        Authentication authentication){
+        
+        Long loginUserId = (Long) authentication.getPrincipal();
+
+        if (!loginUserId.equals(userId)){
+            throw UserException.profileAccessDenied();
+        }
+
         return ResponseEntity.ok(userService.findProfile(userId));
     }
 
     @PatchMapping("/{userId}/profile")
     public ResponseEntity<UserProfileResponse> updateProfile(
         @PathVariable Long userId, 
-        @RequestBody UserProfileUpdateRequest request
-    ){
+        @RequestBody UserProfileUpdateRequest request,
+        Authentication authentication){
+        
+        Long loginUserId = (Long) authentication.getPrincipal();
+
+        if (!loginUserId.equals(userId)) {
+            throw UserException.profileAccessDenied();
+        }
+
         return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
     

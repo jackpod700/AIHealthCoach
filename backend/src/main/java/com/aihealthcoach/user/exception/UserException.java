@@ -27,4 +27,12 @@ public class UserException extends RuntimeException {
     public static UserException profileNotFound() {
         return new UserException(UserErrorCode.PROFILE_NOT_FOUND);
     }
+
+    public static UserException invalidToken(){
+        return new UserException(UserErrorCode.INVALID_TOKEN);
+    }
+
+    public static UserException profileAccessDenied(){
+        return new UserException(UserErrorCode.PROFILE_ACCESS_DENIED);
+    }
 }

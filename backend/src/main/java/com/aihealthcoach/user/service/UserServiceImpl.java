@@ -1,9 +1,9 @@
 package com.aihealthcoach.user.service;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.user.dto.LoginRequest;
 import com.aihealthcoach.user.dto.LoginResponse;
 import com.aihealthcoach.user.dto.SignupRequest;
@@ -14,14 +14,15 @@ import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
 
+import lombok.RequiredArgsConstructor;
+
 @Service
+@RequiredArgsConstructor
 public class UserServiceImpl implements UserService {
 
-    @Autowired
-    private UserMapper userDao;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    private final UserMapper userDao;
+    private final PasswordEncoder passwordEncoder;
+    private final JwtTokenProvider jwtTokenProvider;
 
     @Override
     public LoginResponse signup(SignupRequest request) {
@@ -65,11 +66,14 @@ public class UserServiceImpl implements UserService {
         if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
             throw UserException.invalidPassword();
         }
+
+        String accessToken = jwtTokenProvider.createAccessToken(existingUser.getId());
         
         return LoginResponse.builder()
                 .userId(existingUser.getId())
                 .email(existingUser.getEmail())
                 .nickname(existingUser.getNickname())
+                .accessToken(accessToken)
                 .build();  
     }
 
