@@ -98,6 +98,16 @@ textarea {
   background: #ffffff;
 }
 
+.auth-switch {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #256f5a;
+  cursor: pointer;
+  font-weight: 800;
+  text-align: left;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: #1f7a53;
@@ -122,6 +132,8 @@ h1 {
 
 .chat-surface,
 .coach-panel,
+.profile-overview,
+.profile-editor,
 .api-panel {
   border: 1px solid #d9e3dc;
   border-radius: 8px;
@@ -383,6 +395,7 @@ h1 {
 }
 
 .coach-panel,
+.profile-panel,
 .api-panel {
   padding: 18px;
 }
@@ -396,6 +409,93 @@ h1 {
 .coach-panel .markdown-body {
   margin-top: 16px;
   color: #3f5148;
+}
+
+.profile-page {
+  display: grid;
+  max-width: 960px;
+  margin: 0 auto;
+  gap: 18px;
+}
+
+.profile-overview {
+  display: grid;
+  gap: 22px;
+  padding: 22px;
+}
+
+.profile-overview h2 {
+  margin: 0;
+  color: #1f2933;
+  font-size: 1.35rem;
+}
+
+.profile-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.profile-summary-grid article {
+  min-height: 104px;
+  padding: 16px;
+  border: 1px solid #e4ece7;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.profile-summary-grid span {
+  display: block;
+  color: #6b7c73;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.profile-summary-grid strong {
+  display: block;
+  margin-top: 12px;
+  color: #1f2933;
+  font-size: 1.35rem;
+}
+
+.profile-editor {
+  padding: 22px;
+}
+
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin-top: 16px;
+  gap: 12px;
+}
+
+.profile-form label {
+  display: grid;
+  gap: 8px;
+  color: #40534a;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.profile-form input,
+.profile-form select {
+  width: 100%;
+  border: 1px solid #cbd8d1;
+  border-radius: 8px;
+  padding: 10px 12px;
+  color: #1f2933;
+  background: #ffffff;
+}
+
+.profile-form .error-banner,
+.profile-form .success-banner,
+.profile-actions {
+  grid-column: 1 / -1;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 10px;
 }
 
 .api-list {
@@ -438,6 +538,16 @@ h1 {
   line-height: 1.4;
 }
 
+.success-banner {
+  margin: 12px 0 0;
+  padding: 12px;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  background: #f0fdf4;
+  color: #166534;
+  line-height: 1.4;
+}
+
 @media (max-width: 920px) {
   .app-shell {
     padding: 16px;
@@ -470,6 +580,14 @@ h1 {
   .summary-band {
     grid-template-columns: 1fr;
   }
+
+  .profile-form {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 560px) {
@@ -479,5 +597,13 @@ h1 {
 
   .message {
     max-width: 94%;
+  }
+
+  .profile-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-actions {
+    flex-direction: column;
   }
 }

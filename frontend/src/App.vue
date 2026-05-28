@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { useHealthStore } from "./stores/healthStore";
 
 const healthStore = useHealthStore();
@@ -9,6 +9,25 @@ const loginForm = ref({
   email: "",
   password: "",
 });
+const activeView = ref("chat");
+const authMode = ref("login");
+const signupForm = ref({
+  email: "",
+  password: "",
+  nickname: "",
+});
+const profileForm = ref({
+  heightCm: "",
+  currentWeightKg: "",
+  targetWeightKg: "",
+  goalType: "",
+});
+
+const goalOptions = [
+  { value: "WEIGHT_LOSS", label: "감량" },
+  { value: "MAINTAIN", label: "유지" },
+  { value: "MUSCLE_GAIN", label: "근육 증가" },
+];
 
 const displayMessages = computed(() => {
   if (healthStore.orderedMessages.length > 0) {
@@ -30,10 +49,19 @@ const latestAssistantText = computed(() => {
 
 onMounted(async () => {
   if (healthStore.isAuthenticated) {
-    await healthStore.loadMessages();
+    await Promise.all([
+      healthStore.loadMessages(),
+      healthStore.loadProfile(),
+    ]);
+    fillProfileForm();
     scrollToBottom();
   }
 });
+
+watch(
+  () => healthStore.profile,
+  () => fillProfileForm(),
+);
 
 function formatTime(value) {
   if (!value) {
@@ -207,8 +235,65 @@ async function submitLogin() {
 
   if (healthStore.isAuthenticated) {
     loginForm.value.password = "";
+    fillProfileForm();
     scrollToBottom();
   }
+}
+
+async function submitSignup() {
+  await healthStore.signup({
+    email: signupForm.value.email.trim(),
+    password: signupForm.value.password,
+    nickname: signupForm.value.nickname.trim(),
+  });
+
+  if (healthStore.isAuthenticated) {
+    signupForm.value.password = "";
+    fillProfileForm();
+    scrollToBottom();
+  }
+}
+
+async function submitProfile() {
+  await healthStore.updateProfile({
+    heightCm: toNullableNumber(profileForm.value.heightCm),
+    currentWeightKg: toNullableNumber(profileForm.value.currentWeightKg),
+    targetWeightKg: toNullableNumber(profileForm.value.targetWeightKg),
+    goalType: profileForm.value.goalType || null,
+  });
+}
+
+function fillProfileForm() {
+  const profile = healthStore.profile;
+
+  if (!profile) {
+    profileForm.value = {
+      heightCm: "",
+      currentWeightKg: "",
+      targetWeightKg: "",
+      goalType: "",
+    };
+    return;
+  }
+
+  profileForm.value = {
+    heightCm: profile.heightCm ?? "",
+    currentWeightKg: profile.currentWeightKg ?? "",
+    targetWeightKg: profile.targetWeightKg ?? "",
+    goalType: profile.goalType ?? "",
+  };
+}
+
+function toNullableNumber(value) {
+  if (value === "" || value === null || value === undefined) {
+    return null;
+  }
+
+  return Number(value);
+}
+
+function goalLabel(value) {
+  return goalOptions.find((option) => option.value === value)?.label || "미설정";
 }
 
 async function scrollToBottom() {
@@ -229,10 +314,11 @@ async function scrollToBottom() {
       <section class="login-panel">
         <div>
           <p class="eyebrow">AI Health Coach</p>
-          <h1>로그인</h1>
+          <h1>{{ authMode === "login" ? "로그인" : "회원가입" }}</h1>
         </div>
 
         <form
+          v-if="authMode === 'login'"
           class="login-form"
           @submit.prevent="submitLogin"
         >
@@ -272,6 +358,67 @@ async function scrollToBottom() {
             :loading="healthStore.isLoggingIn"
           />
         </form>
+
+        <form
+          v-else
+          class="login-form"
+          @submit.prevent="submitSignup"
+        >
+          <label>
+            <span>닉네임</span>
+            <input
+              v-model="signupForm.nickname"
+              type="text"
+              autocomplete="nickname"
+              placeholder="닉네임"
+              required
+            />
+          </label>
+
+          <label>
+            <span>이메일</span>
+            <input
+              v-model="signupForm.email"
+              type="email"
+              autocomplete="email"
+              placeholder="test@example.com"
+              required
+            />
+          </label>
+
+          <label>
+            <span>비밀번호</span>
+            <input
+              v-model="signupForm.password"
+              type="password"
+              autocomplete="new-password"
+              placeholder="비밀번호"
+              required
+            />
+          </label>
+
+          <p
+            v-if="healthStore.signupError"
+            class="error-banner"
+          >
+            {{ healthStore.signupError }}
+          </p>
+
+          <Button
+            type="submit"
+            label="회원가입"
+            icon="pi pi-user-plus"
+            :loading="healthStore.isSigningUp || healthStore.isLoggingIn"
+          />
+        </form>
+
+        <button
+          class="auth-switch"
+          type="button"
+          @click="authMode = authMode === 'login' ? 'signup' : 'login'"
+        >
+          {{ authMode === "login" ? "계정이 없으면 회원가입" : "이미 계정이 있으면 로그인" }}
+        </button>
       </section>
     </main>
 
@@ -284,10 +431,25 @@ async function scrollToBottom() {
       <div class="topbar-actions">
         <span class="user-chip">{{ healthStore.user?.nickname || healthStore.user?.email }}</span>
         <Button
+          label="채팅"
+          icon="pi pi-comments"
+          :severity="activeView === 'chat' ? 'success' : 'secondary'"
+          :outlined="activeView !== 'chat'"
+          @click="activeView = 'chat'"
+        />
+        <Button
+          label="프로필"
+          icon="pi pi-id-card"
+          :severity="activeView === 'profile' ? 'success' : 'secondary'"
+          :outlined="activeView !== 'profile'"
+          @click="activeView = 'profile'"
+        />
+        <Button
           label="이력 새로고침"
           icon="pi pi-refresh"
           severity="contrast"
           :loading="healthStore.isLoading"
+          v-if="activeView === 'chat'"
           @click="healthStore.loadMessages"
         />
         <Button
@@ -300,7 +462,10 @@ async function scrollToBottom() {
       </div>
     </header>
 
-    <main class="layout">
+    <main
+      v-if="activeView === 'chat'"
+      class="layout"
+    >
       <section class="chat-panel">
         <div class="chat-surface">
           <div class="section-title">
@@ -437,6 +602,127 @@ async function scrollToBottom() {
             </article>
           </div>
         </section>
+      </section>
+    </main>
+
+    <main
+      v-else
+      class="profile-page"
+    >
+      <section class="profile-overview">
+        <div>
+          <p class="eyebrow">Profile</p>
+          <h2>건강 코칭 프로필</h2>
+        </div>
+        <div class="profile-summary-grid">
+          <article>
+            <span>키</span>
+            <strong>{{ healthStore.profile?.heightCm ?? "-" }} cm</strong>
+          </article>
+          <article>
+            <span>현재 몸무게</span>
+            <strong>{{ healthStore.profile?.currentWeightKg ?? "-" }} kg</strong>
+          </article>
+          <article>
+            <span>목표 몸무게</span>
+            <strong>{{ healthStore.profile?.targetWeightKg ?? "-" }} kg</strong>
+          </article>
+          <article>
+            <span>목표</span>
+            <strong>{{ goalLabel(healthStore.profile?.goalType) }}</strong>
+          </article>
+        </div>
+      </section>
+
+      <section class="profile-editor">
+        <div class="section-title">
+          <i class="pi pi-pencil"></i>
+          <span>프로필 수정</span>
+        </div>
+
+        <form
+          class="profile-form"
+          @submit.prevent="submitProfile"
+        >
+          <label>
+            <span>키(cm)</span>
+            <input
+              v-model="profileForm.heightCm"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="172.5"
+            />
+          </label>
+
+          <label>
+            <span>현재 몸무게(kg)</span>
+            <input
+              v-model="profileForm.currentWeightKg"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="68.4"
+            />
+          </label>
+
+          <label>
+            <span>목표 몸무게(kg)</span>
+            <input
+              v-model="profileForm.targetWeightKg"
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="65.0"
+            />
+          </label>
+
+          <label>
+            <span>목표</span>
+            <select v-model="profileForm.goalType">
+              <option value="">선택 안 함</option>
+              <option
+                v-for="option in goalOptions"
+                :key="option.value"
+                :value="option.value"
+              >
+                {{ option.label }}
+              </option>
+            </select>
+          </label>
+
+          <p
+            v-if="healthStore.profileError"
+            class="error-banner"
+          >
+            {{ healthStore.profileError }}
+          </p>
+
+          <p
+            v-if="healthStore.profileSuccess"
+            class="success-banner"
+          >
+            {{ healthStore.profileSuccess }}
+          </p>
+
+          <div class="profile-actions">
+            <Button
+              type="submit"
+              label="프로필 저장"
+              icon="pi pi-save"
+              :loading="healthStore.isSavingProfile"
+            />
+            <Button
+              type="button"
+              label="다시 불러오기"
+              icon="pi pi-refresh"
+              severity="secondary"
+              outlined
+              :loading="healthStore.isLoadingProfile"
+              @click="healthStore.loadProfile"
+            />
+          </div>
+        </form>
       </section>
     </main>
     </template>

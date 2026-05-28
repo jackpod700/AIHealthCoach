@@ -5,11 +5,18 @@ export const useHealthStore = defineStore("health", {
     userId: Number(localStorage.getItem("ai-health-user-id")) || null,
     accessToken: localStorage.getItem("ai-health-access-token") || "",
     user: JSON.parse(localStorage.getItem("ai-health-user") || "null"),
+    profile: JSON.parse(localStorage.getItem("ai-health-profile") || "null"),
     isLoading: false,
     isSending: false,
     isLoggingIn: false,
+    isSigningUp: false,
+    isLoadingProfile: false,
+    isSavingProfile: false,
     error: "",
     loginError: "",
+    signupError: "",
+    profileError: "",
+    profileSuccess: "",
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -35,6 +42,35 @@ export const useHealthStore = defineStore("health", {
     },
   },
   actions: {
+    async signup(credentials) {
+      this.isSigningUp = true;
+      this.signupError = "";
+      this.loginError = "";
+      this.error = "";
+
+      try {
+        const response = await fetch("/api/user/signup", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (!response.ok) {
+          throw new Error("회원가입에 실패했습니다. 입력 정보를 확인해주세요.");
+        }
+
+        await this.login({
+          email: credentials.email,
+          password: credentials.password,
+        });
+      } catch (error) {
+        this.signupError = error.message;
+      } finally {
+        this.isSigningUp = false;
+      }
+    },
     async login(credentials) {
       this.isLoggingIn = true;
       this.loginError = "";
@@ -70,7 +106,10 @@ export const useHealthStore = defineStore("health", {
         localStorage.setItem("ai-health-access-token", loginResponse.accessToken);
         localStorage.setItem("ai-health-user", JSON.stringify(this.user));
 
-        await this.loadMessages();
+        await Promise.all([
+          this.loadMessages(),
+          this.loadProfile(),
+        ]);
       } catch (error) {
         this.loginError = error.message;
       } finally {
@@ -81,14 +120,75 @@ export const useHealthStore = defineStore("health", {
       this.userId = null;
       this.accessToken = "";
       this.user = null;
+      this.profile = null;
       this.messages = [];
       this.error = "";
       this.loginError = "";
+      this.signupError = "";
+      this.profileError = "";
       this.refreshSummary();
 
       localStorage.removeItem("ai-health-user-id");
       localStorage.removeItem("ai-health-access-token");
       localStorage.removeItem("ai-health-user");
+      localStorage.removeItem("ai-health-profile");
+    },
+    async loadProfile() {
+      if (!this.isAuthenticated) {
+        return;
+      }
+
+      this.isLoadingProfile = true;
+      this.profileError = "";
+      this.profileSuccess = "";
+
+      try {
+        const response = await fetch("/api/user/profile", {
+          headers: this.authHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("프로필을 불러오지 못했습니다.");
+        }
+
+        this.profile = await response.json();
+        localStorage.setItem("ai-health-profile", JSON.stringify(this.profile));
+      } catch (error) {
+        this.profileError = error.message;
+      } finally {
+        this.isLoadingProfile = false;
+      }
+    },
+    async updateProfile(profile) {
+      if (!this.isAuthenticated || this.isSavingProfile) {
+        return;
+      }
+
+      this.isSavingProfile = true;
+      this.profileError = "";
+
+      try {
+        const response = await fetch("/api/user/profile", {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.authHeaders(),
+          },
+          body: JSON.stringify(profile),
+        });
+
+        if (!response.ok) {
+          throw new Error("프로필을 저장하지 못했습니다.");
+        }
+
+        this.profile = await response.json();
+        localStorage.setItem("ai-health-profile", JSON.stringify(this.profile));
+        this.profileSuccess = "프로필이 저장되었습니다.";
+      } catch (error) {
+        this.profileError = error.message;
+      } finally {
+        this.isSavingProfile = false;
+      }
     },
     async loadMessages() {
       if (!this.isAuthenticated) {
