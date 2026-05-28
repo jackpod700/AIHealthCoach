@@ -16,6 +16,7 @@ import lombok.RequiredArgsConstructor;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -33,15 +34,17 @@ public class ChatController {
     private final AiChatService aiChatService;
 
     @GetMapping("/messages")
-    public ResponseEntity<List<ChatMessageResponse>> getMessage(@RequestParam Long userId) {
+    public ResponseEntity<List<ChatMessageResponse>> getMessage(Authentication authentication) {
+        Long userId = (Long)authentication.getPrincipal();
         return ResponseEntity.ok(chatService.findMessagesByUserId(userId));
     }
 
     @PostMapping("/messages")
-    public ResponseEntity<List<ChatMessageResponse>> insertMessage(@RequestBody ChatMessageRequest message){
+    public ResponseEntity<List<ChatMessageResponse>> insertMessage(@RequestBody ChatMessageRequest message, Authentication authentication){
         List<ChatMessageResponse> messages = new ArrayList<>();
-        messages.add(chatService.insert(message));
-        messages.add(aiChatService.generateReply(message));
+        Long userId = (Long)authentication.getPrincipal();
+        messages.add(chatService.insert(userId, message));
+        messages.add(aiChatService.generateReply(userId, message));
         
         return ResponseEntity.ok(messages);
     }

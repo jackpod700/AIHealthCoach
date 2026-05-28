@@ -9,7 +9,7 @@ import com.aihealthcoach.chat.entity.ChatMessage;
 public interface ChatService {
     public List<ChatMessageResponse> findMessagesByUserId(Long userId);
 
-    public ChatMessageResponse insert(ChatMessageRequest message);
+    public ChatMessageResponse insert(Long userId, ChatMessageRequest message);
 
     public ChatMessageResponse insert(ChatMessage message);
 }

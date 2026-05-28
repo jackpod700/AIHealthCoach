@@ -24,12 +24,11 @@ public class ChatDto {
 
     @Builder
     public record ChatMessageRequest(
-        Long id,
         String content
     ){
-        public ChatMessage toEntity(){
+        public ChatMessage toEntity(Long userId){
                 return ChatMessage.builder()
-                                  .userId(1L)//수정필요
+                                  .userId(userId)
                                   .role("USER")
                                   .content(this.content())
                                   .build();

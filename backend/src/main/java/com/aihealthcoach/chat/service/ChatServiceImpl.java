@@ -23,8 +23,8 @@ public class ChatServiceImpl implements ChatService{
     }
 
     @Override
-    public ChatMessageResponse insert(ChatMessageRequest message) {
-        ChatMessage savedMessage = chatDao.insertMessage(message.toEntity());
+    public ChatMessageResponse insert(Long userId, ChatMessageRequest message) {
+        ChatMessage savedMessage = chatDao.insertMessage(message.toEntity(userId));
         return ChatMessageResponse.fromEntity(savedMessage);
     }
 

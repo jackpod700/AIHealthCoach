@@ -16,7 +16,7 @@ public class AiChatServiceImpl implements AiChatService{
     private final ChatClient chatClient;
     private final ChatService chatService;
 
-    public ChatMessageResponse generateReply(ChatMessageRequest userMessage) {
+    public ChatMessageResponse generateReply(Long userId, ChatMessageRequest userMessage) {
         String aiReply = chatClient.prompt("""
                         너는 AI Health Coach 챗봇이다.
                         사용자의 식단 기록, 운동 기록, 건강 습관 관리를 돕는다.
@@ -28,7 +28,7 @@ public class AiChatServiceImpl implements AiChatService{
                             .content();
         
         return chatService.insert(ChatMessage.builder()
-                            .userId(userMessage.id())
+                            .userId(userId)
                             .content(aiReply)
                             .role("ASSISTANT")
                             .build());
