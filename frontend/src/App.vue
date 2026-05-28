@@ -5,6 +5,10 @@ import { useHealthStore } from "./stores/healthStore";
 const healthStore = useHealthStore();
 const message = ref("");
 const messagesRef = ref(null);
+const loginForm = ref({
+  email: "",
+  password: "",
+});
 
 const displayMessages = computed(() => {
   if (healthStore.orderedMessages.length > 0) {
@@ -25,8 +29,10 @@ const latestAssistantText = computed(() => {
 });
 
 onMounted(async () => {
-  await healthStore.loadMessages();
-  scrollToBottom();
+  if (healthStore.isAuthenticated) {
+    await healthStore.loadMessages();
+    scrollToBottom();
+  }
 });
 
 function formatTime(value) {
@@ -193,6 +199,18 @@ async function sendMessage() {
   scrollToBottom();
 }
 
+async function submitLogin() {
+  await healthStore.login({
+    email: loginForm.value.email.trim(),
+    password: loginForm.value.password,
+  });
+
+  if (healthStore.isAuthenticated) {
+    loginForm.value.password = "";
+    scrollToBottom();
+  }
+}
+
 async function scrollToBottom() {
   await nextTick();
 
@@ -204,18 +222,82 @@ async function scrollToBottom() {
 
 <template>
   <div class="app-shell">
+    <main
+      v-if="!healthStore.isAuthenticated"
+      class="login-layout"
+    >
+      <section class="login-panel">
+        <div>
+          <p class="eyebrow">AI Health Coach</p>
+          <h1>로그인</h1>
+        </div>
+
+        <form
+          class="login-form"
+          @submit.prevent="submitLogin"
+        >
+          <label>
+            <span>이메일</span>
+            <input
+              v-model="loginForm.email"
+              type="email"
+              autocomplete="email"
+              placeholder="test@example.com"
+              required
+            />
+          </label>
+
+          <label>
+            <span>비밀번호</span>
+            <input
+              v-model="loginForm.password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="비밀번호"
+              required
+            />
+          </label>
+
+          <p
+            v-if="healthStore.loginError"
+            class="error-banner"
+          >
+            {{ healthStore.loginError }}
+          </p>
+
+          <Button
+            type="submit"
+            label="로그인"
+            icon="pi pi-sign-in"
+            :loading="healthStore.isLoggingIn"
+          />
+        </form>
+      </section>
+    </main>
+
+    <template v-else>
     <header class="topbar">
       <div>
         <p class="eyebrow">AI Health Coach</p>
         <h1>AI 챗봇 건강 기록</h1>
       </div>
-      <Button
-        label="이력 새로고침"
-        icon="pi pi-refresh"
-        severity="contrast"
-        :loading="healthStore.isLoading"
-        @click="healthStore.loadMessages"
-      />
+      <div class="topbar-actions">
+        <span class="user-chip">{{ healthStore.user?.nickname || healthStore.user?.email }}</span>
+        <Button
+          label="이력 새로고침"
+          icon="pi pi-refresh"
+          severity="contrast"
+          :loading="healthStore.isLoading"
+          @click="healthStore.loadMessages"
+        />
+        <Button
+          label="로그아웃"
+          icon="pi pi-sign-out"
+          severity="secondary"
+          outlined
+          @click="healthStore.logout"
+        />
+      </div>
     </header>
 
     <main class="layout">
@@ -357,5 +439,6 @@ async function scrollToBottom() {
         </section>
       </section>
     </main>
+    </template>
   </div>
 </template>

@@ -39,6 +39,65 @@ textarea {
   gap: 16px;
 }
 
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.user-chip {
+  max-width: 180px;
+  overflow: hidden;
+  padding: 8px 10px;
+  border: 1px solid #d9e3dc;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #40534a;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.login-layout {
+  display: grid;
+  min-height: calc(100vh - 48px);
+  place-items: center;
+}
+
+.login-panel {
+  display: grid;
+  width: min(100%, 420px);
+  gap: 24px;
+  padding: 28px;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 36px rgb(32 52 43 / 10%);
+}
+
+.login-form {
+  display: grid;
+  gap: 16px;
+}
+
+.login-form label {
+  display: grid;
+  gap: 8px;
+  color: #40534a;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.login-form input {
+  width: 100%;
+  border: 1px solid #cbd8d1;
+  border-radius: 8px;
+  padding: 12px;
+  color: #1f2933;
+  background: #ffffff;
+}
+
 .eyebrow {
   margin: 0 0 6px;
   color: #1f7a53;
@@ -387,6 +446,12 @@ h1 {
   .topbar {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .topbar-actions {
+    align-items: stretch;
+    flex-wrap: wrap;
+    width: 100%;
   }
 
   .layout {

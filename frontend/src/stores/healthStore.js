@@ -2,10 +2,14 @@ import { defineStore } from "pinia";
 
 export const useHealthStore = defineStore("health", {
   state: () => ({
-    userId: 1,
+    userId: Number(localStorage.getItem("ai-health-user-id")) || null,
+    accessToken: localStorage.getItem("ai-health-access-token") || "",
+    user: JSON.parse(localStorage.getItem("ai-health-user") || "null"),
     isLoading: false,
     isSending: false,
+    isLoggingIn: false,
     error: "",
+    loginError: "",
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -20,6 +24,7 @@ export const useHealthStore = defineStore("health", {
     },
   }),
   getters: {
+    isAuthenticated: (state) => Boolean(state.accessToken && state.userId),
     orderedMessages: (state) => {
       return [...state.messages].sort((a, b) => {
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
@@ -30,12 +35,73 @@ export const useHealthStore = defineStore("health", {
     },
   },
   actions: {
+    async login(credentials) {
+      this.isLoggingIn = true;
+      this.loginError = "";
+      this.error = "";
+
+      try {
+        const response = await fetch("/api/user/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(credentials),
+        });
+
+        if (!response.ok) {
+          throw new Error("이메일 또는 비밀번호를 확인해주세요.");
+        }
+
+        const loginResponse = await response.json();
+
+        if (!loginResponse.accessToken) {
+          throw new Error("로그인 토큰을 받지 못했습니다.");
+        }
+
+        this.userId = loginResponse.userId;
+        this.accessToken = loginResponse.accessToken;
+        this.user = {
+          email: loginResponse.email,
+          nickname: loginResponse.nickname,
+        };
+
+        localStorage.setItem("ai-health-user-id", String(loginResponse.userId));
+        localStorage.setItem("ai-health-access-token", loginResponse.accessToken);
+        localStorage.setItem("ai-health-user", JSON.stringify(this.user));
+
+        await this.loadMessages();
+      } catch (error) {
+        this.loginError = error.message;
+      } finally {
+        this.isLoggingIn = false;
+      }
+    },
+    logout() {
+      this.userId = null;
+      this.accessToken = "";
+      this.user = null;
+      this.messages = [];
+      this.error = "";
+      this.loginError = "";
+      this.refreshSummary();
+
+      localStorage.removeItem("ai-health-user-id");
+      localStorage.removeItem("ai-health-access-token");
+      localStorage.removeItem("ai-health-user");
+    },
     async loadMessages() {
+      if (!this.isAuthenticated) {
+        return;
+      }
+
       this.isLoading = true;
       this.error = "";
 
       try {
-        const response = await fetch(`/api/chat/messages?userId=${this.userId}`);
+        const response = await fetch(`/api/chat/messages?userId=${this.userId}`, {
+          headers: this.authHeaders(),
+        });
 
         if (!response.ok) {
           throw new Error("채팅 이력을 불러오지 못했습니다.");
@@ -52,7 +118,7 @@ export const useHealthStore = defineStore("health", {
     async sendMessage(content) {
       const trimmedContent = content.trim();
 
-      if (!trimmedContent || this.isSending) {
+      if (!trimmedContent || this.isSending || !this.isAuthenticated) {
         return;
       }
 
@@ -84,6 +150,7 @@ export const useHealthStore = defineStore("health", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            ...this.authHeaders(),
           },
           body: JSON.stringify({
             id: this.userId,
@@ -105,6 +172,15 @@ export const useHealthStore = defineStore("health", {
       } finally {
         this.isSending = false;
       }
+    },
+    authHeaders() {
+      if (!this.accessToken) {
+        return {};
+      }
+
+      return {
+        Authorization: `Bearer ${this.accessToken}`,
+      };
     },
     replacePendingMessages(requestId, newMessages) {
       this.messages = this.messages.filter((message) => !message.clientId?.startsWith(requestId));
