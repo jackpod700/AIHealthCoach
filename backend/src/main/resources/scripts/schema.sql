@@ -7,6 +7,22 @@ CREATE TABLE IF NOT EXISTS users (
     updated_at TIMESTAMP NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS user_profiles (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+
+    height_cm DECIMAL(5,2),
+    current_weight_kg DECIMAL(5,2),
+    target_weight_kg DECIMAL(5,2),
+    goal_type VARCHAR(20),
+
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_profiles_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
 
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGSERIAL PRIMARY KEY,

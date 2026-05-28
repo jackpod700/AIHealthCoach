@@ -1,9 +1,18 @@
 INSERT INTO users (id, email, password, nickname, created_at, updated_at)
 VALUES
-    (1, 'test@example.com', '{noop}password123', '테스트유저', NOW(), NOW())
+    (1, 'test@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '테스트유저', NOW(), NOW()),
+    (2, 'runner@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '러닝초보', NOW(), NOW()),
+    (3, 'diet@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '다이어터', NOW(), NOW())
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO chat_messages (id, user_id, role, content, created_at)
+INSERT INTO user_profiles (id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, updated_at)
+VALUES
+    (1, 1, 172.50, 68.40, 65.00, 'MAINTAIN', NOW()),
+    (2, 2, 178.20, 82.10, 76.00, 'MUSCLE_GAIN', NOW()),
+    (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', NOW())
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO chat_messages (id, session_id, role, content, created_at)
 VALUES
     (1, 1, 'USER', '아침에 그릭요거트랑 블루베리 먹었어.', NOW() - INTERVAL '85 seconds'),
     (2, 1, 'ASSISTANT', '아침 식사로 기록할게요. 예상 칼로리는 약 342kcal입니다.', NOW() - INTERVAL '80 seconds'),
@@ -26,4 +35,5 @@ VALUES
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
+SELECT setval('user_profiles_id_seq', COALESCE((SELECT MAX(id) FROM user_profiles), 1));
 SELECT setval('chat_messages_id_seq', COALESCE((SELECT MAX(id) FROM chat_messages), 1));
