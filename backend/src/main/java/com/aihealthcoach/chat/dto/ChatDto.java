@@ -1,5 +1,9 @@
 package com.aihealthcoach.chat.dto;
 
+import java.time.LocalDateTime;
+
+import com.aihealthcoach.chat.entity.ChatMessage;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 
@@ -17,4 +21,34 @@ public class ChatDto {
             String aiMessage
     ) {
     }
+
+    @Builder
+    public record ChatMessageRequest(
+        String content
+    ){
+        public ChatMessage toEntity(Long userId){
+                return ChatMessage.builder()
+                                  .userId(userId)
+                                  .role("USER")
+                                  .content(this.content())
+                                  .build();
+        }
+
+    }
+
+    @Builder
+    public record ChatMessageResponse(
+        String role,
+        String content,
+        LocalDateTime createdAt
+    ){
+        public static ChatMessageResponse fromEntity(ChatMessage entity){
+                return ChatMessageResponse.builder()
+                                          .role(entity.getRole())
+                                          .content(entity.getContent())
+                                          .createdAt(entity.getCreatedAt())
+                                          .build();
+        }
+    }
+
 }

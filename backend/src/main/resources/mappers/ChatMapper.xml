@@ -4,26 +4,28 @@
 <mapper namespace="com.aihealthcoach.chat.mapper.ChatMapper">
     <resultMap id="chatMessage" type="com.aihealthcoach.chat.entity.ChatMessage">
         <id column="id" property="id"/>
-        <result column="id" property="id"/>
-        <result column="session_id" property="sessionId"/>
+        <result column="user_id" property="userId"/>
         <result column="role" property="role"/>
         <result column="content" property="content"/>
         <result column="created_at" property="createdAt"/>
     </resultMap>
 
     <sql id="messageColumn">
-        id, session_id, role, content, created_at
+        id, user_id, role, content, created_at
     </sql>
 
-    <select id="findMessagesByUserId" parameterType="int" resultMap="chatMessage">
+    <select id="findMessagesByUserId" parameterType="Long" resultMap="chatMessage">
         SELECT
-            m.role, m.content, m.created_at
-        FROM chat_messages m, chat_sessions s
-        WHERE s.user_id=#{userId} AND m.session_id=s.id
+            id, user_id, role, content, created_at
+        FROM chat_messages
+        WHERE user_id=#{userId}
     </select>
 
-    <insert id="insert" parameterType="com.aihealthcoach.chat.entity.ChatMessage">
-        INSERT INTO chat_messages (session_id, role, content, created_at)
-        VALUES (#{sessionId}, #{role}, #{content}, NOW())
-    </insert>
+    <select id="insertMessage"
+        parameterType="com.aihealthcoach.chat.entity.ChatMessage"
+        resultMap="chatMessage">
+        INSERT INTO chat_messages (user_id, role, content, created_at)
+        VALUES (#{userId}, #{role}, #{content}, NOW())
+        RETURNING id, user_id, role, content, created_at
+    </select>
 </mapper>

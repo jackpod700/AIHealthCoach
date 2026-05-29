@@ -8,17 +8,14 @@ import com.aihealthcoach.user.dto.LoginResponse;
 import com.aihealthcoach.user.dto.SignupRequest;
 import com.aihealthcoach.user.dto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
-import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -40,32 +37,20 @@ public class UserController {
         return ResponseEntity.ok(userService.login(request));
     }
 
-    @GetMapping("/{userId}/profile")
+    @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> findProfile(
-        @PathVariable Long userId,
         Authentication authentication){
         
-        Long loginUserId = (Long) authentication.getPrincipal();
-
-        if (!loginUserId.equals(userId)){
-            throw UserException.profileAccessDenied();
-        }
-
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(userService.findProfile(userId));
     }
 
-    @PatchMapping("/{userId}/profile")
+    @PatchMapping("/profile")
     public ResponseEntity<UserProfileResponse> updateProfile(
-        @PathVariable Long userId, 
         @RequestBody UserProfileUpdateRequest request,
         Authentication authentication){
         
-        Long loginUserId = (Long) authentication.getPrincipal();
-
-        if (!loginUserId.equals(userId)) {
-            throw UserException.profileAccessDenied();
-        }
-
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
     

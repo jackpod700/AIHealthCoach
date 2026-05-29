@@ -1,161 +1,195 @@
 # AI Health Coach
 
-## 1. 프로젝트 이름
+AI Health Coach는 사용자가 자연어로 식단, 운동, 건강 상태를 기록하고 AI 챗봇에게 코칭을 받을 수 있는 개인 맞춤형 헬스 코칭 서비스입니다.
 
-**AI Health Coach**
+현재 구현된 핵심 흐름은 **로그인 → 채팅 이력 조회 → 사용자 메시지 저장 → AI 응답 생성 및 저장 → 채팅 UI 표시**입니다.
 
-AI 챗봇을 이용해 식단을 기록하고 관리하며, 사용자의 건강 상태에 맞는 운동과 생활 습관을 추천받는 개인 맞춤형 헬스 코칭 서비스입니다.
+## 1. 프로젝트 소개
 
-## 2. 프로젝트 소개
+사용자는 복잡한 입력 폼 대신 대화하듯 건강 기록을 남길 수 있습니다.
 
-AI Health Coach는 사용자가 복잡한 입력 폼 없이 자연어 대화로 건강 기록을 남길 수 있도록 돕는 서비스입니다.
+예를 들어 사용자가 "점심에 닭가슴살 샐러드를 먹었고 퇴근 후 30분 걸었어"라고 입력하면, 사용자 메시지를 저장하고 챗봇 응답을 생성해 함께 저장합니다.
 
-예를 들어 사용자가 "아침에 그릭요거트랑 블루베리 먹었고, 30분 정도 산책했어"라고 입력하면 AI가 이를 분석해 식단 기록과 운동 기록으로 분류합니다. 이후 예상 칼로리, 운동 소모량, 수분 섭취 상태, 오늘의 건강 요약 등을 제공하고, 부족한 부분에 대한 맞춤형 조언을 제안합니다.
+## 2. 주요 기능
 
-이 프로젝트는 사용자가 식단과 운동 기록을 꾸준히 관리할 수 있도록 기록 부담을 줄이고, AI 기반 피드백을 통해 건강한 생활 습관 형성을 돕는 것을 목표로 합니다.
+### 인증
 
-## 3. 주요 기능
+- 이메일/비밀번호 기반 로그인
+- JWT Access Token 발급
+- 프론트엔드에서 토큰을 저장하고 인증 API 요청에 `Authorization: Bearer <token>` 헤더 적용
+- 로그인 상태 유지 및 로그아웃
 
-### 회원가입 및 로그인
+### AI 채팅
 
-- 이메일/비밀번호 기반 회원가입 및 로그인
-- OAuth 기반 소셜 로그인 확장 가능
-- 로그인 후 사용자 프로필 설정으로 이동
+- 로그인한 사용자의 채팅 메시지 조회
+- 사용자 메시지 저장
+- Spring AI `ChatClient`를 통한 AI Health Coach 응답 생성
+- AI 응답을 `ASSISTANT` 메시지로 저장
+- 사용자별 채팅 이력 관리
 
-### 사용자 프로필 관리
+### 프론트엔드 채팅 UI
 
-- 목표 설정: 감량, 증량, 유지 등
-- 키, 몸무게, 목표 몸무게 입력
-- 알레르기, 질환, 선호 음식 등 코칭에 필요한 정보 저장
-- 설정 화면 또는 채팅을 통한 목표/프로필 수정
+- 로그인 화면 제공
+- 채팅 이력 자동 로드
+- 메시지 전송 시 사용자 메시지 즉시 표시
+- AI 응답 대기 중 pending 메시지 표시
+- AI 응답 완료 시 실제 응답으로 교체
+- AI 응답 Markdown 렌더링
+  - 제목
+  - 목록
+  - 굵게
+  - 인라인 코드
+  - 코드 블록
+  - 표
 
-### AI 채팅 코치
+### DB 초기화
 
-- 자연어 기반 건강 상담
-- 사용자 프로필과 기존 기록을 반영한 AI 응답 생성
-- 식단, 운동, 수분, 수면 기록을 대화로 입력
-- 부족한 정보가 있을 경우 AI가 추가 질문
+- Spring Boot 실행 시 SQL 초기화 스크립트 실행
+- 테스트 사용자 및 채팅 더미 데이터 삽입
 
-### 식단 기록 및 영양 분석
-
-- 자연어 또는 사진 식단 입력에서 음식명과 식사 시간 추출
-- 음식별 예상 칼로리 및 탄수화물/단백질/지방 정보 제공
-- 저장 전 AI가 인식한 기록 후보 확인 및 수정
-- 날짜별 식단 조회 기능 확장 가능
-
-### 운동 및 활동 기록
-
-- 산책, 러닝, 헬스 등 운동 내용을 자연어로 입력
-- 운동 종류, 시간, 강도를 바탕으로 예상 소모 칼로리 계산
-- 오늘 요약과 주간 리포트에 운동 기록 반영
-
-### 오늘 건강 요약
-
-- 오늘 식단, 운동, 수분 기록 통합 조회
-- 칼로리, 단백질, 수분 등 핵심 지표를 목표 대비 비율로 표시
-- AI 한 줄 조언과 개선 제안 제공
-
-### 기록 조회 및 수정
-
-- 저장된 식단, 운동, 수분, 수면 기록 목록 조회
-- 기록별 시간, 분류, 상세 내용, 칼로리/소모량 확인
-- 잘못 인식된 기록 수정 또는 직접 추가
-
-### 주간 리포트
-
-- 일주일 동안 누적된 건강 기록 분석
-- 평균 칼로리, 평균 단백질, 운동 달성률, 수분 섭취량 표시
-- AI가 주간 패턴을 분석해 개선 포인트 제안
-
-## 4. 기술 스택
+## 3. 기술 스택
 
 ### Frontend
 
 - **Vue.js**
-  - 사용자 화면을 구성하는 메인 프론트엔드 프레임워크
-  - 컴포넌트 기반으로 채팅 화면, 기록 목록, 요약 화면, 리포트 화면을 분리해 관리
-  - 반응형 UI와 사용자 입력 이벤트 처리에 활용
+  - 사용자 로그인/회원가입 화면과 AI 채팅 화면 구현
+  - 사용자 건강 코칭 프로필 조회/수정 화면 구현
+  - 채팅 메시지, pending 상태, 에러 상태 표시
 - **PrimeVue**
-  - Vue.js 기반 UI 컴포넌트 라이브러리
-  - 버튼, 입력 폼, 다이얼로그, 탭, 테이블, 캘린더 등 공통 UI 구현에 활용
-  - 일관된 디자인 시스템과 빠른 화면 개발을 위해 사용
+  - 버튼, 태그, 칩 등 UI 컴포넌트 사용
 - **Pinia**
-  - Vue 공식 권장 상태 관리 라이브러리
-  - 로그인 사용자 정보, 프로필 정보, 채팅 상태, 식단/운동 기록 상태 관리
-  - 여러 화면에서 공유되는 데이터를 중앙에서 관리
+  - 로그인 상태, JWT 토큰, 사용자 정보, 사용자 프로필, 채팅 메시지 상태 관리
+  - 회원가입, 프로필 조회/수정, API 로딩/에러/성공 상태 관리
+- **Vite**
+  - 프론트엔드 개발 서버 및 빌드 도구
+  - 개발 환경에서 `/api` 요청을 백엔드 `localhost:8080`으로 프록시
 
 ### Backend
 
 - **Spring Boot**
-  - 백엔드 서버 구축을 위한 Java 기반 프레임워크
-  - 사용자 인증, 프로필 관리, 식단/운동 기록 관리, AI 요청 처리 API 구현
-  - REST API 서버와 비즈니스 로직 계층 구성에 활용
+  - REST API 서버 구현
+  - 사용자 인증, 채팅 메시지 처리, AI 응답 생성 흐름 구성
+- **Spring Security**
+  - JWT 기반 인증 필터 적용
+  - 로그인/회원가입/Swagger/Health Check를 제외한 API 인증 처리
+- **JJWT**
+  - JWT Access Token 생성 및 검증
+- **Spring AI**
+  - OpenAI-compatible API 연동
+  - 현재 OpenRouter API를 통해 AI 응답 생성
 - **MyBatis**
-  - SQL Mapper 기반 데이터 접근 프레임워크
-  - 사용자, 프로필, 식단, 운동, 채팅 기록 등 도메인 데이터를 PostgreSQL과 연동
-  - 복잡한 조회 쿼리나 통계성 쿼리를 직접 SQL로 관리하기 위해 사용
-- **RESTful API**
-  - 프론트엔드와 백엔드 간 통신 방식
-  - 사용자 인증, 프로필 저장, 기록 등록/수정/조회, 오늘 요약, 주간 리포트 조회 API 제공
-  - JSON 기반 요청/응답 구조로 클라이언트와 서버 역할을 분리
+  - 사용자, 프로필, 채팅 메시지 SQL 매핑
+- **springdoc-openapi**
+  - Swagger UI 및 OpenAPI 문서 제공
 
 ### Database
 
 - **PostgreSQL**
-  - 서비스 데이터 저장을 위한 관계형 데이터베이스
-  - 사용자 계정, 프로필, 식단 기록, 운동 기록, 수분/수면 기록, 채팅 로그 저장
-  - 날짜별 조회, 주간 리포트, 영양 지표 집계 등 통계성 데이터 처리에 활용
+  - 사용자 계정, 사용자 프로필, 채팅 메시지 저장
 
 ### Infrastructure
 
+- **Docker / Docker Compose**
+  - PostgreSQL, 백엔드, 프론트엔드 통합 실행
 - **AWS**
-  - 서비스 배포 및 운영 환경 구성을 위한 클라우드 플랫폼
-  - 백엔드 서버, 데이터베이스, 정적 파일 배포, 로그 관리 등에 활용 예정
-  - 추후 확장성과 운영 안정성을 고려한 인프라 구성 가능
-- **Docker**
-  - 개발 및 배포 환경을 컨테이너로 표준화
-  - 프론트엔드, 백엔드, 데이터베이스 실행 환경을 분리해 관리
-  - 로컬 개발 환경과 배포 환경의 차이를 줄이는 데 활용
+  - 추후 배포 환경으로 활용 예정
 
-## 5. Docker 실행 방법
+## 4. 실행 준비
 
-루트 디렉터리에서 다음 명령어로 프론트엔드, 백엔드, PostgreSQL을 한 번에 실행할 수 있습니다.
+루트 디렉터리에 `.env` 파일을 생성합니다.
 
-```bash
-docker compose up --build
+`.env-example`을 참고해 아래 값을 채웁니다.
+
+```env
+OPENAI_API_KEY=
+OPENROUTER_API_KEY=your_openrouter_api_key
+JWT_SECRET=some-long-random-secret-key-at-least-32-bytes
 ```
 
-실행 후 접속 주소는 다음과 같습니다.
+현재 AI 연동은 OpenRouter를 사용하므로 `OPENROUTER_API_KEY`가 필요합니다.
+
+`JWT_SECRET`은 JWT 서명에 사용되며, 충분히 긴 랜덤 문자열을 사용해야 합니다.
+
+## 5. Docker 실행
+
+루트 디렉터리에서 실행합니다.
+
+```bash
+docker compose up -d --build
+```
+
+접속 주소:
 
 - Frontend: `http://localhost:5173`
 - Backend Health Check: `http://localhost:8080/api/health`
+- Swagger UI: `http://localhost:8080/swagger-ui.html`
 - PostgreSQL: `localhost:5432`
 
-컨테이너를 종료하려면 다음 명령어를 사용합니다.
+종료:
 
 ```bash
 docker compose down
 ```
 
-## 6. 프로젝트 구조
+DB 볼륨까지 삭제하고 초기 데이터를 다시 넣고 싶다면:
 
-현재 프로젝트는 프론트엔드와 백엔드를 함께 관리하는 모노레포 구조입니다.
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+## 6. 로컬 개발 실행
+
+### Backend
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+IDE에서 직접 실행할 경우 `.env` 파일은 자동으로 읽히지 않을 수 있습니다. 이 경우 실행 환경변수에 최소한 아래 값을 직접 설정해야 합니다.
+
+```text
+JWT_SECRET=some-long-random-secret-key-at-least-32-bytes
+OPENROUTER_API_KEY=your_openrouter_api_key
+```
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Vite 개발 서버는 `/api` 요청을 `http://localhost:8080`으로 프록시합니다.
+
+## 7. 프로젝트 구조
 
 ```text
 AIHealthCoach/
 ├── frontend/
-│   ├── docs/
-│   ├── harness/
 │   ├── src/
-│   ├── index.html
+│   │   ├── stores/
+│   │   │   └── healthStore.js
+│   │   ├── App.vue
+│   │   ├── main.js
+│   │   └── styles.css
 │   ├── Dockerfile
 │   ├── nginx.conf
-│   └── package.json
+│   ├── package.json
+│   └── vite.config.js
 ├── backend/
-│   ├── docs/
-│   ├── harness/
 │   ├── src/
 │   │   ├── main/
+│   │   │   ├── java/com/aihealthcoach/
+│   │   │   │   ├── chat/
+│   │   │   │   ├── common/
+│   │   │   │   └── user/
+│   │   │   └── resources/
+│   │   │       ├── mappers/
+│   │   │       ├── scripts/
+│   │   │       └── application.properties
 │   │   └── test/
 │   ├── Dockerfile
 │   └── pom.xml
@@ -163,50 +197,93 @@ AIHealthCoach/
 │   ├── check
 │   └── check.ps1
 ├── docker-compose.yml
-├── AGENTS.md
-├── PROJECT_PROFILE.md
+├── .env-example
 └── README.md
 ```
 
-## 7. 아키텍처
-
-> 아직 구현 전이므로 추후 작성 예정입니다.
+## 8. 아키텍처
 
 ```text
-[User]
+[Browser]
   ↓
-[Frontend - Vue.js / PrimeVue]
-  ↓
-[Backend - Spring Boot REST API]
-  ↓
-[Database - PostgreSQL]
+[Vue / PrimeVue / Pinia]
+  ↓ REST API + JWT
+[Spring Boot]
+  ├─ User API
+  ├─ Chat API
+  ├─ Spring Security JWT Filter
+  ├─ MyBatis
+  └─ Spring AI ChatClient
+       ↓
+   [OpenRouter / OpenAI-compatible API]
 
-[AI Agent / AI 기능]
-  ↔ 사용자 입력 분석
-  ↔ 식단/운동 기록 추출
-  ↔ 맞춤형 코칭 응답 생성
+[Spring Boot]
+  ↓
+[PostgreSQL]
 ```
 
-## 8. 화면 예시
+## 9. 화면 예시
 
-> 아직 구현 전이므로 추후 화면 캡처 또는 GIF를 추가할 예정입니다.
+현재 프론트엔드에는 다음 화면이 구현되어 있습니다.
+
+### 로그인 화면
+
+- 이메일/비밀번호 입력
+- 로그인 성공 시 JWT 토큰 저장
+- 로그인 후 채팅 화면으로 전환
+
+### 회원가입 화면
+
+- 닉네임/이메일/비밀번호 입력
+- 회원가입 성공 시 로그인 API를 이어서 호출해 JWT 토큰 저장
+- 로그인 후 채팅 이력과 사용자 프로필 자동 조회
 
 ### AI 채팅 화면
 
-- 사용자가 식단, 운동, 수분 기록을 자연어로 입력하는 화면
-- AI가 대화 내용을 분석해 기록 후보를 생성
+- 이전 채팅 이력 조회
+- 사용자 메시지 전송
+- AI 응답 생성 대기 상태 표시
+- AI 응답 Markdown 표시
+- 로그아웃 및 이력 새로고침
 
-### AI 결과 확인 화면
+### 사용자 프로필 화면
 
-- AI가 인식한 식단/운동 기록을 저장 전 확인
-- 사용자가 기록을 수정하거나 저장 가능
+- 키, 현재 몸무게, 목표 몸무게, 목표 유형 요약 표시
+- 목표 유형은 감량/유지/근육 증가 중 선택
+- 프로필 저장 및 다시 불러오기
+- 프로필 조회/저장 중 로딩 상태와 성공/에러 메시지 표시
 
-### 오늘 건강 요약 화면
+## 10. 검증
 
-- 오늘의 칼로리, 단백질, 수분, 운동 상태 확인
-- AI 코치의 맞춤 조언 표시
+프론트엔드 빌드:
 
-### 기록 및 리포트 화면
+```bash
+cd frontend
+npm run build
+```
 
-- 저장된 건강 기록 목록 조회
-- 주간 건강 리포트와 AI 분석 결과 확인
+백엔드 테스트:
+
+```bash
+cd backend
+mvn test
+```
+
+전체 하네스:
+
+```bash
+./scripts/check
+```
+
+Windows PowerShell:
+
+```powershell
+.\scripts\check.ps1
+```
+
+## 11. 다음 작업
+
+- AI 응답 실패 시 에러 메시지 세분화
+- AI 응답 스트리밍 또는 SSE 적용 검토
+- 식단/운동 기록을 별도 테이블로 구조화
+- OpenRouter 무료 모델 rate limit 대응 전략 정리
