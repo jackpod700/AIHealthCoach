@@ -12,8 +12,9 @@ VALUES
     (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
-INSERT INTO chat_messages (user_id, role, content, created_at)
-VALUES
+INSERT INTO chat_messages (id, user_id, role, content, created_at)
+SELECT row_number() OVER () AS id, user_id, role, content, created_at
+FROM (VALUES
     (1, 'USER', '아침에 그릭요거트랑 블루베리 먹었어.', NOW() - INTERVAL '85 seconds'),
     (1, 'ASSISTANT', '아침 식사로 기록할게요. 예상 칼로리는 약 342kcal입니다.', NOW() - INTERVAL '80 seconds'),
     (1, 'USER', '견과류도 한 줌 정도 같이 먹었어.', NOW() - INTERVAL '75 seconds'),
@@ -32,6 +33,7 @@ VALUES
     (1, 'ASSISTANT', '오늘 걷기를 했으니 내일은 하체 근력 운동 20분과 가벼운 스트레칭을 추천합니다.', NOW() - INTERVAL '10 seconds'),
     (1, 'USER', '오늘 요약 보여줘.', NOW() - INTERVAL '5 seconds'),
     (1, 'ASSISTANT', '오늘은 식단 기록이 안정적이고 활동량도 좋아요. 다만 수분 섭취가 조금 부족하니 물 한 잔을 더 마셔보세요.', NOW())
+) AS seed(user_id, role, content, created_at)
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));

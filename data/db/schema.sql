@@ -103,6 +103,8 @@ CREATE TABLE IF NOT EXISTS meals (
 
     CONSTRAINT chk_meals_meal_type
         CHECK (meal_type IN ('BREAKFAST', 'LUNCH', 'DINNER', 'SNACK')),
+    CONSTRAINT uq_meals_user_type_date
+        UNIQUE (user_id, meal_type, meal_date),
     CONSTRAINT fk_meals_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
@@ -129,3 +131,16 @@ CREATE TABLE IF NOT EXISTS meal_items (
 
 CREATE INDEX IF NOT EXISTS idx_meals_user_date
     ON meals(user_id, meal_date);
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'uq_meals_user_type_date'
+    ) THEN
+        ALTER TABLE meals
+            ADD CONSTRAINT uq_meals_user_type_date
+            UNIQUE (user_id, meal_type, meal_date);
+    END IF;
+END $$;

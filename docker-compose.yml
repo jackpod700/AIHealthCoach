@@ -16,11 +16,11 @@ services:
       timeout: 5s
       retries: 5
 
-  food-importer:
+  data-importer:
     build:
       context: .
-      dockerfile: data/foods/Dockerfile
-    container_name: ai-health-food-importer
+      dockerfile: data/Dockerfile
+    container_name: ai-health-data-importer
     depends_on:
       postgres:
         condition: service_healthy
@@ -36,7 +36,7 @@ services:
       context: ./backend
     container_name: ai-health-backend
     depends_on:
-      food-importer:
+      data-importer:
         condition: service_completed_successfully
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/ai_health_coach

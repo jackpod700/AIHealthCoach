@@ -13,9 +13,13 @@
 ## 폴더 구조
 
 음식 데이터 적재는 백엔드 애플리케이션 로직이 아니라 데이터 운영 작업에 가깝기 때문에 루트의 `data/foods` 아래에서 관리한다.
+DB schema와 기본 seed SQL도 `data/db`에서 관리하며, Spring Boot의 SQL 자동 초기화는 `spring.sql.init.mode=never`로 비활성화한다.
 
 ```text
 data/
+├─ db/
+│  ├─ schema.sql
+│  └─ data.sql
 └─ foods/
    ├─ raw/
    │  ├─ 전국통합식품영양성분정보_가공식품_표준데이터.csv
@@ -24,7 +28,7 @@ data/
    ├─ scripts/
    │  ├─ prepare_foods.py
    │  ├─ import-foods.sql
-   │  └─ import_foods.ps1
+   │  └─ import-foods.sql
    └─ build/
       ├─ processed-foods.csv
       └─ food-import-errors.csv
@@ -54,14 +58,16 @@ docker compose up -d --build
 Compose 실행 흐름:
 
 1. `postgres`가 healthcheck를 통과한다.
-2. `food-importer`가 CSV 전처리와 `foods` upsert를 수행한다.
-3. `food-importer`가 성공하면 `backend`가 실행된다.
-4. `backend` 실행 후 `frontend`가 실행된다.
+2. `data-importer`가 `data/db/schema.sql`과 `data/db/data.sql`을 먼저 실행한다.
+3. `data-importer`가 CSV 전처리와 `foods` upsert를 수행한다.
+4. `data-importer`가 `data/meals/seed-meals.sql`을 실행한다.
+5. `data-importer`가 성공하면 `backend`가 실행된다.
+5. `backend` 실행 후 `frontend`가 실행된다.
 
 전처리와 DB 적재를 한 번에 실행한다.
 
 ```powershell
-.\data\foods\scripts\import_foods.ps1
+.\data\scripts\import_data.ps1
 ```
 
 전처리만 실행하려면 아래 명령을 사용한다.
