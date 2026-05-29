@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.meal.mapper.MealMapper">
+    <resultMap id="mealFoodRow" type="com.aihealthcoach.meal.dto.MealFoodRow">
+        <id column="meal_id" property="mealId"/>
+        <result column="meal_type" property="mealType"/>
+        <result column="meal_date" property="mealDate"/>
+        <result column="food_code" property="foodCode"/>
+        <result column="food_name" property="foodName"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="quantity" property="quantity"/>
+        <result column="calories" property="calories"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="fat" property="fat"/>
+    </resultMap>
+
+    <select id="findDailyMeals" resultMap="mealFoodRow">
+        SELECT
+            m.id AS meal_id,
+            m.meal_type,
+            m.meal_date,
+            mi.food_code,
+            mi.quantity,
+            f.name AS food_name,
+            f.manufacturer,
+            f.calories,
+            f.carbohydrate,
+            f.protein,
+            f.fat
+        FROM meals m
+        LEFT JOIN meal_items mi
+            ON mi.meal_id = m.id
+        LEFT JOIN foods f
+            ON f.code = mi.food_code
+        WHERE m.user_id = #{userId}
+          AND m.meal_date = #{date}
+        ORDER BY
+            CASE m.meal_type
+                WHEN 'BREAKFAST' THEN 1
+                WHEN 'LUNCH' THEN 2
+                WHEN 'DINNER' THEN 3
+                WHEN 'SNACK' THEN 4
+                ELSE 5
+            END,
+            f.name
+    </select>
+</mapper>
