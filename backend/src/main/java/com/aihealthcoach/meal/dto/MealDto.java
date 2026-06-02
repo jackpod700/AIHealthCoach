@@ -4,7 +4,26 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 public class MealDto {
+
+    public record CreateMealRequest(
+            @NotNull LocalDate mealDate,
+            @NotBlank String mealType,
+            @NotEmpty List<@Valid MealItemRequest> items
+    ) {
+    }
+
+    public record MealItemRequest(
+            @NotBlank String foodCode,
+            @NotNull @Positive BigDecimal quantity
+    ) {
+    }
 
     public record DailyMealResponse(
             LocalDate date,

@@ -46,4 +46,36 @@
             END,
             f.name
     </select>
+
+    <select id="findMealIdByUserTypeDate" resultType="long">
+        SELECT id
+        FROM meals
+        WHERE user_id = #{userId}
+          AND meal_type = #{mealType}
+          AND meal_date = #{mealDate}
+    </select>
+
+    <select id="insertMeal" resultType="long">
+        INSERT INTO meals (user_id, meal_type, meal_date)
+        VALUES (#{userId}, #{mealType}, #{mealDate})
+        RETURNING id
+    </select>
+
+    <delete id="deleteMealItems">
+        DELETE FROM meal_items
+        WHERE meal_id = #{mealId}
+    </delete>
+
+    <insert id="insertMealItem">
+        INSERT INTO meal_items (meal_id, food_code, quantity)
+        VALUES (#{mealId}, #{item.foodCode}, #{item.quantity})
+    </insert>
+
+    <select id="existsFoodCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM foods
+            WHERE code = #{foodCode}
+        )
+    </select>
 </mapper>
