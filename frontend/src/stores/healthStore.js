@@ -12,11 +12,15 @@ export const useHealthStore = defineStore("health", {
     isSigningUp: false,
     isLoadingProfile: false,
     isSavingProfile: false,
+    isConfirmingMealProposal: false,
     error: "",
     loginError: "",
     signupError: "",
     profileError: "",
     profileSuccess: "",
+    mealProposal: null,
+    mealProposalSelections: [],
+    mealProposalQuantities: [],
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -39,6 +43,19 @@ export const useHealthStore = defineStore("health", {
     },
     lastAssistantMessage: (state) => {
       return [...state.messages].reverse().find((message) => message.role === "ASSISTANT");
+    },
+    canConfirmMealProposal: (state) => {
+      if (!state.mealProposal?.items?.length) {
+        return false;
+      }
+
+      return state.mealProposal.items.every((item, index) => {
+        const quantity = Number(state.mealProposalQuantities[index]);
+        return Boolean(state.mealProposalSelections[index])
+          && item.candidates?.length > 0
+          && Number.isFinite(quantity)
+          && quantity > 0;
+      });
     },
   },
   actions: {
@@ -122,6 +139,9 @@ export const useHealthStore = defineStore("health", {
       this.user = null;
       this.profile = null;
       this.messages = [];
+      this.mealProposal = null;
+      this.mealProposalSelections = [];
+      this.mealProposalQuantities = [];
       this.error = "";
       this.loginError = "";
       this.signupError = "";
@@ -262,7 +282,9 @@ export const useHealthStore = defineStore("health", {
           throw new Error("AI 응답을 생성하지 못했습니다.");
         }
 
-        const newMessages = await response.json();
+        const payload = await response.json();
+        const newMessages = Array.isArray(payload) ? payload : payload.messages || [];
+        this.setMealProposal(Array.isArray(payload) ? null : payload.mealProposal || null);
         this.replacePendingMessages(requestId, newMessages);
         this.refreshSummary();
       } catch (error) {
@@ -271,6 +293,64 @@ export const useHealthStore = defineStore("health", {
         this.refreshSummary();
       } finally {
         this.isSending = false;
+      }
+    },
+    selectMealCandidate(itemIndex, foodCode) {
+      this.mealProposalSelections[itemIndex] = foodCode;
+    },
+    updateMealProposalQuantity(itemIndex, quantity) {
+      this.mealProposalQuantities[itemIndex] = quantity;
+    },
+    cancelMealProposal() {
+      this.mealProposal = null;
+      this.mealProposalSelections = [];
+      this.mealProposalQuantities = [];
+    },
+    setMealProposal(proposal) {
+      this.mealProposal = proposal;
+      this.mealProposalSelections = proposal?.items?.map(() => "") || [];
+      this.mealProposalQuantities = proposal?.items?.map((item) => {
+        const quantity = Number(item.quantity);
+        return Number.isFinite(quantity) && quantity > 0 ? String(quantity) : "1";
+      }) || [];
+    },
+    async confirmMealProposal() {
+      if (!this.canConfirmMealProposal || this.isConfirmingMealProposal || !this.isAuthenticated) {
+        return;
+      }
+
+      this.isConfirmingMealProposal = true;
+      this.error = "";
+
+      try {
+        const response = await fetch("/api/chat/meal-proposals/confirm", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.authHeaders(),
+          },
+          body: JSON.stringify({
+            mealDate: this.mealProposal.mealDate,
+            mealType: this.mealProposal.mealType,
+            items: this.mealProposal.items.map((item, index) => ({
+              foodCode: this.mealProposalSelections[index],
+              quantity: Number(this.mealProposalQuantities[index]),
+            })),
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("식단을 기록하지 못했습니다.");
+        }
+
+        const payload = await response.json();
+        this.messages.push(...(payload.messages || []));
+        this.cancelMealProposal();
+        this.refreshSummary();
+      } catch (error) {
+        this.error = error.message;
+      } finally {
+        this.isConfirmingMealProposal = false;
       }
     },
     authHeaders() {

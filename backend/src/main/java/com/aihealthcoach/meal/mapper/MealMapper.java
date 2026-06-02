@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
+import com.aihealthcoach.meal.dto.FoodCandidateRow;
 import com.aihealthcoach.meal.dto.MealFoodRow;
 
 @Mapper
@@ -30,4 +31,6 @@ public interface MealMapper {
     void insertMealItem(@Param("mealId") Long mealId, @Param("item") MealItemRequest item);
 
     boolean existsFoodCode(@Param("foodCode") String foodCode);
+
+    List<FoodCandidateRow> searchFoodCandidates(@Param("query") String query, @Param("limit") int limit);
 }

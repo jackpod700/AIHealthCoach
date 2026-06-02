@@ -548,6 +548,100 @@ h1 {
   line-height: 1.4;
 }
 
+.meal-proposal {
+  margin-top: 14px;
+  padding: 14px;
+  border: 1px solid #c8e6d6;
+  border-radius: 8px;
+  background: #f8fffb;
+}
+
+.meal-proposal-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  color: #52635a;
+  font-size: 0.92rem;
+}
+
+.meal-proposal-items {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.meal-proposal-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 260px);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid #dfeee6;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.meal-proposal-item div {
+  display: grid;
+  gap: 4px;
+}
+
+.meal-proposal-item strong {
+  color: #1f2933;
+}
+
+.meal-proposal-item span {
+  color: #62736a;
+  font-size: 0.9rem;
+}
+
+.meal-proposal-item select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #ccd8d1;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2933;
+}
+
+.meal-proposal-controls {
+  display: grid;
+  gap: 8px;
+}
+
+.quantity-control {
+  display: grid;
+  grid-template-columns: auto minmax(80px, 1fr);
+  align-items: center;
+  gap: 8px;
+  color: #52635a;
+  font-size: 0.9rem;
+}
+
+.quantity-control input {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #ccd8d1;
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #1f2933;
+  background: #ffffff;
+}
+
+.proposal-warning {
+  margin: 0;
+  color: #b45309;
+  font-size: 0.92rem;
+}
+
+.meal-proposal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
 @media (max-width: 920px) {
   .app-shell {
     padding: 16px;
@@ -582,6 +676,10 @@ h1 {
   }
 
   .profile-form {
+    grid-template-columns: 1fr;
+  }
+
+  .meal-proposal-item {
     grid-template-columns: 1fr;
   }
 

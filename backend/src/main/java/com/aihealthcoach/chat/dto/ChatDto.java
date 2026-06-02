@@ -1,8 +1,11 @@
 package com.aihealthcoach.chat.dto;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import com.aihealthcoach.chat.entity.ChatMessage;
+import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
+import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
@@ -49,6 +52,18 @@ public class ChatDto {
                                           .createdAt(entity.getCreatedAt())
                                           .build();
         }
+    }
+
+    public record ChatMessageSendResponse(
+            List<ChatMessageResponse> messages,
+            MealProposalResponse mealProposal
+    ) {
+    }
+
+    public record AiChatResult(
+            String assistantMessage,
+            ExtractedMealResult mealExtraction
+    ) {
     }
 
 }

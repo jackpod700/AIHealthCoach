@@ -29,6 +29,13 @@ const goalOptions = [
   { value: "MUSCLE_GAIN", label: "근육 증가" },
 ];
 
+const mealTypeLabels = {
+  BREAKFAST: "아침",
+  LUNCH: "점심",
+  DINNER: "저녁",
+  SNACK: "간식",
+};
+
 const displayMessages = computed(() => {
   if (healthStore.orderedMessages.length > 0) {
     return healthStore.orderedMessages;
@@ -227,6 +234,11 @@ async function sendMessage() {
   scrollToBottom();
 }
 
+async function confirmMealProposal() {
+  await healthStore.confirmMealProposal();
+  scrollToBottom();
+}
+
 async function submitLogin() {
   await healthStore.login({
     email: loginForm.value.email.trim(),
@@ -294,6 +306,25 @@ function toNullableNumber(value) {
 
 function goalLabel(value) {
   return goalOptions.find((option) => option.value === value)?.label || "미설정";
+}
+
+function mealTypeLabel(value) {
+  return mealTypeLabels[value] || value;
+}
+
+function formatNumber(value) {
+  if (value === null || value === undefined || value === "") {
+    return "-";
+  }
+
+  return Number(value).toLocaleString("ko-KR", {
+    maximumFractionDigits: 2,
+  });
+}
+
+function selectedCandidate(item, index) {
+  const selectedFoodCode = healthStore.mealProposalSelections[index];
+  return item.candidates?.find((candidate) => candidate.foodCode === selectedFoodCode) || null;
 }
 
 async function scrollToBottom() {
@@ -512,6 +543,105 @@ async function scrollToBottom() {
               </div>
             </div>
           </div>
+
+          <section
+            v-if="healthStore.mealProposal"
+            class="meal-proposal"
+          >
+            <div class="section-title">
+              <i class="pi pi-check-circle"></i>
+              <span>식단 기록 확인</span>
+              <Tag
+                :value="mealTypeLabel(healthStore.mealProposal.mealType)"
+                severity="success"
+              />
+            </div>
+
+            <div class="meal-proposal-meta">
+              <span>{{ healthStore.mealProposal.mealDate }}</span>
+              <span
+                v-if="healthStore.mealProposal.defaultsApplied?.length"
+              >
+                기본값 적용: {{ healthStore.mealProposal.defaultsApplied.join(", ") }}
+              </span>
+            </div>
+
+            <div class="meal-proposal-items">
+              <article
+                v-for="(item, index) in healthStore.mealProposal.items"
+                :key="`${item.extractedName}-${index}`"
+                class="meal-proposal-item"
+              >
+                <div>
+                  <strong>{{ item.extractedName }}</strong>
+                  <span
+                    v-if="selectedCandidate(item, index)"
+                  >
+                    기준량 {{ formatNumber(selectedCandidate(item, index).servingSize) }}
+                    {{ selectedCandidate(item, index).servingUnit }}
+                  </span>
+                  <span v-else>후보를 선택하면 기준량이 표시됩니다.</span>
+                </div>
+
+                <div class="meal-proposal-controls">
+                  <select
+                    v-if="item.candidates?.length"
+                    :value="healthStore.mealProposalSelections[index]"
+                    @change="healthStore.selectMealCandidate(index, $event.target.value)"
+                  >
+                    <option value="">음식 후보 선택</option>
+                    <option
+                      v-for="candidate in item.candidates"
+                      :key="candidate.foodCode"
+                      :value="candidate.foodCode"
+                    >
+                      {{ candidate.foodName }} · {{ formatNumber(candidate.calories) }} kcal
+                    </option>
+                  </select>
+
+                  <label
+                    v-if="item.candidates?.length"
+                    class="quantity-control"
+                  >
+                    <span>배수</span>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.1"
+                      :value="healthStore.mealProposalQuantities[index]"
+                      @input="healthStore.updateMealProposalQuantity(index, $event.target.value)"
+                    />
+                  </label>
+
+                  <p
+                    v-else
+                    class="proposal-warning"
+                  >
+                    매칭된 음식 후보가 없습니다.
+                  </p>
+                </div>
+              </article>
+            </div>
+
+            <div class="meal-proposal-actions">
+              <Button
+                type="button"
+                label="기록하기"
+                icon="pi pi-save"
+                :disabled="!healthStore.canConfirmMealProposal"
+                :loading="healthStore.isConfirmingMealProposal"
+                @click="confirmMealProposal"
+              />
+              <Button
+                type="button"
+                label="취소"
+                icon="pi pi-times"
+                severity="secondary"
+                outlined
+                @click="healthStore.cancelMealProposal"
+              />
+            </div>
+          </section>
 
           <p
             v-if="healthStore.error"

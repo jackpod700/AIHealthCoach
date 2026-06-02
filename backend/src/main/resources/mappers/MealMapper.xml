@@ -16,6 +16,18 @@
         <result column="fat" property="fat"/>
     </resultMap>
 
+    <resultMap id="foodCandidateRow" type="com.aihealthcoach.meal.dto.FoodCandidateRow">
+        <id column="food_code" property="foodCode"/>
+        <result column="food_name" property="foodName"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
+        <result column="calories" property="calories"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="fat" property="fat"/>
+    </resultMap>
+
     <select id="findDailyMeals" resultMap="mealFoodRow">
         SELECT
             m.id AS meal_id,
@@ -77,5 +89,28 @@
             FROM foods
             WHERE code = #{foodCode}
         )
+    </select>
+
+    <select id="searchFoodCandidates" resultMap="foodCandidateRow">
+        SELECT
+            code AS food_code,
+            name AS food_name,
+            manufacturer,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        FROM foods
+        WHERE name ILIKE CONCAT('%', #{query}, '%')
+        ORDER BY
+            CASE
+                WHEN name = #{query} THEN 0
+                WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
+                ELSE 2
+            END,
+            name
+        LIMIT #{limit}
     </select>
 </mapper>
