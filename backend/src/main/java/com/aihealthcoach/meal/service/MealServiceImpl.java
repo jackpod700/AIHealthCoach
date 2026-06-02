@@ -17,6 +17,8 @@ import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.dto.MealDto.MealItemResponse;
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
 import com.aihealthcoach.meal.dto.MealDto.MealResponse;
+import com.aihealthcoach.meal.dto.MealDto.MonthlyMealDayResponse;
+import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
 import com.aihealthcoach.meal.dto.MealFoodRow;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
@@ -53,6 +55,29 @@ public class MealServiceImpl implements MealService {
                 sum(meals, MealResponse::totalProtein),
                 sum(meals, MealResponse::totalFat)
         );
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public MonthlyMealResponse findMonthlyMeals(Long userId, int year, int month) {
+        if (month < 1 || month > 12) {
+            throw new IllegalArgumentException("month must be between 1 and 12");
+        }
+
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.plusMonths(1);
+        List<MealFoodRow> rows = mealMapper.findMealsBetween(userId, startDate, endDate);
+        Map<LocalDate, List<MealFoodRow>> groupedRows = new LinkedHashMap<>();
+
+        for (MealFoodRow row : rows) {
+            groupedRows.computeIfAbsent(row.getMealDate(), ignored -> new ArrayList<>()).add(row);
+        }
+
+        List<MonthlyMealDayResponse> days = groupedRows.entrySet().stream()
+                .map(entry -> toMonthlyMealDayResponse(entry.getKey(), entry.getValue()))
+                .toList();
+
+        return new MonthlyMealResponse(year, month, days);
     }
 
     @Override
@@ -110,6 +135,31 @@ public class MealServiceImpl implements MealService {
                 sumItems(items, MealItemResponse::carbohydrate),
                 sumItems(items, MealItemResponse::protein),
                 sumItems(items, MealItemResponse::fat)
+        );
+    }
+
+    private MonthlyMealDayResponse toMonthlyMealDayResponse(LocalDate date, List<MealFoodRow> rows) {
+        Map<Long, List<MealFoodRow>> groupedRows = new LinkedHashMap<>();
+        for (MealFoodRow row : rows) {
+            groupedRows.computeIfAbsent(row.getMealId(), ignored -> new ArrayList<>()).add(row);
+        }
+
+        List<MealResponse> meals = groupedRows.values().stream()
+                .map(this::toMealResponse)
+                .toList();
+        List<String> mealTypes = meals.stream()
+                .map(MealResponse::mealType)
+                .distinct()
+                .toList();
+
+        return new MonthlyMealDayResponse(
+                date,
+                meals.size(),
+                mealTypes,
+                sum(meals, MealResponse::totalCalories),
+                sum(meals, MealResponse::totalCarbohydrate),
+                sum(meals, MealResponse::totalProtein),
+                sum(meals, MealResponse::totalFat)
         );
     }
 

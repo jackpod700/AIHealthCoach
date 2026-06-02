@@ -54,6 +54,36 @@ const latestAssistantText = computed(() => {
   return healthStore.lastAssistantMessage?.content || "아직 AI 응답이 없습니다. 오늘의 기록을 한 문장으로 남겨보세요.";
 });
 
+const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
+
+const calendarDays = computed(() => {
+  const [year, month] = healthStore.selectedCalendarMonth.split("-").map(Number);
+  const firstDate = new Date(year, month - 1, 1);
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const leadingBlankCount = firstDate.getDay();
+  const cellCount = Math.ceil((leadingBlankCount + daysInMonth) / 7) * 7;
+  const summariesByDate = new Map((healthStore.mealCalendar?.days || []).map((day) => [day.date, day]));
+
+  return Array.from({ length: cellCount }, (_, index) => {
+    const dayNumber = index - leadingBlankCount + 1;
+    if (dayNumber < 1 || dayNumber > daysInMonth) {
+      return {
+        key: `blank-${index}`,
+        inMonth: false,
+      };
+    }
+
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(dayNumber).padStart(2, "0")}`;
+    return {
+      key: date,
+      date,
+      dayNumber,
+      inMonth: true,
+      summary: summariesByDate.get(date) || null,
+    };
+  });
+});
+
 onMounted(async () => {
   if (healthStore.isAuthenticated) {
     await Promise.all([
@@ -327,6 +357,37 @@ function selectedCandidate(item, index) {
   return item.candidates?.find((candidate) => candidate.foodCode === selectedFoodCode) || null;
 }
 
+function calendarMonthTitle() {
+  const [year, month] = healthStore.selectedCalendarMonth.split("-").map(Number);
+  return new Intl.DateTimeFormat("ko-KR", {
+    year: "numeric",
+    month: "long",
+  }).format(new Date(year, month - 1, 1));
+}
+
+async function openCalendarView() {
+  activeView.value = "calendar";
+
+  if (!healthStore.mealCalendar) {
+    const [year, month] = healthStore.selectedCalendarMonth.split("-").map(Number);
+    await healthStore.loadMonthlyMeals(year, month);
+  }
+}
+
+async function moveCalendarMonth(offset) {
+  const [year, month] = healthStore.selectedCalendarMonth.split("-").map(Number);
+  const nextMonth = new Date(year, month - 1 + offset, 1);
+  await healthStore.loadMonthlyMeals(nextMonth.getFullYear(), nextMonth.getMonth() + 1);
+}
+
+async function selectCalendarDate(day) {
+  if (!day.inMonth) {
+    return;
+  }
+
+  await healthStore.loadDailyMeal(day.date);
+}
+
 async function scrollToBottom() {
   await nextTick();
 
@@ -474,6 +535,13 @@ async function scrollToBottom() {
           :severity="activeView === 'profile' ? 'success' : 'secondary'"
           :outlined="activeView !== 'profile'"
           @click="activeView = 'profile'"
+        />
+        <Button
+          label="캘린더"
+          icon="pi pi-calendar"
+          :severity="activeView === 'calendar' ? 'success' : 'secondary'"
+          :outlined="activeView !== 'calendar'"
+          @click="openCalendarView"
         />
         <Button
           label="이력 새로고침"
@@ -736,7 +804,153 @@ async function scrollToBottom() {
     </main>
 
     <main
-      v-else
+      v-else-if="activeView === 'calendar'"
+      class="calendar-page"
+    >
+      <section class="calendar-panel">
+        <div class="calendar-toolbar">
+          <div>
+            <p class="eyebrow">Meal Calendar</p>
+            <h2>{{ calendarMonthTitle() }}</h2>
+          </div>
+          <div class="calendar-actions">
+            <Button
+              type="button"
+              icon="pi pi-chevron-left"
+              severity="secondary"
+              outlined
+              @click="moveCalendarMonth(-1)"
+            />
+            <Button
+              type="button"
+              icon="pi pi-refresh"
+              severity="secondary"
+              outlined
+              :loading="healthStore.isLoadingMealCalendar"
+              @click="moveCalendarMonth(0)"
+            />
+            <Button
+              type="button"
+              icon="pi pi-chevron-right"
+              severity="secondary"
+              outlined
+              @click="moveCalendarMonth(1)"
+            />
+          </div>
+        </div>
+
+        <div class="calendar-grid">
+          <div
+            v-for="dayName in weekDays"
+            :key="dayName"
+            class="calendar-weekday"
+          >
+            {{ dayName }}
+          </div>
+          <button
+            v-for="day in calendarDays"
+            :key="day.key"
+            type="button"
+            class="calendar-day"
+            :class="{
+              blank: !day.inMonth,
+              selected: day.date === healthStore.selectedMealDate,
+              recorded: day.summary,
+            }"
+            :disabled="!day.inMonth"
+            @click="selectCalendarDate(day)"
+          >
+            <span class="calendar-day-number">{{ day.dayNumber }}</span>
+            <strong v-if="day.summary">{{ formatNumber(day.summary.totalCalories) }} kcal</strong>
+            <span
+              v-if="day.summary"
+              class="calendar-meal-types"
+            >
+              {{ day.summary.mealTypes.map(mealTypeLabel).join(" · ") }}
+            </span>
+          </button>
+        </div>
+
+        <p
+          v-if="healthStore.mealCalendarError"
+          class="error-banner"
+        >
+          {{ healthStore.mealCalendarError }}
+        </p>
+      </section>
+
+      <section class="daily-meal-panel">
+        <div class="section-title">
+          <i class="pi pi-list"></i>
+          <span>선택한 날짜 상세</span>
+          <Tag
+            v-if="healthStore.selectedMealDate"
+            :value="healthStore.selectedMealDate"
+            severity="secondary"
+          />
+        </div>
+
+        <template v-if="healthStore.isLoadingDailyMeal">
+          <p class="empty-state">식단 상세를 불러오는 중입니다.</p>
+        </template>
+
+        <template v-else-if="healthStore.selectedDailyMeal?.meals?.length">
+          <div class="daily-totals">
+            <article>
+              <span>총 칼로리</span>
+              <strong>{{ formatNumber(healthStore.selectedDailyMeal.dailyTotalCalories) }} kcal</strong>
+            </article>
+            <article>
+              <span>탄수화물</span>
+              <strong>{{ formatNumber(healthStore.selectedDailyMeal.dailyTotalCarbohydrate) }} g</strong>
+            </article>
+            <article>
+              <span>단백질</span>
+              <strong>{{ formatNumber(healthStore.selectedDailyMeal.dailyTotalProtein) }} g</strong>
+            </article>
+            <article>
+              <span>지방</span>
+              <strong>{{ formatNumber(healthStore.selectedDailyMeal.dailyTotalFat) }} g</strong>
+            </article>
+          </div>
+
+          <div class="daily-meal-list">
+            <article
+              v-for="meal in healthStore.selectedDailyMeal.meals"
+              :key="meal.mealId"
+              class="daily-meal-card"
+            >
+              <div class="daily-meal-card-header">
+                <Tag
+                  :value="mealTypeLabel(meal.mealType)"
+                  severity="success"
+                />
+                <strong>{{ formatNumber(meal.totalCalories) }} kcal</strong>
+              </div>
+              <ul>
+                <li
+                  v-for="item in meal.items"
+                  :key="`${meal.mealId}-${item.foodCode}`"
+                >
+                  <span>{{ item.foodName }}</span>
+                  <strong>{{ formatNumber(item.quantity) }}배 · {{ formatNumber(item.calories) }} kcal</strong>
+                </li>
+              </ul>
+            </article>
+          </div>
+        </template>
+
+        <p
+          v-else
+          class="empty-state"
+        >
+          날짜를 선택하면 식단 상세가 표시됩니다.
+        </p>
+      </section>
+    </main>
+
+    <main
+      v-else-if="activeView === 'profile'"
       class="profile-page"
     >
       <section class="profile-overview">

@@ -59,6 +59,39 @@
             f.name
     </select>
 
+    <select id="findMealsBetween" resultMap="mealFoodRow">
+        SELECT
+            m.id AS meal_id,
+            m.meal_type,
+            m.meal_date,
+            mi.food_code,
+            mi.quantity,
+            f.name AS food_name,
+            f.manufacturer,
+            f.calories,
+            f.carbohydrate,
+            f.protein,
+            f.fat
+        FROM meals m
+        LEFT JOIN meal_items mi
+            ON mi.meal_id = m.id
+        LEFT JOIN foods f
+            ON f.code = mi.food_code
+        WHERE m.user_id = #{userId}
+          AND m.meal_date &gt;= #{startDate}
+          AND m.meal_date &lt; #{endDate}
+        ORDER BY
+            m.meal_date,
+            CASE m.meal_type
+                WHEN 'BREAKFAST' THEN 1
+                WHEN 'LUNCH' THEN 2
+                WHEN 'DINNER' THEN 3
+                WHEN 'SNACK' THEN 4
+                ELSE 5
+            END,
+            f.name
+    </select>
+
     <select id="findMealIdByUserTypeDate" resultType="long">
         SELECT id
         FROM meals

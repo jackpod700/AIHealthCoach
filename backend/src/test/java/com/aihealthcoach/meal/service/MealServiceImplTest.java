@@ -1,5 +1,6 @@
 package com.aihealthcoach.meal.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -18,6 +19,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aihealthcoach.meal.dto.MealDto.CreateMealRequest;
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
+import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
+import com.aihealthcoach.meal.dto.MealFoodRow;
 import com.aihealthcoach.meal.exception.MealErrorCode;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
@@ -111,11 +114,79 @@ class MealServiceImplTest {
         verify(mealMapper, never()).insertMeal(any(), any(), any());
     }
 
+    @Test
+    void findMonthlyMealsGroupsDaysAndSumsNutrition() {
+        LocalDate date = LocalDate.of(2026, 6, 2);
+        LocalDate startDate = LocalDate.of(2026, 6, 1);
+        LocalDate endDate = LocalDate.of(2026, 7, 1);
+        when(mealMapper.findMealsBetween(USER_ID, startDate, endDate)).thenReturn(List.of(
+                row(10L, date, "BREAKFAST", "1.5", "100", "20", "10", "5"),
+                row(10L, date, "BREAKFAST", "1", "50", "10", "5", "2"),
+                row(11L, date, "DINNER", "2", "200", "30", "20", "8")
+        ));
+
+        MonthlyMealResponse response = mealService.findMonthlyMeals(USER_ID, 2026, 6);
+
+        assertThat(response.year()).isEqualTo(2026);
+        assertThat(response.month()).isEqualTo(6);
+        assertThat(response.days()).hasSize(1);
+        assertThat(response.days().get(0).date()).isEqualTo(date);
+        assertThat(response.days().get(0).mealCount()).isEqualTo(2);
+        assertThat(response.days().get(0).mealTypes()).containsExactly("BREAKFAST", "DINNER");
+        assertThat(response.days().get(0).totalCalories()).isEqualByComparingTo("600.0");
+        assertThat(response.days().get(0).totalCarbohydrate()).isEqualByComparingTo("100.0");
+        assertThat(response.days().get(0).totalProtein()).isEqualByComparingTo("60.0");
+        assertThat(response.days().get(0).totalFat()).isEqualByComparingTo("25.5");
+    }
+
+    @Test
+    void findMonthlyMealsReturnsEmptyDaysForEmptyMonth() {
+        LocalDate startDate = LocalDate.of(2026, 6, 1);
+        LocalDate endDate = LocalDate.of(2026, 7, 1);
+        when(mealMapper.findMealsBetween(USER_ID, startDate, endDate)).thenReturn(List.of());
+
+        MonthlyMealResponse response = mealService.findMonthlyMeals(USER_ID, 2026, 6);
+
+        assertThat(response.days()).isEmpty();
+    }
+
+    @Test
+    void findMonthlyMealsRejectsInvalidMonth() {
+        assertThatThrownBy(() -> mealService.findMonthlyMeals(USER_ID, 2026, 13))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("month must be between 1 and 12");
+
+        verify(mealMapper, never()).findMealsBetween(any(), any(), any());
+    }
+
     private CreateMealRequest request(String mealType, MealItemRequest... items) {
         return new CreateMealRequest(MEAL_DATE, mealType, List.of(items));
     }
 
     private MealItemRequest item(String foodCode, String quantity) {
         return new MealItemRequest(foodCode, new BigDecimal(quantity));
+    }
+
+    private MealFoodRow row(
+            Long mealId,
+            LocalDate mealDate,
+            String mealType,
+            String quantity,
+            String calories,
+            String carbohydrate,
+            String protein,
+            String fat
+    ) {
+        MealFoodRow row = new MealFoodRow();
+        row.setMealId(mealId);
+        row.setMealDate(mealDate);
+        row.setMealType(mealType);
+        row.setFoodCode(FOOD_CODE + mealId + quantity);
+        row.setQuantity(new BigDecimal(quantity));
+        row.setCalories(new BigDecimal(calories));
+        row.setCarbohydrate(new BigDecimal(carbohydrate));
+        row.setProtein(new BigDecimal(protein));
+        row.setFat(new BigDecimal(fat));
+        return row;
     }
 }

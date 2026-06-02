@@ -462,6 +462,175 @@ h1 {
   padding: 22px;
 }
 
+.calendar-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.8fr);
+  max-width: 1180px;
+  margin: 0 auto;
+  gap: 18px;
+}
+
+.calendar-panel,
+.daily-meal-panel {
+  padding: 18px;
+  border: 1px solid #d9e3dc;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 12px 28px rgb(32 52 43 / 8%);
+}
+
+.calendar-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.calendar-toolbar h2 {
+  margin: 0;
+  color: #1f2933;
+  font-size: 1.35rem;
+}
+
+.calendar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.calendar-weekday {
+  color: #63766d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.calendar-day {
+  display: grid;
+  min-height: 112px;
+  align-content: start;
+  gap: 6px;
+  border: 1px solid #dfe8e2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #fbfdfb;
+  color: #1f2933;
+  cursor: pointer;
+  text-align: left;
+}
+
+.calendar-day:hover:not(:disabled),
+.calendar-day.selected {
+  border-color: #2f8f63;
+  background: #effaf3;
+}
+
+.calendar-day.blank {
+  border-color: transparent;
+  background: transparent;
+  cursor: default;
+}
+
+.calendar-day.recorded {
+  background: #f6fffa;
+}
+
+.calendar-day-number {
+  color: #52635a;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.calendar-day strong {
+  color: #174c37;
+  font-size: 1rem;
+}
+
+.calendar-meal-types {
+  color: #63766d;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.daily-totals {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.daily-totals article {
+  padding: 12px;
+  border: 1px solid #e4ece7;
+  border-radius: 8px;
+  background: #fbfdfb;
+}
+
+.daily-totals span,
+.daily-meal-card li span {
+  color: #63766d;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.daily-totals strong {
+  display: block;
+  margin-top: 8px;
+  color: #1f2933;
+}
+
+.daily-meal-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.daily-meal-card {
+  padding: 12px;
+  border: 1px solid #e4ece7;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.daily-meal-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.daily-meal-card ul {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.daily-meal-card li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.daily-meal-card li strong {
+  color: #1f2933;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.empty-state {
+  margin: 16px 0 0;
+  color: #63766d;
+  line-height: 1.5;
+}
+
 .profile-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -662,6 +831,10 @@ h1 {
     grid-template-columns: 1fr;
   }
 
+  .calendar-page {
+    grid-template-columns: 1fr;
+  }
+
   .chat-surface {
     min-height: auto;
   }
@@ -703,5 +876,22 @@ h1 {
 
   .profile-actions {
     flex-direction: column;
+  }
+
+  .calendar-grid {
+    gap: 5px;
+  }
+
+  .calendar-day {
+    min-height: 86px;
+    padding: 8px;
+  }
+
+  .calendar-meal-types {
+    display: none;
+  }
+
+  .daily-totals {
+    grid-template-columns: 1fr;
   }
 }

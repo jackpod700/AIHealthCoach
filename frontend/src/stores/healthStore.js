@@ -21,6 +21,13 @@ export const useHealthStore = defineStore("health", {
     mealProposal: null,
     mealProposalSelections: [],
     mealProposalQuantities: [],
+    mealCalendar: null,
+    selectedCalendarMonth: new Date().toISOString().slice(0, 7),
+    selectedMealDate: "",
+    selectedDailyMeal: null,
+    isLoadingMealCalendar: false,
+    isLoadingDailyMeal: false,
+    mealCalendarError: "",
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -142,6 +149,10 @@ export const useHealthStore = defineStore("health", {
       this.mealProposal = null;
       this.mealProposalSelections = [];
       this.mealProposalQuantities = [];
+      this.mealCalendar = null;
+      this.selectedMealDate = "";
+      this.selectedDailyMeal = null;
+      this.mealCalendarError = "";
       this.error = "";
       this.loginError = "";
       this.signupError = "";
@@ -345,12 +356,78 @@ export const useHealthStore = defineStore("health", {
 
         const payload = await response.json();
         this.messages.push(...(payload.messages || []));
+        await this.refreshMealCalendarAfterMealSave(payload.dailyMeal?.date);
         this.cancelMealProposal();
         this.refreshSummary();
       } catch (error) {
         this.error = error.message;
       } finally {
         this.isConfirmingMealProposal = false;
+      }
+    },
+    async loadMonthlyMeals(year, month) {
+      if (!this.isAuthenticated) {
+        return;
+      }
+
+      this.isLoadingMealCalendar = true;
+      this.mealCalendarError = "";
+      this.selectedCalendarMonth = `${year}-${String(month).padStart(2, "0")}`;
+
+      try {
+        const response = await fetch(`/api/meals/monthly?year=${year}&month=${month}`, {
+          headers: this.authHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("식단 캘린더를 불러오지 못했습니다.");
+        }
+
+        this.mealCalendar = await response.json();
+      } catch (error) {
+        this.mealCalendarError = error.message;
+      } finally {
+        this.isLoadingMealCalendar = false;
+      }
+    },
+    async loadDailyMeal(date) {
+      if (!this.isAuthenticated || !date) {
+        return;
+      }
+
+      this.isLoadingDailyMeal = true;
+      this.mealCalendarError = "";
+      this.selectedMealDate = date;
+
+      try {
+        const response = await fetch(`/api/meals/daily?date=${date}`, {
+          headers: this.authHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("하루 식단 상세를 불러오지 못했습니다.");
+        }
+
+        this.selectedDailyMeal = await response.json();
+      } catch (error) {
+        this.mealCalendarError = error.message;
+      } finally {
+        this.isLoadingDailyMeal = false;
+      }
+    },
+    async refreshMealCalendarAfterMealSave(date) {
+      if (!date) {
+        return;
+      }
+
+      const savedMonth = date.slice(0, 7);
+      if (this.selectedCalendarMonth === savedMonth) {
+        const [year, month] = savedMonth.split("-").map(Number);
+        await this.loadMonthlyMeals(year, month);
+      }
+
+      if (this.selectedMealDate === date) {
+        await this.loadDailyMeal(date);
       }
     },
     authHeaders() {

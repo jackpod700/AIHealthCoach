@@ -35,6 +35,24 @@ public class MealDto {
     ) {
     }
 
+    public record MonthlyMealResponse(
+            int year,
+            int month,
+            List<MonthlyMealDayResponse> days
+    ) {
+    }
+
+    public record MonthlyMealDayResponse(
+            LocalDate date,
+            int mealCount,
+            List<String> mealTypes,
+            BigDecimal totalCalories,
+            BigDecimal totalCarbohydrate,
+            BigDecimal totalProtein,
+            BigDecimal totalFat
+    ) {
+    }
+
     public record MealResponse(
             Long mealId,
             String mealType,

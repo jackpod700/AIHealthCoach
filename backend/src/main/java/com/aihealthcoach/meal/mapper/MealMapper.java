@@ -14,6 +14,12 @@ import com.aihealthcoach.meal.dto.MealFoodRow;
 public interface MealMapper {
     List<MealFoodRow> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
 
+    List<MealFoodRow> findMealsBetween(
+            @Param("userId") Long userId,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );
+
     Long findMealIdByUserTypeDate(
             @Param("userId") Long userId,
             @Param("mealType") String mealType,
