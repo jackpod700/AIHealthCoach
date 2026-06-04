@@ -5,6 +5,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import com.aihealthcoach.exercise.exception.ExerciseErrorCode;
+import com.aihealthcoach.exercise.exception.ExerciseException;
 import com.aihealthcoach.meal.exception.MealErrorCode;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.user.exception.UserErrorCode;
@@ -25,6 +27,15 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MealException.class)
     public ResponseEntity<ErrorResponse> handleMealException(MealException exception) {
         MealErrorCode errorCode = exception.getErrorCode();
+
+        return ResponseEntity
+                .status(errorCode.getStatus())
+                .body(new ErrorResponse(errorCode.name(), errorCode.getMessage()));
+    }
+
+    @ExceptionHandler(ExerciseException.class)
+    public ResponseEntity<ErrorResponse> handleExerciseException(ExerciseException exception) {
+        ExerciseErrorCode errorCode = exception.getErrorCode();
 
         return ResponseEntity
                 .status(errorCode.getStatus())
