@@ -16,7 +16,7 @@ const router = useRouter();
 const navItems = [
   { label: "대화", icon: "pi pi-comment", to: "/chat" },
   { label: "캘린더", icon: "pi pi-calendar", to: "/calendar" },
-  { label: "일일 기록", icon: "pi pi-file", to: "#", needsApi: true },
+  { label: "일일 기록", icon: "pi pi-file", to: "/records" },
   { label: "프로필", icon: "pi pi-user", to: "/profile" },
 ];
 

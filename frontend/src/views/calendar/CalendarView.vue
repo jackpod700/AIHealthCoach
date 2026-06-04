@@ -69,6 +69,15 @@ async function moveMonth(offset) {
   }
 }
 
+function openDailyRecord(dateKey) {
+  router.push({
+    path: "/records",
+    query: {
+      date: dateKey,
+    },
+  });
+}
+
 function toDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -139,15 +148,17 @@ function formatCalories(value) {
         </div>
 
         <div class="calendar-grid">
-          <article
+          <button
             v-for="cell in calendarCells"
             :key="cell.dateKey"
+            type="button"
             class="calendar-cell"
             :class="{
               muted: !cell.isCurrentMonth,
               recorded: cell.summary,
               today: cell.isToday,
             }"
+            @click="openDailyRecord(cell.dateKey)"
           >
             <div class="calendar-cell-head">
               <strong>{{ cell.day }}</strong>
@@ -166,7 +177,7 @@ function formatCalories(value) {
                 :title="mealTypeMeta[mealType].label"
               ></i>
             </div>
-          </article>
+          </button>
         </div>
       </section>
     </section>
