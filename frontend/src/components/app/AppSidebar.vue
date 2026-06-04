@@ -2,16 +2,20 @@
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
+import { useChatStore } from "../../stores/chatStore";
+import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const chatStore = useChatStore();
+const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const route = useRoute();
 const router = useRouter();
 
 const navItems = [
   { label: "대화", icon: "pi pi-comment", to: "/chat" },
-  { label: "캘린더", icon: "pi pi-calendar", to: "#", needsApi: true },
+  { label: "캘린더", icon: "pi pi-calendar", to: "/calendar" },
   { label: "일일 기록", icon: "pi pi-file", to: "#", needsApi: true },
   { label: "프로필", icon: "pi pi-user", to: "/profile" },
 ];
@@ -48,6 +52,8 @@ function isActive(item) {
 
 function logout() {
   authStore.logout();
+  chatStore.clearMessages();
+  mealStore.clearMeals();
   profileStore.clearProfile();
   router.push("/login");
 }

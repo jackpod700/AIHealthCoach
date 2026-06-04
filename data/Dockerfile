@@ -9,6 +9,6 @@ COPY data/foods ./foods
 COPY data/db ./db
 COPY data/meals ./meals
 
-RUN chmod +x ./scripts/import_data.sh
+RUN sed -i 's/\r$//' ./scripts/import_data.sh && chmod +x ./scripts/import_data.sh
 
 CMD ["./scripts/import_data.sh"]
