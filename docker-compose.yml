@@ -46,8 +46,16 @@ services:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       JWT_SECRET: ${JWT_SECRET}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
     ports:
       - "8080:8080"
+
+  redis:
+    image: redis:7-alpine
+    container_name: ai-health-redis
+    ports:
+      - "6379:6379"
 
   frontend:
     build:
