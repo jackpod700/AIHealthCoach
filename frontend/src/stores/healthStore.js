@@ -28,6 +28,12 @@ export const useHealthStore = defineStore("health", {
     isLoadingMealCalendar: false,
     isLoadingDailyMeal: false,
     mealCalendarError: "",
+    manualMealForm: null,
+    manualFoodQuery: "",
+    manualFoodResults: [],
+    manualFoodSearchRequestId: 0,
+    isSearchingFoods: false,
+    isSavingManualMeal: false,
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -62,6 +68,16 @@ export const useHealthStore = defineStore("health", {
           && item.candidates?.length > 0
           && Number.isFinite(quantity)
           && quantity > 0;
+      });
+    },
+    canSaveManualMeal: (state) => {
+      if (!state.manualMealForm?.items?.length) {
+        return false;
+      }
+
+      return state.manualMealForm.items.every((item) => {
+        const quantity = Number(item.quantity);
+        return Boolean(item.foodCode) && Number.isFinite(quantity) && quantity > 0;
       });
     },
   },
@@ -153,6 +169,7 @@ export const useHealthStore = defineStore("health", {
       this.selectedMealDate = "";
       this.selectedDailyMeal = null;
       this.mealCalendarError = "";
+      this.cancelManualMealForm();
       this.error = "";
       this.loginError = "";
       this.signupError = "";
@@ -428,6 +445,171 @@ export const useHealthStore = defineStore("health", {
 
       if (this.selectedMealDate === date) {
         await this.loadDailyMeal(date);
+      }
+    },
+    openManualMealForm(date, meal = null) {
+      const mealType = meal?.mealType || "BREAKFAST";
+      this.manualMealForm = {
+        mealDate: date,
+        mealType,
+        items: (meal?.items || []).map((item) => ({
+          foodCode: item.foodCode,
+          foodName: item.foodName,
+          manufacturer: item.manufacturer,
+          servingSize: item.servingSize ?? null,
+          servingUnit: item.servingUnit ?? "",
+          calories: this.toBaseNutrient(item.calories, item.quantity),
+          carbohydrate: this.toBaseNutrient(item.carbohydrate, item.quantity),
+          protein: this.toBaseNutrient(item.protein, item.quantity),
+          fat: this.toBaseNutrient(item.fat, item.quantity),
+          quantity: this.roundQuantityToTenth(item.quantity ?? "1"),
+        })),
+      };
+      this.manualFoodQuery = "";
+      this.manualFoodResults = [];
+      this.mealCalendarError = "";
+    },
+    cancelManualMealForm() {
+      this.manualMealForm = null;
+      this.manualFoodQuery = "";
+      this.manualFoodResults = [];
+      this.manualFoodSearchRequestId = 0;
+      this.isSearchingFoods = false;
+      this.isSavingManualMeal = false;
+    },
+    async searchManualFoods(query) {
+      this.manualFoodQuery = query;
+      const trimmedQuery = query.trim();
+      const requestId = this.manualFoodSearchRequestId + 1;
+      this.manualFoodSearchRequestId = requestId;
+
+      if (!this.isAuthenticated || !trimmedQuery) {
+        this.manualFoodResults = [];
+        this.isSearchingFoods = false;
+        return;
+      }
+
+      this.isSearchingFoods = true;
+      this.mealCalendarError = "";
+
+      try {
+        const response = await fetch(`/api/foods/search?query=${encodeURIComponent(trimmedQuery)}`, {
+          headers: this.authHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("음식 검색에 실패했습니다.");
+        }
+
+        const foods = await response.json();
+        if (this.manualFoodSearchRequestId === requestId) {
+          this.manualFoodResults = foods;
+        }
+      } catch (error) {
+        if (this.manualFoodSearchRequestId === requestId) {
+          this.mealCalendarError = error.message;
+        }
+      } finally {
+        if (this.manualFoodSearchRequestId === requestId) {
+          this.isSearchingFoods = false;
+        }
+      }
+    },
+    addManualMealFood(food) {
+      if (!this.manualMealForm || this.manualMealForm.items.some((item) => item.foodCode === food.foodCode)) {
+        return;
+      }
+
+      this.manualMealForm.items.push({
+        ...food,
+        quantity: "1",
+      });
+      this.manualFoodQuery = "";
+      this.manualFoodResults = [];
+      this.manualFoodSearchRequestId += 1;
+    },
+    removeManualMealFood(index) {
+      if (!this.manualMealForm) {
+        return;
+      }
+
+      this.manualMealForm.items.splice(index, 1);
+    },
+    updateManualMealQuantity(index, quantity) {
+      if (!this.manualMealForm?.items[index]) {
+        return;
+      }
+
+      this.manualMealForm.items[index].quantity = quantity;
+    },
+    normalizeManualMealQuantity(index) {
+      if (!this.manualMealForm?.items[index]) {
+        return;
+      }
+
+      this.manualMealForm.items[index].quantity = this.roundQuantityToTenth(this.manualMealForm.items[index].quantity);
+    },
+    roundQuantityToTenth(value) {
+      const quantity = Number(value);
+
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return "";
+      }
+
+      return String(Math.round(quantity * 10) / 10);
+    },
+    toBaseNutrient(value, quantity) {
+      const numericValue = Number(value);
+      const numericQuantity = Number(quantity);
+
+      if (!Number.isFinite(numericValue) || !Number.isFinite(numericQuantity) || numericQuantity <= 0) {
+        return value;
+      }
+
+      return numericValue / numericQuantity;
+    },
+    async saveManualMeal() {
+      if (!this.manualMealForm || this.isSavingManualMeal || !this.isAuthenticated) {
+        return;
+      }
+
+      const items = this.manualMealForm.items.map((item) => ({
+        foodCode: item.foodCode,
+        quantity: Number(this.roundQuantityToTenth(item.quantity)),
+      }));
+
+      if (!items.length || items.some((item) => !item.foodCode || !Number.isFinite(item.quantity) || item.quantity <= 0)) {
+        return;
+      }
+
+      this.isSavingManualMeal = true;
+      this.mealCalendarError = "";
+
+      try {
+        const response = await fetch("/api/meals", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...this.authHeaders(),
+          },
+          body: JSON.stringify({
+            mealDate: this.manualMealForm.mealDate,
+            mealType: this.manualMealForm.mealType,
+            items,
+          }),
+        });
+
+        if (!response.ok) {
+          throw new Error("식단을 저장하지 못했습니다.");
+        }
+
+        const dailyMeal = await response.json();
+        await this.refreshMealCalendarAfterMealSave(dailyMeal.date);
+        this.cancelManualMealForm();
+      } catch (error) {
+        this.mealCalendarError = error.message;
+      } finally {
+        this.isSavingManualMeal = false;
       }
     },
     authHeaders() {

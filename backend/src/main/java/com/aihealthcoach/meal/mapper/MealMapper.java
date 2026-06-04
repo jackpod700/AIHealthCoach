@@ -9,6 +9,7 @@ import org.apache.ibatis.annotations.Param;
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
 import com.aihealthcoach.meal.dto.FoodCandidateRow;
 import com.aihealthcoach.meal.dto.MealFoodRow;
+import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
 @Mapper
 public interface MealMapper {
@@ -38,5 +39,11 @@ public interface MealMapper {
 
     boolean existsFoodCode(@Param("foodCode") String foodCode);
 
-    List<FoodCandidateRow> searchFoodCandidates(@Param("query") String query, @Param("limit") int limit);
+    List<FoodCandidateRow> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
+
+    List<FoodCandidateRow> searchFoodCandidates(
+            @Param("query") String query,
+            @Param("tokens") List<Token> tokens,
+            @Param("limit") int limit
+    );
 }

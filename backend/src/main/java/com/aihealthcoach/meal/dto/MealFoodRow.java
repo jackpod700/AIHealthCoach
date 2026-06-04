@@ -15,6 +15,8 @@ public class MealFoodRow {
     private String foodCode;
     private String foodName;
     private String manufacturer;
+    private BigDecimal servingSize;
+    private String servingUnit;
     private BigDecimal quantity;
     private BigDecimal calories;
     private BigDecimal carbohydrate;

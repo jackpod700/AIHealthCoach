@@ -9,6 +9,8 @@
         <result column="food_code" property="foodCode"/>
         <result column="food_name" property="foodName"/>
         <result column="manufacturer" property="manufacturer"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
         <result column="quantity" property="quantity"/>
         <result column="calories" property="calories"/>
         <result column="carbohydrate" property="carbohydrate"/>
@@ -37,6 +39,8 @@
             mi.quantity,
             f.name AS food_name,
             f.manufacturer,
+            f.serving_size,
+            f.serving_unit,
             f.calories,
             f.carbohydrate,
             f.protein,
@@ -68,6 +72,8 @@
             mi.quantity,
             f.name AS food_name,
             f.manufacturer,
+            f.serving_size,
+            f.serving_unit,
             f.calories,
             f.carbohydrate,
             f.protein,
@@ -136,14 +142,58 @@
             protein,
             fat
         FROM foods
-        WHERE name ILIKE CONCAT('%', #{query}, '%')
+        WHERE
+        <foreach collection="tokens" item="token" separator=" AND ">
+            (
+                name ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+            )
+        </foreach>
         ORDER BY
             CASE
                 WHEN name = #{query} THEN 0
                 WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
-                ELSE 2
+                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
+                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                ELSE 4
             END,
-            name
+            name,
+            manufacturer
         LIMIT #{limit}
+    </select>
+
+    <select id="searchFoods" resultMap="foodCandidateRow">
+        SELECT
+            code AS food_code,
+            name AS food_name,
+            manufacturer,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        FROM foods
+        WHERE
+        <foreach collection="tokens" item="token" separator=" AND ">
+            (
+                name ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+            )
+        </foreach>
+        ORDER BY
+            CASE
+                WHEN name = #{query} THEN 0
+                WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
+                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
+                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                ELSE 4
+            END,
+            name,
+            manufacturer
     </select>
 </mapper>

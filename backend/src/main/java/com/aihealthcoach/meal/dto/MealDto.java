@@ -68,6 +68,8 @@ public class MealDto {
             String foodCode,
             String foodName,
             String manufacturer,
+            BigDecimal servingSize,
+            String servingUnit,
             BigDecimal quantity,
             BigDecimal calories,
             BigDecimal carbohydrate,

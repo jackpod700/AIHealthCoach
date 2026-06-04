@@ -170,6 +170,8 @@ public class MealServiceImpl implements MealService {
                 row.getFoodCode(),
                 row.getFoodName(),
                 row.getManufacturer(),
+                row.getServingSize(),
+                row.getServingUnit(),
                 quantity,
                 multiply(defaultZero(row.getCalories()), quantity),
                 multiply(defaultZero(row.getCarbohydrate()), quantity),

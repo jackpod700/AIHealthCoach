@@ -16,6 +16,8 @@ import com.aihealthcoach.meal.dto.AiMealDto.FoodCandidateResponse;
 import com.aihealthcoach.meal.dto.AiMealDto.MealProposalItemResponse;
 import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.meal.util.FoodSearchQuery;
+import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,7 +25,7 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AiMealProposalServiceImpl implements AiMealProposalService {
 
-    private static final int CANDIDATE_LIMIT = 3;
+    private static final int CANDIDATE_LIMIT = 5;
 
     private final MealMapper mealMapper;
     private final Clock clock;
@@ -71,7 +73,9 @@ public class AiMealProposalServiceImpl implements AiMealProposalService {
             }
         }
 
-        List<FoodCandidateResponse> candidates = mealMapper.searchFoodCandidates(item.name(), CANDIDATE_LIMIT)
+        String query = FoodSearchQuery.normalize(item.name());
+        List<Token> tokens = FoodSearchQuery.tokens(query);
+        List<FoodCandidateResponse> candidates = mealMapper.searchFoodCandidates(query, tokens, CANDIDATE_LIMIT)
                 .stream()
                 .map(FoodCandidateResponse::fromRow)
                 .toList();

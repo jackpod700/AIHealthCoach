@@ -605,6 +605,12 @@ h1 {
   gap: 8px;
 }
 
+.daily-meal-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .daily-meal-card ul {
   display: grid;
   gap: 8px;
@@ -629,6 +635,110 @@ h1 {
   margin: 16px 0 0;
   color: #63766d;
   line-height: 1.5;
+}
+
+.manual-meal-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid #d9eadf;
+  border-radius: 8px;
+  background: #f8fffb;
+}
+
+.manual-meal-form-row,
+.food-search-box {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: end;
+  gap: 10px;
+}
+
+.food-search-box {
+  grid-template-columns: 1fr 24px;
+}
+
+.manual-meal-form label,
+.food-search-box label,
+.manual-meal-item label {
+  display: grid;
+  gap: 6px;
+  color: #40534a;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.manual-meal-form input,
+.manual-meal-form select {
+  width: 100%;
+  min-height: 38px;
+  border: 1px solid #ccd8d1;
+  border-radius: 8px;
+  padding: 8px 10px;
+  color: #1f2933;
+  background: #ffffff;
+}
+
+.food-search-spinner {
+  align-self: center;
+  color: #256f5a;
+}
+
+.food-search-results,
+.manual-meal-items {
+  display: grid;
+  gap: 8px;
+}
+
+.food-search-results button {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #dfe8e2;
+  border-radius: 8px;
+  padding: 10px;
+  background: #ffffff;
+  color: #1f2933;
+  cursor: pointer;
+  text-align: left;
+}
+
+.food-search-results button:hover {
+  border-color: #2f8f63;
+  background: #effaf3;
+}
+
+.food-search-results span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.food-search-results small,
+.manual-meal-item span {
+  color: #63766d;
+  font-size: 0.82rem;
+}
+
+.manual-meal-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px auto;
+  align-items: end;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #dfe8e2;
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.manual-meal-item div {
+  display: grid;
+  gap: 4px;
+}
+
+.manual-meal-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .profile-form {
@@ -893,5 +1003,17 @@ h1 {
 
   .daily-totals {
     grid-template-columns: 1fr;
+  }
+
+  .manual-meal-form-row,
+  .food-search-box,
+  .manual-meal-item {
+    grid-template-columns: 1fr;
+  }
+
+  .manual-meal-actions,
+  .daily-meal-card-actions {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

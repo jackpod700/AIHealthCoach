@@ -20,6 +20,7 @@ import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealItem;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.dto.FoodCandidateRow;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
 @ExtendWith(MockitoExtension.class)
 class AiMealProposalServiceImplTest {
@@ -44,9 +45,9 @@ class AiMealProposalServiceImplTest {
     void createProposalAppliesDefaultsAndFoodCandidates() {
         when(clock.instant()).thenReturn(Instant.parse("2026-06-02T03:30:00Z"));
         when(clock.getZone()).thenReturn(SEOUL);
-        when(mealMapper.searchFoodCandidates("김치찌개", 3))
+        when(mealMapper.searchFoodCandidates("김치찌개", List.of(new Token("김치찌개", "김치찌개")), 5))
                 .thenReturn(List.of(food("F001", "김치찌개", "80")));
-        when(mealMapper.searchFoodCandidates("밥", 3))
+        when(mealMapper.searchFoodCandidates("밥", List.of(new Token("밥", "밥")), 5))
                 .thenReturn(List.of(food("F002", "밥", "150")));
         ExtractedMealResult extracted = new ExtractedMealResult(
                 true,

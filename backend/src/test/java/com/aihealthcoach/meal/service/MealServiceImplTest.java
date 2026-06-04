@@ -18,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aihealthcoach.meal.dto.MealDto.CreateMealRequest;
+import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
 import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
 import com.aihealthcoach.meal.dto.MealFoodRow;
@@ -112,6 +113,21 @@ class MealServiceImplTest {
                 .isEqualTo(MealErrorCode.INVALID_MEAL_ITEM);
 
         verify(mealMapper, never()).insertMeal(any(), any(), any());
+    }
+
+    @Test
+    void findDailyMealsIncludesServingBasisForEditing() {
+        MealFoodRow row = row(MEAL_ID, MEAL_DATE, "BREAKFAST", "1.5", "100", "20", "10", "5");
+        row.setServingSize(new BigDecimal("100"));
+        row.setServingUnit("g");
+        when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of(row));
+
+        DailyMealResponse response = mealService.findDailyMeals(USER_ID, MEAL_DATE);
+
+        assertThat(response.meals()).hasSize(1);
+        assertThat(response.meals().get(0).items()).hasSize(1);
+        assertThat(response.meals().get(0).items().get(0).servingSize()).isEqualByComparingTo("100");
+        assertThat(response.meals().get(0).items().get(0).servingUnit()).isEqualTo("g");
     }
 
     @Test

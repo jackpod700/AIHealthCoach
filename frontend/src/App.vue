@@ -11,6 +11,7 @@ const loginForm = ref({
 });
 const activeView = ref("chat");
 const authMode = ref("login");
+const foodSearchDebounceTimer = ref(null);
 const signupForm = ref({
   email: "",
   password: "",
@@ -35,6 +36,8 @@ const mealTypeLabels = {
   DINNER: "저녁",
   SNACK: "간식",
 };
+
+const mealTypeOptions = Object.entries(mealTypeLabels).map(([value, label]) => ({ value, label }));
 
 const displayMessages = computed(() => {
   if (healthStore.orderedMessages.length > 0) {
@@ -98,6 +101,19 @@ onMounted(async () => {
 watch(
   () => healthStore.profile,
   () => fillProfileForm(),
+);
+
+watch(
+  () => healthStore.manualFoodQuery,
+  (query) => {
+    if (foodSearchDebounceTimer.value) {
+      clearTimeout(foodSearchDebounceTimer.value);
+    }
+
+    foodSearchDebounceTimer.value = setTimeout(() => {
+      healthStore.searchManualFoods(query);
+    }, 250);
+  },
 );
 
 function formatTime(value) {
@@ -388,6 +404,11 @@ async function selectCalendarDate(day) {
   await healthStore.loadDailyMeal(day.date);
 }
 
+function openManualMealForm(meal = null) {
+  const date = healthStore.selectedMealDate || new Date().toISOString().slice(0, 10);
+  healthStore.openManualMealForm(date, meal);
+}
+
 async function scrollToBottom() {
   await nextTick();
 
@@ -674,7 +695,7 @@ async function scrollToBottom() {
                     <span>배수</span>
                     <input
                       type="number"
-                      min="0.01"
+                      min="0.1"
                       step="0.1"
                       :value="healthStore.mealProposalQuantities[index]"
                       @input="healthStore.updateMealProposalQuantity(index, $event.target.value)"
@@ -888,7 +909,140 @@ async function scrollToBottom() {
             :value="healthStore.selectedMealDate"
             severity="secondary"
           />
+          <Button
+            v-if="healthStore.selectedMealDate"
+            type="button"
+            label="식단 작성"
+            icon="pi pi-plus"
+            size="small"
+            @click="openManualMealForm()"
+          />
         </div>
+
+        <form
+          v-if="healthStore.manualMealForm"
+          class="manual-meal-form"
+          @submit.prevent="healthStore.saveManualMeal"
+        >
+          <div class="manual-meal-form-row">
+            <label>
+              <span>날짜</span>
+              <input
+                :value="healthStore.manualMealForm.mealDate"
+                type="text"
+                readonly
+              />
+            </label>
+            <label>
+              <span>끼니</span>
+              <select v-model="healthStore.manualMealForm.mealType">
+                <option
+                  v-for="option in mealTypeOptions"
+                  :key="option.value"
+                  :value="option.value"
+                >
+                  {{ option.label }}
+                </option>
+              </select>
+            </label>
+          </div>
+
+          <div class="food-search-box">
+            <label>
+              <span>음식 검색</span>
+              <input
+                v-model="healthStore.manualFoodQuery"
+                type="search"
+                placeholder="예: 닭가슴살"
+              />
+            </label>
+            <i
+              v-if="healthStore.isSearchingFoods"
+              class="pi pi-spin pi-spinner food-search-spinner"
+              aria-hidden="true"
+            ></i>
+          </div>
+
+          <div
+            v-if="healthStore.manualFoodResults.length"
+            class="food-search-results"
+          >
+            <button
+              v-for="food in healthStore.manualFoodResults"
+              :key="food.foodCode"
+              type="button"
+              @click="healthStore.addManualMealFood(food)"
+            >
+              <span>
+                <strong>{{ food.foodName }}</strong>
+                {{ food.manufacturer || "제조사 없음" }}
+              </span>
+              <small>
+                기준량 {{ formatNumber(food.servingSize) }} {{ food.servingUnit }}
+                · {{ formatNumber(food.calories) }} kcal
+              </small>
+            </button>
+          </div>
+
+          <div class="manual-meal-items">
+            <article
+              v-for="(item, index) in healthStore.manualMealForm.items"
+              :key="item.foodCode"
+              class="manual-meal-item"
+            >
+              <div>
+                <strong>{{ item.foodName }}</strong>
+                <span>
+                  기준량 {{ formatNumber(item.servingSize) }} {{ item.servingUnit }}
+                  · {{ formatNumber(item.calories) }} kcal
+                </span>
+              </div>
+              <label>
+                <span>배수</span>
+                <input
+                  type="number"
+                  min="0.1"
+                  step="0.1"
+                  :value="item.quantity"
+                  @input="healthStore.updateManualMealQuantity(index, $event.target.value)"
+                  @change="healthStore.normalizeManualMealQuantity(index)"
+                />
+              </label>
+              <Button
+                type="button"
+                icon="pi pi-times"
+                severity="secondary"
+                outlined
+                @click="healthStore.removeManualMealFood(index)"
+              />
+            </article>
+          </div>
+
+          <p
+            v-if="!healthStore.manualMealForm.items.length"
+            class="empty-state"
+          >
+            음식을 검색해서 식단에 추가하세요.
+          </p>
+
+          <div class="manual-meal-actions">
+            <Button
+              type="submit"
+              label="저장"
+              icon="pi pi-save"
+              :disabled="!healthStore.canSaveManualMeal"
+              :loading="healthStore.isSavingManualMeal"
+            />
+            <Button
+              type="button"
+              label="취소"
+              icon="pi pi-times"
+              severity="secondary"
+              outlined
+              @click="healthStore.cancelManualMealForm"
+            />
+          </div>
+        </form>
 
         <template v-if="healthStore.isLoadingDailyMeal">
           <p class="empty-state">식단 상세를 불러오는 중입니다.</p>
@@ -925,7 +1079,18 @@ async function scrollToBottom() {
                   :value="mealTypeLabel(meal.mealType)"
                   severity="success"
                 />
-                <strong>{{ formatNumber(meal.totalCalories) }} kcal</strong>
+                <div class="daily-meal-card-actions">
+                  <strong>{{ formatNumber(meal.totalCalories) }} kcal</strong>
+                  <Button
+                    type="button"
+                    label="수정"
+                    icon="pi pi-pencil"
+                    size="small"
+                    severity="secondary"
+                    outlined
+                    @click="openManualMealForm(meal)"
+                  />
+                </div>
               </div>
               <ul>
                 <li
