@@ -7,6 +7,7 @@ import java.time.LocalDate;
 
 import org.junit.jupiter.api.Test;
 
+import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class AiChatServiceImplTest {
@@ -29,7 +30,7 @@ class AiChatServiceImplTest {
                 }
                 """;
 
-        var result = service.parseAiResult(json);
+        AiChatResult result = service.parseAiResult(json);
 
         assertThat(result.assistantMessage()).isEqualTo("I found a meal proposal.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
@@ -43,7 +44,7 @@ class AiChatServiceImplTest {
     void parseAiResultFallsBackWhenJsonIsInvalid() {
         AiChatServiceImpl service = new AiChatServiceImpl(null, new ObjectMapper());
 
-        var result = service.parseAiResult("not json");
+        AiChatResult result = service.parseAiResult("not json");
 
         assertThat(result.assistantMessage()).isNotBlank();
         assertThat(result.mealExtraction().mealIntent()).isFalse();

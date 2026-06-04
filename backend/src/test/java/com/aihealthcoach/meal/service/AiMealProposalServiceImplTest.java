@@ -18,6 +18,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealItem;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
+import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
 import com.aihealthcoach.meal.dto.FoodCandidateRow;
 import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
@@ -59,7 +60,7 @@ class AiMealProposalServiceImplTest {
                 )
         );
 
-        var proposal = aiMealProposalService.createProposal(extracted);
+        MealProposalResponse proposal = aiMealProposalService.createProposal(extracted);
 
         assertThat(proposal.mealDate()).isEqualTo(LocalDate.of(2026, 6, 2));
         assertThat(proposal.mealType()).isEqualTo("LUNCH");
