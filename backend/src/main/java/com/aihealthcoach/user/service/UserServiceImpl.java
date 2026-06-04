@@ -95,6 +95,28 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    public void logout(String accessToken, String refreshToken) {
+        jwtTokenProvider.validateAccessToken(accessToken);
+        jwtTokenProvider.validateRefreshToken(refreshToken);
+        
+        Long accessTokenUserId = jwtTokenProvider.getUserId(accessToken);
+        Long refreshTokenUserId = jwtTokenProvider.getUserId(refreshToken);
+
+        if (!accessTokenUserId.equals(refreshTokenUserId)) {
+            throw UserException.invalidToken();
+        }
+
+        String accessTokenId = jwtTokenProvider.getTokenId(accessToken);
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        tokenRedisRepository.blacklistAccessToken(
+            accessTokenId,
+            jwtTokenProvider.getRemaining(accessToken));
+            
+        tokenRedisRepository.deleteRefreshToken(refreshTokenUserId, refreshTokenId);
+    }
+    
+    @Override
     public TokenRefreshResponse refreshAccessToken(String refreshToken) {
         jwtTokenProvider.validateRefreshToken(refreshToken);
 

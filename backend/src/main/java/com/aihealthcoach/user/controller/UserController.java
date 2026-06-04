@@ -10,8 +10,10 @@ import com.aihealthcoach.user.dto.UserDto.SignupRequest;
 import com.aihealthcoach.user.dto.UserDto.TokenRefreshResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.service.UserService;
 
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -24,6 +26,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 
 
 @RestController
@@ -63,13 +66,35 @@ public class UserController {
             .body(loginResult.response());
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+        @Parameter(hidden = true) @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
+        @Parameter(hidden = true) @CookieValue("refreshToken") String refreshToken) {
+
+        String accessToken = extractBearerToken(authorization);
+
+        userService.logout(accessToken, refreshToken);
+
+        ResponseCookie expiredRefreshCookie = ResponseCookie.from("refreshToken", "")
+            .httpOnly(true)
+            .secure(cookieSecure)
+            .sameSite(cookieSameSite)
+            .path("/api/user")
+            .maxAge(0)
+            .build();
+
+        return ResponseEntity.noContent()
+            .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie.toString())
+            .build();
+    }
+
     @PostMapping("/token/refresh")
     public ResponseEntity<TokenRefreshResponse> refreshAccessToken(
-            @CookieValue("refreshToken") String refreshToken) {
+            @Parameter(hidden = true) @CookieValue("refreshToken") String refreshToken) {
         return ResponseEntity.ok(userService.refreshAccessToken(refreshToken));
     }
     
-@GetMapping("/profile")
+    @GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> findProfile(
         Authentication authentication){
         
@@ -86,4 +111,11 @@ public class UserController {
         return ResponseEntity.ok(userService.updateProfile(userId, request));
     }
     
+    private String extractBearerToken(String authorization) {
+        if (authorization == null || !authorization.startsWith("Bearer ")) {
+            throw UserException.invalidToken();
+        }
+
+        return authorization.substring("Bearer ".length());
+    }
 }
