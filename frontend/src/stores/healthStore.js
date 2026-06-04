@@ -112,10 +112,6 @@ export const useHealthStore = defineStore("health", {
         localStorage.setItem("ai-health-access-token", loginResponse.accessToken);
         localStorage.setItem("ai-health-user", JSON.stringify(this.user));
 
-        await Promise.all([
-          this.loadMessages(),
-          this.loadProfile(),
-        ]);
       } catch (error) {
         this.loginError = error.message;
       } finally {

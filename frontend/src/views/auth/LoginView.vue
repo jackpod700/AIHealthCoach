@@ -27,6 +27,10 @@ async function submitLogin() {
     email: loginForm.email,
     password: loginForm.password,
   });
+
+  if (healthStore.isAuthenticated) {
+    router.push("/chat");
+  }
 }
 </script>
 
