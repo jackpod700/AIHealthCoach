@@ -35,6 +35,8 @@ public interface MealMapper {
 
     void deleteMealItems(@Param("mealId") Long mealId);
 
+    int deleteMeal(@Param("userId") Long userId, @Param("mealId") Long mealId);
+
     void insertMealItem(@Param("mealId") Long mealId, @Param("item") MealItemRequest item);
 
     boolean existsFoodCode(@Param("foodCode") String foodCode);

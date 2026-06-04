@@ -23,4 +23,8 @@ public class MealException extends RuntimeException {
     public static MealException invalidMealItem() {
         return new MealException(MealErrorCode.INVALID_MEAL_ITEM);
     }
+
+    public static MealException mealNotFound() {
+        return new MealException(MealErrorCode.MEAL_NOT_FOUND);
+    }
 }

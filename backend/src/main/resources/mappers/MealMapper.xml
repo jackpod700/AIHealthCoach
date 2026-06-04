@@ -117,6 +117,12 @@
         WHERE meal_id = #{mealId}
     </delete>
 
+    <delete id="deleteMeal">
+        DELETE FROM meals
+        WHERE id = #{mealId}
+          AND user_id = #{userId}
+    </delete>
+
     <insert id="insertMealItem">
         INSERT INTO meal_items (meal_id, food_code, quantity)
         VALUES (#{mealId}, #{item.foodCode}, #{item.quantity})

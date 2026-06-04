@@ -34,6 +34,7 @@ export const useHealthStore = defineStore("health", {
     manualFoodSearchRequestId: 0,
     isSearchingFoods: false,
     isSavingManualMeal: false,
+    deletingMealId: null,
     quickPrompts: [
       "아침에 그릭요거트랑 블루베리 먹었어.",
       "점심에 닭가슴살 샐러드 먹었어.",
@@ -169,6 +170,7 @@ export const useHealthStore = defineStore("health", {
       this.selectedMealDate = "";
       this.selectedDailyMeal = null;
       this.mealCalendarError = "";
+      this.deletingMealId = null;
       this.cancelManualMealForm();
       this.error = "";
       this.loginError = "";
@@ -450,6 +452,7 @@ export const useHealthStore = defineStore("health", {
     openManualMealForm(date, meal = null) {
       const mealType = meal?.mealType || "BREAKFAST";
       this.manualMealForm = {
+        mealId: meal?.mealId ?? null,
         mealDate: date,
         mealType,
         items: (meal?.items || []).map((item) => ({
@@ -610,6 +613,36 @@ export const useHealthStore = defineStore("health", {
         this.mealCalendarError = error.message;
       } finally {
         this.isSavingManualMeal = false;
+      }
+    },
+    async deleteMeal(mealId) {
+      if (!mealId || this.deletingMealId || !this.isAuthenticated) {
+        return;
+      }
+
+      const deletedDate = this.selectedMealDate || this.selectedDailyMeal?.date;
+      this.deletingMealId = mealId;
+      this.mealCalendarError = "";
+
+      try {
+        const response = await fetch(`/api/meals/${mealId}`, {
+          method: "DELETE",
+          headers: this.authHeaders(),
+        });
+
+        if (!response.ok) {
+          throw new Error("식단을 삭제하지 못했습니다.");
+        }
+
+        if (this.manualMealForm?.mealId === mealId) {
+          this.cancelManualMealForm();
+        }
+
+        await this.refreshMealCalendarAfterMealSave(deletedDate);
+      } catch (error) {
+        this.mealCalendarError = error.message;
+      } finally {
+        this.deletingMealId = null;
       }
     },
     authHeaders() {

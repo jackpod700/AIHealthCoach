@@ -101,6 +101,16 @@ public class MealServiceImpl implements MealService {
         return findDailyMeals(userId, request.mealDate());
     }
 
+    @Override
+    @Transactional
+    public void deleteMeal(Long userId, Long mealId) {
+        int deletedRows = mealMapper.deleteMeal(userId, mealId);
+
+        if (deletedRows == 0) {
+            throw MealException.mealNotFound();
+        }
+    }
+
     private void validateMealType(String mealType) {
         if (!MEAL_TYPES.contains(mealType)) {
             throw MealException.invalidMealType();

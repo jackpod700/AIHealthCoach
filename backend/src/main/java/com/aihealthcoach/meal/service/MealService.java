@@ -12,4 +12,6 @@ public interface MealService {
     MonthlyMealResponse findMonthlyMeals(Long userId, int year, int month);
 
     DailyMealResponse createMeal(Long userId, CreateMealRequest request);
+
+    void deleteMeal(Long userId, Long mealId);
 }

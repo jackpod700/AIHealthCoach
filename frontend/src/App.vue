@@ -409,6 +409,14 @@ function openManualMealForm(meal = null) {
   healthStore.openManualMealForm(date, meal);
 }
 
+async function deleteMeal(meal) {
+  if (!window.confirm("이 끼니를 삭제할까요?")) {
+    return;
+  }
+
+  await healthStore.deleteMeal(meal.mealId);
+}
+
 async function scrollToBottom() {
   await nextTick();
 
@@ -1089,6 +1097,17 @@ async function scrollToBottom() {
                     severity="secondary"
                     outlined
                     @click="openManualMealForm(meal)"
+                  />
+                  <Button
+                    type="button"
+                    label="삭제"
+                    icon="pi pi-trash"
+                    size="small"
+                    severity="danger"
+                    outlined
+                    :loading="healthStore.deletingMealId === meal.mealId"
+                    :disabled="healthStore.deletingMealId !== null"
+                    @click="deleteMeal(meal)"
                   />
                 </div>
               </div>

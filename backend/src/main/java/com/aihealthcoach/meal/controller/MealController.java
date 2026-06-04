@@ -6,7 +6,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -57,5 +59,15 @@ public class MealController {
     ) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(mealService.createMeal(userId, request));
+    }
+
+    @DeleteMapping("/{mealId}")
+    public ResponseEntity<Void> deleteMeal(
+            Authentication authentication,
+            @PathVariable Long mealId
+    ) {
+        Long userId = (Long) authentication.getPrincipal();
+        mealService.deleteMeal(userId, mealId);
+        return ResponseEntity.noContent().build();
     }
 }

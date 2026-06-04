@@ -175,6 +175,25 @@ class MealServiceImplTest {
         verify(mealMapper, never()).findMealsBetween(any(), any(), any());
     }
 
+    @Test
+    void deleteMealDeletesOwnedMeal() {
+        when(mealMapper.deleteMeal(USER_ID, MEAL_ID)).thenReturn(1);
+
+        mealService.deleteMeal(USER_ID, MEAL_ID);
+
+        verify(mealMapper).deleteMeal(USER_ID, MEAL_ID);
+    }
+
+    @Test
+    void deleteMealRejectsMissingOrUnownedMeal() {
+        when(mealMapper.deleteMeal(USER_ID, MEAL_ID)).thenReturn(0);
+
+        assertThatThrownBy(() -> mealService.deleteMeal(USER_ID, MEAL_ID))
+                .isInstanceOf(MealException.class)
+                .extracting("errorCode")
+                .isEqualTo(MealErrorCode.MEAL_NOT_FOUND);
+    }
+
     private CreateMealRequest request(String mealType, MealItemRequest... items) {
         return new CreateMealRequest(MEAL_DATE, mealType, List.of(items));
     }
