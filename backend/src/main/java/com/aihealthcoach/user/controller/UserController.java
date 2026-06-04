@@ -7,6 +7,7 @@ import com.aihealthcoach.user.dto.UserDto.LoginRequest;
 import com.aihealthcoach.user.dto.UserDto.LoginResponse;
 import com.aihealthcoach.user.dto.UserDto.LoginResult;
 import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.TokenRefreshResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.service.UserService;
@@ -18,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -61,7 +63,13 @@ public class UserController {
             .body(loginResult.response());
     }
 
-    @GetMapping("/profile")
+    @PostMapping("/token/refresh")
+    public ResponseEntity<TokenRefreshResponse> refreshAccessToken(
+            @CookieValue("refreshToken") String refreshToken) {
+        return ResponseEntity.ok(userService.refreshAccessToken(refreshToken));
+    }
+    
+@GetMapping("/profile")
     public ResponseEntity<UserProfileResponse> findProfile(
         Authentication authentication){
         

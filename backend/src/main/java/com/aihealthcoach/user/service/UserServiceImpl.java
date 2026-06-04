@@ -9,6 +9,7 @@ import com.aihealthcoach.user.dto.UserDto.LoginRequest;
 import com.aihealthcoach.user.dto.UserDto.LoginResponse;
 import com.aihealthcoach.user.dto.UserDto.LoginResult;
 import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.TokenRefreshResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
@@ -77,7 +78,7 @@ public class UserServiceImpl implements UserService {
         tokenRedisRepository.saveRefreshToken(
             existingUser.getId(), 
             refreshTokenId, 
-            refreshTokenId, 
+            refreshToken, 
             jwtTokenProvider.getRemaining(refreshToken));
         
         LoginResponse response = LoginResponse.builder()
@@ -91,6 +92,28 @@ public class UserServiceImpl implements UserService {
             .response(response)
             .refreshToken(refreshToken)
             .build(); 
+    }
+
+    @Override
+    public TokenRefreshResponse refreshAccessToken(String refreshToken) {
+        jwtTokenProvider.validateRefreshToken(refreshToken);
+
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        String savedRefreshToken = tokenRedisRepository
+            .findRefreshToken(userId, refreshTokenId)
+            .orElseThrow(UserException::invalidToken);
+
+        if (!savedRefreshToken.equals(refreshToken)) {
+            throw UserException.invalidToken();
+        }
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId);
+
+        return TokenRefreshResponse.builder()
+            .accessToken(newAccessToken)
+            .build();
     }
 
     @Override
