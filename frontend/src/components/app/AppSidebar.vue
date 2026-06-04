@@ -1,9 +1,11 @@
 <script setup>
 import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { useHealthStore } from "../../stores/healthStore";
+import { useAuthStore } from "../../stores/authStore";
+import { useProfileStore } from "../../stores/profileStore";
 
-const healthStore = useHealthStore();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -15,7 +17,7 @@ const navItems = [
 ];
 
 const displayName = computed(() => {
-  return healthStore.user?.nickname || healthStore.user?.email?.split("@")[0] || "사용자";
+  return authStore.user?.nickname || authStore.user?.email?.split("@")[0] || "사용자";
 });
 
 const avatarInitial = computed(() => {
@@ -23,7 +25,7 @@ const avatarInitial = computed(() => {
 });
 
 const goalLabel = computed(() => {
-  const goalType = healthStore.profile?.goalType;
+  const goalType = profileStore.profile?.goalType;
 
   if (goalType === "WEIGHT_LOSS") {
     return "감량 목표";
@@ -45,7 +47,8 @@ function isActive(item) {
 }
 
 function logout() {
-  healthStore.logout();
+  authStore.logout();
+  profileStore.clearProfile();
   router.push("/login");
 }
 </script>

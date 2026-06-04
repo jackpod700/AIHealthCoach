@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from "vue-router";
-import { useHealthStore } from "../stores/healthStore";
+import { useAuthStore } from "../stores/authStore";
 import LoginView from "../views/auth/LoginView.vue";
 import SignupView from "../views/auth/SignupView.vue";
 import ChatView from "../views/chat/ChatView.vue";
@@ -12,8 +12,8 @@ const router = createRouter({
     {
       path: "/",
       redirect: () => {
-        const healthStore = useHealthStore();
-        return healthStore.isAuthenticated ? "/chat" : "/login";
+        const authStore = useAuthStore();
+        return authStore.isAuthenticated ? "/chat" : "/login";
       },
     },
     {
@@ -51,13 +51,13 @@ const router = createRouter({
 });
 
 router.beforeEach((to) => {
-  const healthStore = useHealthStore();
+  const authStore = useAuthStore();
 
-  if (to.meta.requiresAuth && !healthStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return "/login";
   }
 
-  if ((to.name === "login" || to.name === "signup") && healthStore.isAuthenticated) {
+  if ((to.name === "login" || to.name === "signup") && authStore.isAuthenticated) {
     return "/chat";
   }
 

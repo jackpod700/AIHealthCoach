@@ -6,10 +6,12 @@ import FormField from "../../components/auth/FormField.vue";
 import GoalOptionCard from "../../components/auth/GoalOptionCard.vue";
 import SignupStepper from "../../components/auth/SignupStepper.vue";
 import { goalOptions, signupSteps } from "../../constants/authOptions";
-import { useHealthStore } from "../../stores/healthStore";
+import { useAuthStore } from "../../stores/authStore";
+import { useProfileStore } from "../../stores/profileStore";
 
 const router = useRouter();
-const healthStore = useHealthStore();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
 const signupStep = ref(1);
 
 const signupForm = reactive({
@@ -24,7 +26,7 @@ const signupForm = reactive({
 });
 
 const signupButtonLabel = computed(() => {
-  return healthStore.isSigningUp ? "가입 중..." : "시작하기";
+  return authStore.isSigningUp ? "가입 중..." : "시작하기";
 });
 
 function nextSignupStep() {
@@ -53,23 +55,24 @@ async function submitSignup() {
     return;
   }
 
-  if (healthStore.isSigningUp) {
+  if (authStore.isSigningUp) {
     return;
   }
 
-  await healthStore.signup({
+  await authStore.signup({
     email: signupForm.email,
     password: signupForm.password,
     nickname: signupForm.nickname,
   });
 
-  if (healthStore.isAuthenticated) {
-    await healthStore.updateProfile({
+  if (authStore.isAuthenticated) {
+    await profileStore.updateProfile({
       heightCm: Number(signupForm.heightCm),
       currentWeightKg: Number(signupForm.currentWeightKg),
       targetWeightKg: Number(signupForm.targetWeightKg),
       goalType: signupForm.goalType,
     });
+    router.push("/chat");
   }
 }
 </script>
@@ -91,7 +94,7 @@ async function submitSignup() {
               v-model="signupForm.nickname"
               label="닉네임"
               icon="pi pi-user"
-              placeholder="닉네임"
+              placeholder="닉네임을 입력하세요"
               autocomplete="nickname"
             />
             <FormField
@@ -192,13 +195,13 @@ async function submitSignup() {
           </div>
         </template>
 
-        <div v-if="healthStore.signupError" class="login-error">
-          {{ healthStore.signupError }}
+        <div v-if="authStore.signupError" class="login-error">
+          {{ authStore.signupError }}
         </div>
 
         <div class="signup-actions">
           <button class="secondary-action" type="button" @click="previousSignupStep">이전</button>
-          <button class="primary-action" type="submit" :disabled="healthStore.isSigningUp">
+          <button class="primary-action" type="submit" :disabled="authStore.isSigningUp">
             {{ signupStep === 3 ? signupButtonLabel : "다음" }}
           </button>
         </div>

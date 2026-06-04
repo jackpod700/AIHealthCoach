@@ -3,10 +3,10 @@ import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 import LoginHero from "../../components/auth/LoginHero.vue";
 import FormField from "../../components/auth/FormField.vue";
-import { useHealthStore } from "../../stores/healthStore";
+import { useAuthStore } from "../../stores/authStore";
 
 const router = useRouter();
-const healthStore = useHealthStore();
+const authStore = useAuthStore();
 
 const loginForm = reactive({
   email: "",
@@ -15,20 +15,20 @@ const loginForm = reactive({
 });
 
 const loginButtonLabel = computed(() => {
-  return healthStore.isLoggingIn ? "로그인 중..." : "로그인";
+  return authStore.isLoggingIn ? "로그인 중..." : "로그인";
 });
 
 async function submitLogin() {
-  if (healthStore.isLoggingIn) {
+  if (authStore.isLoggingIn) {
     return;
   }
 
-  await healthStore.login({
+  await authStore.login({
     email: loginForm.email,
     password: loginForm.password,
   });
 
-  if (healthStore.isAuthenticated) {
+  if (authStore.isAuthenticated) {
     router.push("/chat");
   }
 }
@@ -73,11 +73,11 @@ async function submitLogin() {
             <button type="button">비밀번호 찾기</button>
           </div>
 
-          <div v-if="healthStore.loginError" class="login-error">
-            {{ healthStore.loginError }}
+          <div v-if="authStore.loginError" class="login-error">
+            {{ authStore.loginError }}
           </div>
 
-          <button class="login-submit" type="submit" :disabled="healthStore.isLoggingIn">
+          <button class="login-submit" type="submit" :disabled="authStore.isLoggingIn">
             {{ loginButtonLabel }}
           </button>
         </form>

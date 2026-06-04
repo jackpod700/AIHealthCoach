@@ -420,18 +420,112 @@
 .assistant-card {
   width: min(430px, 100%);
   border-radius: 12px;
-  padding: 20px;
+  padding: 20px 22px;
   background: #fff;
   box-shadow: 0 16px 42px rgb(32 63 102 / 9%);
 }
 
-.assistant-card p {
-  margin: 0;
+.markdown-content {
   color: #526174;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 700;
-  line-height: 1.75;
-  white-space: pre-wrap;
+  line-height: 1.7;
+}
+
+.markdown-content > :first-child {
+  margin-top: 0;
+}
+
+.markdown-content > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3,
+.markdown-content h4 {
+  margin: 0 0 12px;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.markdown-content p {
+  margin: 0 0 14px;
+}
+
+.markdown-content strong {
+  color: var(--navy);
+  font-weight: 900;
+}
+
+.markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 10px 0 14px;
+  font-size: 12px;
+}
+
+.markdown-content th {
+  border-bottom: 1px solid #ece3d6;
+  padding: 8px;
+  color: #8a7d70;
+  font-weight: 900;
+  text-align: left;
+}
+
+.markdown-content td {
+  border-bottom: 1px solid #f0e9de;
+  padding: 10px 8px;
+  color: #6a7482;
+  font-weight: 700;
+}
+
+.markdown-content th:not(:first-child),
+.markdown-content td:not(:first-child) {
+  color: var(--navy);
+  font-weight: 900;
+  text-align: right;
+}
+
+.markdown-content tbody tr:last-child td {
+  background: #fbf4ec;
+  color: var(--ink);
+  font-weight: 900;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.markdown-content li {
+  position: relative;
+  padding-left: 17px;
+}
+
+.markdown-content li::before {
+  content: "";
+  position: absolute;
+  top: 0.72em;
+  left: 0;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--orange);
+}
+
+.markdown-content code {
+  border-radius: 4px;
+  padding: 2px 4px;
+  background: #fbf4ec;
+  color: var(--navy);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 11px;
 }
 
 .assistant-card time {

@@ -1,9 +1,16 @@
 <script setup>
 import { computed, nextTick, onMounted, ref } from "vue";
+import { marked } from "marked";
+import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
-import { useHealthStore } from "../../stores/healthStore";
+import { useAuthStore } from "../../stores/authStore";
+import { useChatStore } from "../../stores/chatStore";
+import { useProfileStore } from "../../stores/profileStore";
 
-const healthStore = useHealthStore();
+const authStore = useAuthStore();
+const chatStore = useChatStore();
+const profileStore = useProfileStore();
+const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
 
@@ -16,30 +23,47 @@ const todayLabel = computed(() => {
 });
 
 const displayMessages = computed(() => {
-  return healthStore.orderedMessages;
+  return chatStore.orderedMessages;
 });
 
 const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
 
+marked.setOptions({
+  breaks: true,
+  gfm: true,
+});
+
 onMounted(async () => {
   await Promise.all([
-    healthStore.loadMessages(),
-    healthStore.loadProfile(),
+    chatStore.loadMessages(),
+    profileStore.loadProfile(),
   ]);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
   await scrollToBottom();
 });
 
 async function sendMessage() {
   const content = message.value.trim();
 
-  if (!content || healthStore.isSending) {
+  if (!content || chatStore.isSending) {
     return;
   }
 
   message.value = "";
-  await healthStore.sendMessage(content);
+  await chatStore.sendMessage(content);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
   await scrollToBottom();
 }
 
@@ -65,6 +89,50 @@ function formatMessageTime(value) {
     minute: "2-digit",
   }).format(new Date(value));
 }
+
+function renderMarkdown(content = "") {
+  return sanitizeHtml(marked.parse(content));
+}
+
+function sanitizeHtml(html = "") {
+  const template = document.createElement("template");
+  template.innerHTML = html;
+
+  const allowedTags = new Set([
+    "P",
+    "STRONG",
+    "EM",
+    "UL",
+    "OL",
+    "LI",
+    "TABLE",
+    "THEAD",
+    "TBODY",
+    "TR",
+    "TH",
+    "TD",
+    "H1",
+    "H2",
+    "H3",
+    "H4",
+    "BR",
+    "CODE",
+    "PRE",
+  ]);
+
+  template.content.querySelectorAll("*").forEach((element) => {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(document.createTextNode(element.textContent || ""));
+      return;
+    }
+
+    [...element.attributes].forEach((attribute) => {
+      element.removeAttribute(attribute.name);
+    });
+  });
+
+  return template.innerHTML;
+}
 </script>
 
 <template>
@@ -88,12 +156,12 @@ function formatMessageTime(value) {
           <div class="chat-scroll" ref="threadRef">
             <div class="day-pill">오늘 · {{ todayLabel }}</div>
 
-            <div v-if="healthStore.isLoading" class="chat-state-card">
+            <div v-if="chatStore.isLoading" class="chat-state-card">
               채팅 기록을 불러오는 중입니다...
             </div>
 
-            <div v-else-if="healthStore.error" class="chat-state-card error">
-              {{ healthStore.error }}
+            <div v-else-if="chatStore.error" class="chat-state-card error">
+              {{ chatStore.error }}
             </div>
 
             <div v-else-if="!hasMessages" class="chat-state-card">
@@ -117,7 +185,7 @@ function formatMessageTime(value) {
                     <i></i>
                     <strong>AI 코치 답변</strong>
                   </div>
-                  <p>{{ chatMessage.content }}</p>
+                  <div class="markdown-content" v-html="renderMarkdown(chatMessage.content)"></div>
                   <time>{{ formatMessageTime(chatMessage.createdAt) }}</time>
                 </article>
               </div>
@@ -136,7 +204,7 @@ function formatMessageTime(value) {
             <button type="button" aria-label="음성 입력">
               <i class="pi pi-microphone"></i>
             </button>
-            <button class="send-button" type="submit" aria-label="전송" :disabled="healthStore.isSending">
+            <button class="send-button" type="submit" aria-label="전송" :disabled="chatStore.isSending">
               <i class="pi pi-send"></i>
             </button>
           </form>

@@ -1,10 +1,14 @@
 <script setup>
 import { computed, onMounted, reactive, watch } from "vue";
+import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { goalOptions } from "../../constants/authOptions";
-import { useHealthStore } from "../../stores/healthStore";
+import { useAuthStore } from "../../stores/authStore";
+import { useProfileStore } from "../../stores/profileStore";
 
-const healthStore = useHealthStore();
+const authStore = useAuthStore();
+const profileStore = useProfileStore();
+const router = useRouter();
 
 const profileForm = reactive({
   heightCm: "",
@@ -14,7 +18,7 @@ const profileForm = reactive({
 });
 
 const displayName = computed(() => {
-  return healthStore.user?.nickname || healthStore.user?.email?.split("@")[0] || "사용자";
+  return authStore.user?.nickname || authStore.user?.email?.split("@")[0] || "사용자";
 });
 
 const avatarInitial = computed(() => {
@@ -26,8 +30,8 @@ const goalLabel = computed(() => {
 });
 
 const weightDiff = computed(() => {
-  const current = Number(healthStore.profile?.currentWeightKg);
-  const target = Number(healthStore.profile?.targetWeightKg);
+  const current = Number(profileStore.profile?.currentWeightKg);
+  const target = Number(profileStore.profile?.targetWeightKg);
 
   if (!Number.isFinite(current) || !Number.isFinite(target)) {
     return null;
@@ -37,7 +41,7 @@ const weightDiff = computed(() => {
 });
 
 const profileUpdatedLabel = computed(() => {
-  if (!healthStore.profile?.updatedAt) {
+  if (!profileStore.profile?.updatedAt) {
     return "최근 수정일 API 연결 필요";
   }
 
@@ -45,15 +49,19 @@ const profileUpdatedLabel = computed(() => {
     year: "numeric",
     month: "long",
     day: "numeric",
-  }).format(new Date(healthStore.profile.updatedAt));
+  }).format(new Date(profileStore.profile.updatedAt));
 });
 
 onMounted(async () => {
-  await healthStore.loadProfile();
+  await profileStore.loadProfile();
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
 });
 
 watch(
-  () => healthStore.profile,
+  () => profileStore.profile,
   (profile) => {
     if (!profile) {
       return;
@@ -68,7 +76,7 @@ watch(
 );
 
 function resetForm() {
-  const profile = healthStore.profile;
+  const profile = profileStore.profile;
 
   if (!profile) {
     return;
@@ -81,12 +89,16 @@ function resetForm() {
 }
 
 async function saveProfile() {
-  await healthStore.updateProfile({
+  await profileStore.updateProfile({
     heightCm: Number(profileForm.heightCm),
     currentWeightKg: Number(profileForm.currentWeightKg),
     targetWeightKg: Number(profileForm.targetWeightKg),
     goalType: profileForm.goalType,
   });
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
 }
 </script>
 
@@ -116,17 +128,17 @@ async function saveProfile() {
 
           <div class="profile-stat-row">
             <div>
-              <strong>{{ healthStore.profile?.heightCm ?? "-" }}</strong>
+              <strong>{{ profileStore.profile?.heightCm ?? "-" }}</strong>
               <small>cm</small>
               <span>키</span>
             </div>
             <div>
-              <strong>{{ healthStore.profile?.currentWeightKg ?? "-" }}</strong>
+              <strong>{{ profileStore.profile?.currentWeightKg ?? "-" }}</strong>
               <small>kg</small>
               <span>현재</span>
             </div>
             <div>
-              <strong>{{ healthStore.profile?.targetWeightKg ?? "-" }}</strong>
+              <strong>{{ profileStore.profile?.targetWeightKg ?? "-" }}</strong>
               <small>kg</small>
               <span>목표</span>
             </div>
@@ -152,16 +164,16 @@ async function saveProfile() {
             <p>정확한 정보일수록 코칭이 더 정밀해져요.</p>
           </div>
 
-          <div v-if="healthStore.profileSuccess" class="profile-success">
+          <div v-if="profileStore.profileSuccess" class="profile-success">
             <i class="pi pi-check-circle"></i>
-            {{ healthStore.profileSuccess }}
+            {{ profileStore.profileSuccess }}
           </div>
 
-          <div v-if="healthStore.profileError" class="profile-error">
-            {{ healthStore.profileError }}
+          <div v-if="profileStore.profileError" class="profile-error">
+            {{ profileStore.profileError }}
           </div>
 
-          <div v-if="healthStore.isLoadingProfile" class="profile-loading">
+          <div v-if="profileStore.isLoadingProfile" class="profile-loading">
             프로필 정보를 불러오는 중입니다...
           </div>
 
@@ -200,8 +212,8 @@ async function saveProfile() {
 
             <div class="profile-actions">
               <button class="profile-cancel" type="button" @click="resetForm">취소</button>
-              <button class="profile-save" type="submit" :disabled="healthStore.isSavingProfile">
-                {{ healthStore.isSavingProfile ? "저장 중..." : "변경 사항 저장" }}
+              <button class="profile-save" type="submit" :disabled="profileStore.isSavingProfile">
+                {{ profileStore.isSavingProfile ? "저장 중..." : "변경 사항 저장" }}
               </button>
             </div>
           </form>
