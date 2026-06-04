@@ -18,6 +18,8 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
+import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.meal.dto.FoodCandidateRow;
@@ -25,7 +27,7 @@ import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
 @WebMvcTest(FoodController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
 class FoodControllerTest {
 
     private static final String TOKEN = "access-token";
@@ -42,21 +44,22 @@ class FoodControllerTest {
     @Test
     void searchFoodsReturnsCandidatesWithoutLimit() throws Exception {
         when(jwtTokenProvider.getUserId(TOKEN)).thenReturn(1L);
-        List<Token> tokens = List.of(new Token("닭가슴살", "닭가슴살"), new Token("하림", "하림"));
-        when(mealMapper.searchFoods("닭가슴살 하림", tokens))
+        List<Token> tokens = List.of(new Token("chicken", "chicken"), new Token("brand", "brand"));
+        when(mealMapper.searchFoods("chicken brand", tokens))
                 .thenReturn(List.of(food()));
 
         mockMvc.perform(get("/api/foods/search")
                         .header("Authorization", "Bearer " + TOKEN)
-                        .param("query", " 닭가슴살   하림 "))
+                        .param("query", " chicken   brand "))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].foodCode").value("1234567890123456789"))
-                .andExpect(jsonPath("$[0].foodName").value("닭가슴살"))
-                .andExpect(jsonPath("$[0].servingSize").value(100))
-                .andExpect(jsonPath("$[0].servingUnit").value("g"))
-                .andExpect(jsonPath("$[0].calories").value(120));
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data[0].foodCode").value("1234567890123456789"))
+                .andExpect(jsonPath("$.data[0].foodName").value("Chicken Breast"))
+                .andExpect(jsonPath("$.data[0].servingSize").value(100))
+                .andExpect(jsonPath("$.data[0].servingUnit").value("g"))
+                .andExpect(jsonPath("$.data[0].calories").value(120));
 
-        verify(mealMapper).searchFoods("닭가슴살 하림", tokens);
+        verify(mealMapper).searchFoods("chicken brand", tokens);
     }
 
     @Test
@@ -67,7 +70,8 @@ class FoodControllerTest {
                         .header("Authorization", "Bearer " + TOKEN)
                         .param("query", " "))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data").isEmpty());
 
         verify(mealMapper, never()).searchFoods(eq(""), eq(List.of()));
     }
@@ -75,8 +79,8 @@ class FoodControllerTest {
     private FoodCandidateRow food() {
         FoodCandidateRow row = new FoodCandidateRow();
         row.setFoodCode("1234567890123456789");
-        row.setFoodName("닭가슴살");
-        row.setManufacturer("브랜드");
+        row.setFoodName("Chicken Breast");
+        row.setManufacturer("Brand");
         row.setServingSize(new BigDecimal("100"));
         row.setServingUnit("g");
         row.setCalories(new BigDecimal("120"));
