@@ -1,0 +1,213 @@
+<script setup>
+import { computed, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
+import AuthBrand from "../../components/auth/AuthBrand.vue";
+import FormField from "../../components/auth/FormField.vue";
+import GoalOptionCard from "../../components/auth/GoalOptionCard.vue";
+import SignupStepper from "../../components/auth/SignupStepper.vue";
+import { goalOptions, signupSteps } from "../../constants/authOptions";
+import { useHealthStore } from "../../stores/healthStore";
+
+const router = useRouter();
+const healthStore = useHealthStore();
+const signupStep = ref(1);
+
+const signupForm = reactive({
+  nickname: "",
+  email: "",
+  password: "",
+  heightCm: "",
+  currentWeightKg: "",
+  targetWeightKg: "62",
+  goalPeriodMonths: 3,
+  goalType: "WEIGHT_LOSS",
+});
+
+const signupButtonLabel = computed(() => {
+  return healthStore.isSigningUp ? "가입 중..." : "시작하기";
+});
+
+function nextSignupStep() {
+  if (signupStep.value < 3) {
+    signupStep.value += 1;
+  }
+}
+
+function previousSignupStep() {
+  if (signupStep.value > 1) {
+    signupStep.value -= 1;
+    return;
+  }
+
+  router.push("/login");
+}
+
+function updateGoalPeriod(delta) {
+  const nextValue = signupForm.goalPeriodMonths + delta;
+  signupForm.goalPeriodMonths = Math.min(12, Math.max(1, nextValue));
+}
+
+async function submitSignup() {
+  if (signupStep.value < 3) {
+    nextSignupStep();
+    return;
+  }
+
+  if (healthStore.isSigningUp) {
+    return;
+  }
+
+  await healthStore.signup({
+    email: signupForm.email,
+    password: signupForm.password,
+    nickname: signupForm.nickname,
+  });
+
+  if (healthStore.isAuthenticated) {
+    await healthStore.updateProfile({
+      heightCm: Number(signupForm.heightCm),
+      currentWeightKg: Number(signupForm.currentWeightKg),
+      targetWeightKg: Number(signupForm.targetWeightKg),
+      goalType: signupForm.goalType,
+    });
+  }
+}
+</script>
+
+<template>
+  <main class="signup-screen">
+    <section class="signup-shell">
+      <AuthBrand compact />
+      <SignupStepper :steps="signupSteps" :active-step="signupStep" />
+
+      <form class="signup-card" @submit.prevent="submitSignup">
+        <template v-if="signupStep === 1">
+          <p class="deco">Create Account</p>
+          <h1>계정을 만들어볼까요?</h1>
+          <p class="signup-lead">코칭 기록을 안전하게 저장할 수 있도록 기본 계정을 먼저 만들어요.</p>
+
+          <div class="signup-fields">
+            <FormField
+              v-model="signupForm.nickname"
+              label="닉네임"
+              icon="pi pi-user"
+              placeholder="닉네임"
+              autocomplete="nickname"
+            />
+            <FormField
+              v-model="signupForm.email"
+              label="이메일"
+              icon="pi pi-envelope"
+              type="email"
+              placeholder="이메일을 입력하세요"
+              autocomplete="email"
+            />
+            <FormField
+              v-model="signupForm.password"
+              label="비밀번호"
+              icon="pi pi-lock"
+              type="password"
+              placeholder="8자 이상 입력하세요"
+              autocomplete="new-password"
+            />
+          </div>
+        </template>
+
+        <template v-else-if="signupStep === 2">
+          <p class="deco">Basic Info</p>
+          <h1>기본 정보를 알려주세요</h1>
+          <p class="signup-lead">키와 현재 체중을 기반으로 하루 섭취량과 코칭 기준을 계산해요.</p>
+
+          <div class="signup-fields two-column">
+            <label>
+              <span>키</span>
+              <div class="unit-field">
+                <input v-model="signupForm.heightCm" inputmode="decimal" placeholder="168" />
+                <em>cm</em>
+              </div>
+            </label>
+            <label>
+              <span>현재 체중</span>
+              <div class="unit-field">
+                <input v-model="signupForm.currentWeightKg" inputmode="decimal" placeholder="65.2" />
+                <em>kg</em>
+              </div>
+            </label>
+          </div>
+
+          <div class="signup-info-card">
+            <i class="pi pi-sparkles"></i>
+            <div>
+              <strong>입력한 정보는 코칭 계산에만 사용돼요</strong>
+              <span>목표 체중과 기간은 다음 단계에서 설정할 수 있어요.</span>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <p class="deco">Almost There</p>
+          <h1>어떤 목표를 향해 갈까요?</h1>
+          <p class="signup-lead">목표에 맞춰 코치가 칼로리와 코칭 톤을 조절해요. 나중에 바꿀 수 있어요.</p>
+
+          <div class="goal-grid">
+            <GoalOptionCard
+              v-for="goal in goalOptions"
+              :key="goal.value"
+              :goal="goal"
+              :selected="signupForm.goalType === goal.value"
+              @select="signupForm.goalType = $event"
+            />
+          </div>
+
+          <div class="signup-fields two-column">
+            <label>
+              <span>목표 몸무게</span>
+              <div class="unit-field focused">
+                <input v-model="signupForm.targetWeightKg" inputmode="decimal" />
+                <em>kg</em>
+              </div>
+            </label>
+            <label>
+              <span>목표 기간</span>
+              <div class="period-stepper">
+                <button
+                  type="button"
+                  aria-label="목표 기간 줄이기"
+                  :disabled="signupForm.goalPeriodMonths <= 1"
+                  @click="updateGoalPeriod(-1)"
+                >
+                  <i class="pi pi-minus"></i>
+                </button>
+                <strong>{{ signupForm.goalPeriodMonths }}개월</strong>
+                <button
+                  type="button"
+                  aria-label="목표 기간 늘리기"
+                  :disabled="signupForm.goalPeriodMonths >= 12"
+                  @click="updateGoalPeriod(1)"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+            </label>
+          </div>
+        </template>
+
+        <div v-if="healthStore.signupError" class="login-error">
+          {{ healthStore.signupError }}
+        </div>
+
+        <div class="signup-actions">
+          <button class="secondary-action" type="button" @click="previousSignupStep">이전</button>
+          <button class="primary-action" type="submit" :disabled="healthStore.isSigningUp">
+            {{ signupStep === 3 ? signupButtonLabel : "다음" }}
+          </button>
+        </div>
+      </form>
+
+      <p class="signup-foot">
+        이미 계정이 있으신가요?
+        <button type="button" @click="router.push('/login')">로그인</button>
+      </p>
+    </section>
+  </main>
+</template>

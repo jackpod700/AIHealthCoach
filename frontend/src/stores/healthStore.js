@@ -1,5 +1,21 @@
 import { defineStore } from "pinia";
 
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, options);
+
+  if (response.status === 204) {
+    return null;
+  }
+
+  const payload = await response.json().catch(() => null);
+
+  if (!response.ok || payload?.success === false) {
+    throw new Error(payload?.error?.message || "요청 처리 중 오류가 발생했습니다.");
+  }
+
+  return payload?.data ?? payload;
+}
+
 export const useHealthStore = defineStore("health", {
   state: () => ({
     userId: Number(localStorage.getItem("ai-health-user-id")) || null,
@@ -18,9 +34,9 @@ export const useHealthStore = defineStore("health", {
     profileError: "",
     profileSuccess: "",
     quickPrompts: [
-      "아침에 그릭요거트랑 블루베리 먹었어.",
-      "점심에 닭가슴살 샐러드 먹었어.",
-      "퇴근하고 30분 빠르게 걸었어.",
+      "아침에 그릭요거트랑 블루베리 먹었어",
+      "점심에 김치찌개랑 밥 한 공기 먹었어",
+      "퇴근하고 30분 빠르게 걸었어",
       "오늘 식단 기준으로 저녁 추천해줘.",
     ],
     messages: [],
@@ -49,17 +65,13 @@ export const useHealthStore = defineStore("health", {
       this.error = "";
 
       try {
-        const response = await fetch("/api/user/signup", {
+        await apiRequest("/api/user/signup", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify(credentials),
         });
-
-        if (!response.ok) {
-          throw new Error("회원가입에 실패했습니다. 입력 정보를 확인해주세요.");
-        }
 
         await this.login({
           email: credentials.email,
@@ -77,7 +89,7 @@ export const useHealthStore = defineStore("health", {
       this.error = "";
 
       try {
-        const response = await fetch("/api/user/login", {
+        const loginResponse = await apiRequest("/api/user/login", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -85,13 +97,7 @@ export const useHealthStore = defineStore("health", {
           body: JSON.stringify(credentials),
         });
 
-        if (!response.ok) {
-          throw new Error("이메일 또는 비밀번호를 확인해주세요.");
-        }
-
-        const loginResponse = await response.json();
-
-        if (!loginResponse.accessToken) {
+        if (!loginResponse?.accessToken) {
           throw new Error("로그인 토큰을 받지 못했습니다.");
         }
 
@@ -126,6 +132,7 @@ export const useHealthStore = defineStore("health", {
       this.loginError = "";
       this.signupError = "";
       this.profileError = "";
+      this.profileSuccess = "";
       this.refreshSummary();
 
       localStorage.removeItem("ai-health-user-id");
@@ -143,15 +150,9 @@ export const useHealthStore = defineStore("health", {
       this.profileSuccess = "";
 
       try {
-        const response = await fetch("/api/user/profile", {
+        this.profile = await apiRequest("/api/user/profile", {
           headers: this.authHeaders(),
         });
-
-        if (!response.ok) {
-          throw new Error("프로필을 불러오지 못했습니다.");
-        }
-
-        this.profile = await response.json();
         localStorage.setItem("ai-health-profile", JSON.stringify(this.profile));
       } catch (error) {
         this.profileError = error.message;
@@ -166,9 +167,10 @@ export const useHealthStore = defineStore("health", {
 
       this.isSavingProfile = true;
       this.profileError = "";
+      this.profileSuccess = "";
 
       try {
-        const response = await fetch("/api/user/profile", {
+        this.profile = await apiRequest("/api/user/profile", {
           method: "PATCH",
           headers: {
             "Content-Type": "application/json",
@@ -176,12 +178,6 @@ export const useHealthStore = defineStore("health", {
           },
           body: JSON.stringify(profile),
         });
-
-        if (!response.ok) {
-          throw new Error("프로필을 저장하지 못했습니다.");
-        }
-
-        this.profile = await response.json();
         localStorage.setItem("ai-health-profile", JSON.stringify(this.profile));
         this.profileSuccess = "프로필이 저장되었습니다.";
       } catch (error) {
@@ -199,15 +195,9 @@ export const useHealthStore = defineStore("health", {
       this.error = "";
 
       try {
-        const response = await fetch(`/api/chat/messages?userId=${this.userId}`, {
+        this.messages = await apiRequest("/api/chat/messages", {
           headers: this.authHeaders(),
         });
-
-        if (!response.ok) {
-          throw new Error("채팅 이력을 불러오지 못했습니다.");
-        }
-
-        this.messages = await response.json();
         this.refreshSummary();
       } catch (error) {
         this.error = error.message;
@@ -237,7 +227,7 @@ export const useHealthStore = defineStore("health", {
       const pendingAssistantMessage = {
         clientId: `${requestId}-assistant`,
         role: "ASSISTANT",
-        content: "AI가 답변을 작성하고 있어요...",
+        content: "AI 코치가 답변을 준비하고 있어요...",
         createdAt: new Date(requestedAt.getTime() + 1).toISOString(),
         pending: true,
       };
@@ -246,7 +236,7 @@ export const useHealthStore = defineStore("health", {
       this.refreshSummary();
 
       try {
-        const response = await fetch("/api/chat/messages", {
+        const response = await apiRequest("/api/chat/messages", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -258,11 +248,7 @@ export const useHealthStore = defineStore("health", {
           }),
         });
 
-        if (!response.ok) {
-          throw new Error("AI 응답을 생성하지 못했습니다.");
-        }
-
-        const newMessages = await response.json();
+        const newMessages = Array.isArray(response) ? response : response?.messages || [];
         this.replacePendingMessages(requestId, newMessages);
         this.refreshSummary();
       } catch (error) {
@@ -290,7 +276,7 @@ export const useHealthStore = defineStore("health", {
       const pendingAssistantMessage = this.messages.find((message) => message.clientId === `${requestId}-assistant`);
 
       if (pendingAssistantMessage) {
-        pendingAssistantMessage.content = "응답 생성에 실패했습니다. 잠시 후 다시 시도해주세요.";
+        pendingAssistantMessage.content = "답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.";
         pendingAssistantMessage.failed = true;
         pendingAssistantMessage.pending = false;
       }
@@ -300,8 +286,8 @@ export const useHealthStore = defineStore("health", {
       const assistantMessages = this.messages.filter((message) => message.role === "ASSISTANT");
 
       this.summary = {
-        mealCount: userMessages.filter((message) => this.includesAny(message.content, ["먹", "식사", "아침", "점심", "저녁", "샐러드"])).length,
-        exerciseCount: userMessages.filter((message) => this.includesAny(message.content, ["운동", "걸", "산책", "헬스", "뛰", "스트레칭"])).length,
+        mealCount: userMessages.filter((message) => this.includesAny(message.content, ["먹", "식사", "아침", "점심", "저녁", "간식"])).length,
+        exerciseCount: userMessages.filter((message) => this.includesAny(message.content, ["운동", "걷", "러닝", "헬스", "스트레칭"])).length,
         assistantCount: assistantMessages.length,
       };
     },
