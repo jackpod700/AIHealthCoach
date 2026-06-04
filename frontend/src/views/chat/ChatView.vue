@@ -3,6 +3,7 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
+import MealProposalCard from "../../components/chat/MealProposalCard.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
 import { useMealStore } from "../../stores/mealStore";
@@ -94,6 +95,23 @@ async function sendMessage() {
   }
 
   await mealStore.loadDailyMeal(todayDateKey.value);
+  await scrollToBottom();
+}
+
+async function confirmMealProposal(payload) {
+  const response = await chatStore.confirmMealProposal(payload);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (response?.dailyMeal) {
+    mealStore.dailyMeal = response.dailyMeal;
+  } else {
+    await mealStore.loadDailyMeal(todayDateKey.value);
+  }
+
   await scrollToBottom();
 }
 
@@ -249,6 +267,19 @@ function sanitizeHtml(html = "") {
                 </article>
               </div>
             </template>
+
+            <div v-if="chatStore.mealProposal" class="message-row coach">
+              <div class="coach-icon">
+                <i class="pi pi-briefcase"></i>
+              </div>
+              <MealProposalCard
+                :proposal="chatStore.mealProposal"
+                :is-confirming="chatStore.isConfirmingMeal"
+                :error="chatStore.mealProposalError"
+                @confirm="confirmMealProposal"
+                @dismiss="chatStore.dismissMealProposal"
+              />
+            </div>
           </div>
 
           <form class="chat-composer" @submit.prevent="sendMessage">

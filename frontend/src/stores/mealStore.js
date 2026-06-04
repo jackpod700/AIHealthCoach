@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { fetchDailyMeals, fetchMonthlyMeals, saveMeal, searchFoods } from "../api/mealApi";
+import { deleteMeal, fetchDailyMeals, fetchMonthlyMeals, saveMeal, searchFoods } from "../api/mealApi";
 import { useAuthStore } from "./authStore";
 
 const today = new Date();
@@ -17,10 +17,12 @@ export const useMealStore = defineStore("meal", {
     isLoadingMonthly: false,
     isSearchingFoods: false,
     isSavingMeal: false,
+    isDeletingMeal: false,
     dailyError: "",
     monthlyError: "",
     foodSearchError: "",
     saveMealError: "",
+    deleteMealError: "",
   }),
   getters: {
     monthlyDaysByDate: (state) => {
@@ -113,6 +115,33 @@ export const useMealStore = defineStore("meal", {
         this.isSavingMeal = false;
       }
     },
+    async deleteMealById(mealId, date = this.selectedDate) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated || this.isDeletingMeal) {
+        return false;
+      }
+
+      this.isDeletingMeal = true;
+      this.deleteMealError = "";
+
+      try {
+        await deleteMeal(authStore.accessToken, mealId);
+        await this.loadDailyMeal(date);
+        const [year, month] = date.split("-").map(Number);
+        await this.loadMonthlyMeals(year, month);
+        return true;
+      } catch (error) {
+        if (authStore.handleAuthFailure(error)) {
+          return false;
+        }
+
+        this.deleteMealError = error.message;
+        return false;
+      } finally {
+        this.isDeletingMeal = false;
+      }
+    },
     clearFoodSearch() {
       this.foodSearchResults = [];
       this.foodSearchError = "";
@@ -153,6 +182,7 @@ export const useMealStore = defineStore("meal", {
       this.monthlyError = "";
       this.foodSearchError = "";
       this.saveMealError = "";
+      this.deleteMealError = "";
     },
   },
 });

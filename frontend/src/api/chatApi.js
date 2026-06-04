@@ -21,3 +21,14 @@ export function postChatMessage(accessToken, userId, content) {
     }),
   });
 }
+
+export function confirmMealProposal(accessToken, proposal) {
+  return apiRequest("/api/chat/meal-proposals/confirm", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(proposal),
+  });
+}

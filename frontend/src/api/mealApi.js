@@ -23,6 +23,15 @@ export function saveMeal(accessToken, meal) {
   });
 }
 
+export function deleteMeal(accessToken, mealId) {
+  return apiRequest(`/api/meals/${mealId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
 export function searchFoods(accessToken, query) {
   const searchParams = new URLSearchParams({
     query,

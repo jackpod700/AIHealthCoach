@@ -560,6 +560,201 @@
   background: #fff4f2;
 }
 
+.meal-proposal-card {
+  width: min(520px, 100%);
+  border: 1px solid #eee5d8;
+  border-radius: 14px;
+  padding: 20px;
+  background: #fff;
+  box-shadow: 0 16px 42px rgb(32 63 102 / 9%);
+}
+
+.meal-proposal-card header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.meal-proposal-card h2 {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 900;
+}
+
+.meal-proposal-card header button {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--navy);
+}
+
+.meal-proposal-meta {
+  margin: 12px 0 0;
+  color: #687586;
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.6;
+}
+
+.meal-proposal-defaults {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.meal-proposal-defaults span {
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: #fbf4ec;
+  color: #8a7560;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.meal-proposal-items {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.meal-proposal-items section {
+  border: 1px solid #eee5d8;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fffaf3;
+}
+
+.meal-proposal-item-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px;
+  align-items: end;
+  gap: 12px;
+}
+
+.meal-proposal-item-head strong {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.meal-proposal-item-head label {
+  display: grid;
+  gap: 6px;
+}
+
+.meal-proposal-item-head label span {
+  color: var(--ink);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.meal-proposal-item-head input {
+  width: 100%;
+  min-width: 0;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 0 10px;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+  outline: none;
+}
+
+.meal-candidate-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.meal-candidate-list button {
+  display: grid;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #fff;
+  text-align: left;
+}
+
+.meal-candidate-list button.selected {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 1px rgb(32 63 102 / 8%);
+}
+
+.meal-candidate-list strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.meal-candidate-list span,
+.meal-selected-summary,
+.meal-candidate-empty {
+  color: #7f8b9b;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.meal-selected-summary {
+  margin: 10px 0 0;
+}
+
+.meal-candidate-empty {
+  margin-top: 12px;
+  border: 1px dashed #dfc8ad;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.meal-proposal-error {
+  margin: 14px 0 0;
+  border: 1px solid #f0b5aa;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #fff1ef;
+  color: #ae4d42;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.meal-proposal-card footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.meal-proposal-cancel,
+.meal-proposal-confirm {
+  height: 42px;
+  border-radius: 10px;
+  padding: 0 16px;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.meal-proposal-cancel {
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+}
+
+.meal-proposal-confirm {
+  background: var(--navy);
+  color: #fff;
+  box-shadow: 0 14px 28px rgb(32 63 102 / 18%);
+}
+
 .chat-state-card,
 .chat-api-note,
 .api-list-empty {
@@ -1650,13 +1845,20 @@
 
 .meal-edit-modal footer {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
   gap: 10px;
   margin-top: 22px;
 }
 
+.meal-edit-modal footer > div {
+  display: flex;
+  gap: 10px;
+}
+
 .meal-edit-cancel,
-.meal-edit-save {
+.meal-edit-save,
+.meal-edit-delete {
   height: 44px;
   border-radius: 10px;
   padding: 0 18px;
@@ -1674,6 +1876,12 @@
   background: var(--navy);
   color: #fff;
   box-shadow: 0 14px 28px rgb(32 63 102 / 18%);
+}
+
+.meal-edit-delete {
+  border: 1px solid #f0b5aa;
+  background: #fff1ef;
+  color: #ae4d42;
 }
 
 .profile-body {
@@ -2224,5 +2432,11 @@
 
   .meal-edit-item > button {
     width: 100%;
+  }
+
+  .meal-edit-modal footer,
+  .meal-edit-modal footer > div {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

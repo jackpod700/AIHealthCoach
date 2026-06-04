@@ -17,6 +17,7 @@ const searchRequestId = ref(0);
 let foodSearchTimer = null;
 const editForm = reactive({
   open: false,
+  mealId: null,
   mealType: "",
   items: [],
 });
@@ -105,6 +106,7 @@ watch(foodQuery, (query) => {
 
 function openEditMeal(meal) {
   editForm.open = true;
+  editForm.mealId = meal.mealId;
   editForm.mealType = meal.mealType;
   editForm.items = meal.items.map((item) => ({
     foodCode: item.foodCode,
@@ -126,6 +128,7 @@ function openEditMeal(meal) {
 
 function closeEditMeal() {
   editForm.open = false;
+  editForm.mealId = null;
   editForm.mealType = "";
   editForm.items = [];
   foodQuery.value = "";
@@ -177,6 +180,26 @@ async function saveEditedMeal() {
   });
 
   if (saved) {
+    closeEditMeal();
+  }
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
+}
+
+async function deleteEditedMeal() {
+  if (!editForm.mealId) {
+    return;
+  }
+
+  if (!window.confirm(`${mealMeta(editForm.mealType).label} 끼니를 삭제할까요?`)) {
+    return;
+  }
+
+  const deleted = await mealStore.deleteMealById(editForm.mealId, selectedDate.value);
+
+  if (deleted) {
     closeEditMeal();
   }
 
@@ -418,20 +441,30 @@ function goToChat() {
           </article>
         </div>
 
-        <p v-if="mealStore.saveMealError" class="meal-edit-error">
-          {{ mealStore.saveMealError }}
+        <p v-if="mealStore.saveMealError || mealStore.deleteMealError" class="meal-edit-error">
+          {{ mealStore.saveMealError || mealStore.deleteMealError }}
         </p>
 
         <footer>
-          <button class="meal-edit-cancel" type="button" @click="closeEditMeal">취소</button>
           <button
-            class="meal-edit-save"
+            class="meal-edit-delete"
             type="button"
-            :disabled="!canSaveMeal || mealStore.isSavingMeal"
-            @click="saveEditedMeal"
+            :disabled="mealStore.isDeletingMeal || mealStore.isSavingMeal"
+            @click="deleteEditedMeal"
           >
-            {{ mealStore.isSavingMeal ? "저장 중..." : "수정 저장" }}
+            {{ mealStore.isDeletingMeal ? "삭제 중..." : "삭제" }}
           </button>
+          <div>
+            <button class="meal-edit-cancel" type="button" @click="closeEditMeal">취소</button>
+            <button
+              class="meal-edit-save"
+              type="button"
+              :disabled="!canSaveMeal || mealStore.isSavingMeal || mealStore.isDeletingMeal"
+              @click="saveEditedMeal"
+            >
+              {{ mealStore.isSavingMeal ? "저장 중..." : "수정 저장" }}
+            </button>
+          </div>
         </footer>
       </section>
     </div>
