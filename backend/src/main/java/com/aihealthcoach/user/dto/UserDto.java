@@ -22,6 +22,13 @@ public class UserDto {
         String accessToken) {
 
     }
+
+    @Builder
+    public record LoginResult(
+        LoginResponse response,
+        String refreshToken
+    ) {
+    }
         
     @Builder
     public record SignupRequest (

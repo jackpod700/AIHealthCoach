@@ -4,8 +4,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.common.auth.JwtTokenProvider;
+import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.user.dto.UserDto.LoginRequest;
 import com.aihealthcoach.user.dto.UserDto.LoginResponse;
+import com.aihealthcoach.user.dto.UserDto.LoginResult;
 import com.aihealthcoach.user.dto.UserDto.SignupRequest;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
@@ -23,6 +25,7 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRedisRepository tokenRedisRepository;
 
     @Override
     public LoginResponse signup(SignupRequest request) {
@@ -56,7 +59,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
+    public LoginResult login(LoginRequest request) {
         User existingUser = userDao.findUserByEmail(request.email());
 
         if (existingUser == null){
@@ -68,13 +71,26 @@ public class UserServiceImpl implements UserService {
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(existingUser.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(existingUser.getId());
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        tokenRedisRepository.saveRefreshToken(
+            existingUser.getId(), 
+            refreshTokenId, 
+            refreshTokenId, 
+            jwtTokenProvider.getRemaining(refreshToken));
         
-        return LoginResponse.builder()
-                .userId(existingUser.getId())
-                .email(existingUser.getEmail())
-                .nickname(existingUser.getNickname())
-                .accessToken(accessToken)
-                .build();  
+        LoginResponse response = LoginResponse.builder()
+            .userId(existingUser.getId())
+            .email(existingUser.getEmail())
+            .nickname(existingUser.getNickname())
+            .accessToken(accessToken)
+            .build();
+
+        return LoginResult.builder()
+            .response(response)
+            .refreshToken(refreshToken)
+            .build(); 
     }
 
     @Override
