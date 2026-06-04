@@ -3,11 +3,11 @@ package com.aihealthcoach.user.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.aihealthcoach.user.dto.LoginRequest;
-import com.aihealthcoach.user.dto.LoginResponse;
-import com.aihealthcoach.user.dto.SignupRequest;
-import com.aihealthcoach.user.dto.UserProfileResponse;
-import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginResponse;
+import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
+import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.service.UserService;
 
 import lombok.RequiredArgsConstructor;

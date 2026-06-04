@@ -1,10 +1,10 @@
 package com.aihealthcoach.user.service;
 
-import com.aihealthcoach.user.dto.LoginRequest;
-import com.aihealthcoach.user.dto.LoginResponse;
-import com.aihealthcoach.user.dto.SignupRequest;
-import com.aihealthcoach.user.dto.UserProfileResponse;
-import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginResponse;
+import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
+import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 
 public interface UserService {
     LoginResponse signup(SignupRequest request);

@@ -4,11 +4,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.common.auth.JwtTokenProvider;
-import com.aihealthcoach.user.dto.LoginRequest;
-import com.aihealthcoach.user.dto.LoginResponse;
-import com.aihealthcoach.user.dto.SignupRequest;
-import com.aihealthcoach.user.dto.UserProfileResponse;
-import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginResponse;
+import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
+import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
@@ -26,21 +26,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse signup(SignupRequest request) {
-        User existingUser = userDao.findUserByEmail(request.getEmail());
+        User existingUser = userDao.findUserByEmail(request.email());
 
         if (existingUser != null){
             throw UserException.duplicateEmail();
         }
 
         User newUser = User.builder()
-                        .email(request.getEmail())
-                        .password(passwordEncoder.encode(request.getPassword()))
-                        .nickname(request.getNickname())
+                        .email(request.email())
+                        .password(passwordEncoder.encode(request.password()))
+                        .nickname(request.nickname())
                         .build();
         
         userDao.insertUser(newUser);
 
-        User savedUser = userDao.findUserByEmail(request.getEmail());
+        User savedUser = userDao.findUserByEmail(request.email());
 
         UserProfile profile = UserProfile.builder()
                                 .userId(savedUser.getId())
@@ -57,13 +57,13 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        User existingUser = userDao.findUserByEmail(request.getEmail());
+        User existingUser = userDao.findUserByEmail(request.email());
 
         if (existingUser == null){
             throw UserException.userNotFound();
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), existingUser.getPassword())) {
             throw UserException.invalidPassword();
         }
 
