@@ -17,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
 import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
+import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.service.MealService;
@@ -37,6 +38,9 @@ class MealControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private TokenRedisRepository tokenRedisRepository;
 
     @Test
     void deleteMealReturnsNoContent() throws Exception {

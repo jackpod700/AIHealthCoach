@@ -6,6 +6,7 @@ WORKDIR /app
 
 COPY data/scripts ./scripts
 COPY data/foods ./foods
+COPY data/exercise ./exercise
 COPY data/db ./db
 COPY data/meals ./meals
 

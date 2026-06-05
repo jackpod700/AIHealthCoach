@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.exercise.mapper.ExerciseMapper">
+    <resultMap id="physicalActivity" type="com.aihealthcoach.exercise.entity.PhysicalActivity">
+        <id column="physical_activity_id" property="id"/>
+        <result column="physical_activity_id" property="id"/>
+        <result column="compendium_code" property="compendiumCode"/>
+        <result column="compendium_version" property="compendiumVersion"/>
+        <result column="major_heading" property="majorHeading"/>
+        <result column="met_value" property="metValue"/>
+        <result column="description" property="description"/>
+    </resultMap>
+
+    <resultMap id="exerciseRecord" type="com.aihealthcoach.exercise.entity.ExerciseRecord">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="physical_activity_id" property="physicalActivityId"/>
+        <result column="exercise_date" property="exerciseDate"/>
+        <result column="duration_minutes" property="durationMinutes"/>
+        <result column="calories_burned" property="caloriesBurned"/>
+        <result column="memo" property="memo"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+        <association property="physicalActivity" resultMap="physicalActivity"/>
+    </resultMap>
+
+    <select id="findPhysicalActivities" resultMap="physicalActivity">
+        SELECT
+            id AS physical_activity_id,
+            compendium_code,
+            compendium_version,
+            major_heading,
+            met_value,
+            description
+        FROM physical_activities
+        <where>
+            <if test="keyword != null and keyword != ''">
+                description ILIKE CONCAT('%', #{keyword}, '%')
+                OR major_heading ILIKE CONCAT('%', #{keyword}, '%')
+            </if>
+        </where>
+        ORDER BY major_heading, description
+    </select>
+
+    <select id="findPhysicalActivityById" parameterType="Long" resultMap="physicalActivity">
+        SELECT
+            id AS physical_activity_id,
+            compendium_code,
+            compendium_version,
+            major_heading,
+            met_value,
+            description
+        FROM physical_activities
+        WHERE id = #{id}
+    </select>
+
+    <insert id="upsertPhysicalActivity" parameterType="com.aihealthcoach.exercise.entity.PhysicalActivity">
+        INSERT INTO physical_activities (
+            compendium_code,
+            compendium_version,
+            major_heading,
+            met_value,
+            description
+        )
+        VALUES (
+            #{compendiumCode},
+            #{compendiumVersion},
+            #{majorHeading},
+            #{metValue},
+            #{description}
+        )
+        ON CONFLICT (compendium_code)
+        DO UPDATE SET
+            compendium_version = EXCLUDED.compendium_version,
+            major_heading = EXCLUDED.major_heading,
+            met_value = EXCLUDED.met_value,
+            description = EXCLUDED.description
+    </insert>
+
+    <select id="insertExerciseRecord"
+        parameterType="com.aihealthcoach.exercise.entity.ExerciseRecord"
+        resultMap="exerciseRecord">
+        INSERT INTO exercise_records (
+            user_id,
+            physical_activity_id,
+            exercise_date,
+            duration_minutes,
+            calories_burned,
+            memo,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{userId},
+            #{physicalActivityId},
+            #{exerciseDate},
+            #{durationMinutes},
+            #{caloriesBurned},
+            #{memo},
+            NOW(),
+            NOW()
+        )
+        RETURNING
+            id,
+            user_id,
+            physical_activity_id,
+            exercise_date,
+            duration_minutes,
+            calories_burned,
+            memo,
+            created_at,
+            updated_at,
+            (SELECT id FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS physical_activity_id,
+            (SELECT compendium_code FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS compendium_code,
+            (SELECT compendium_version FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS compendium_version,
+            (SELECT major_heading FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS major_heading,
+            (SELECT met_value FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS met_value,
+            (SELECT description FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS description
+    </select>
+
+    <select id="findExerciseRecordsByDate" resultMap="exerciseRecord">
+        SELECT
+            er.id,
+            er.user_id,
+            er.physical_activity_id,
+            er.exercise_date,
+            er.duration_minutes,
+            er.calories_burned,
+            er.memo,
+            er.created_at,
+            er.updated_at,
+            pa.id AS physical_activity_id,
+            pa.compendium_code,
+            pa.compendium_version,
+            pa.major_heading,
+            pa.met_value,
+            pa.description
+        FROM exercise_records er
+        JOIN physical_activities pa ON pa.id = er.physical_activity_id
+        WHERE er.user_id = #{userId}
+          AND er.exercise_date = #{exerciseDate}
+        ORDER BY er.created_at, er.id
+    </select>
+
+    <select id="findExerciseDatesInMonth" resultType="java.time.LocalDate">
+        SELECT DISTINCT exercise_date
+        FROM exercise_records
+        WHERE user_id = #{userId}
+          AND exercise_date &gt;= #{startDate}
+          AND exercise_date &lt; #{endDate}
+        ORDER BY exercise_date
+    </select>
+</mapper>

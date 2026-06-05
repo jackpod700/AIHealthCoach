@@ -1,6 +1,6 @@
 package com.aihealthcoach.user.mapper;
 
-import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import org.apache.ibatis.annotations.Mapper;

@@ -1,6 +1,7 @@
 package com.aihealthcoach.common.health;
 
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -17,6 +18,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
 import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
+import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.user.exception.UserException;
 
@@ -29,6 +31,9 @@ class HealthControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private TokenRedisRepository tokenRedisRepository;
 
     @Test
     void healthReturnsUpStatus() throws Exception {
@@ -49,7 +54,7 @@ class HealthControllerTest {
 
     @Test
     void protectedApiWithInvalidTokenReturnsApiResponseError() throws Exception {
-        when(jwtTokenProvider.getUserId("invalid-token")).thenThrow(UserException.invalidToken());
+        doThrow(UserException.invalidToken()).when(jwtTokenProvider).validateAccessToken("invalid-token");
 
         mockMvc.perform(get("/api/protected")
                         .header("Authorization", "Bearer invalid-token"))
