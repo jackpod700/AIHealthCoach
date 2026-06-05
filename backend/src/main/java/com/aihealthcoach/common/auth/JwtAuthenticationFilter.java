@@ -24,11 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
-    private static final String INVALID_TOKEN_RESPONSE = """
-            {"code":"INVALID_TOKEN","message":"올바르지 않은 JWT 토큰입니다."}
-            """;
 
-    private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRedisRepository tokenRedisRepository;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
@@ -48,6 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         Long userId;
 
         try {
+            jwtTokenProvider.validateAccessToken(token);
+
+            String tokenId = jwtTokenProvider.getTokenId(token);
+            if (tokenRedisRepository.isAccessTokenBlacklisted(tokenId)) {
+                throw UserException.invalidToken();
+            }
+            
             userId = jwtTokenProvider.getUserId(token);
         } catch (UserException exception) {
             // JWT 검증은 컨트롤러에 도달하기 전 필터 단계에서 수행된다.
@@ -61,17 +64,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        try {
-            jwtTokenProvider.validateAccessToken(token);
-            String tokenId = jwtTokenProvider.getTokenId(token);
-
-            if (tokenRedisRepository.isAccessTokenBlacklisted(tokenId)) {
-                writeInvalidTokenResponse(response);
-                return;
-            }
-
-            userId = jwtTokenProvider.getUserId(token);
-
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     userId,
                     null,
@@ -79,18 +71,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
-        } catch (UserException exception) {
-            writeInvalidTokenResponse(response);
-            return;
-        }
 
         filterChain.doFilter(request, response);
     }
 
-    private void writeInvalidTokenResponse(HttpServletResponse response) throws IOException {
-        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-        response.setContentType("application/json");
-        response.setCharacterEncoding("UTF-8");
-        response.getWriter().write(INVALID_TOKEN_RESPONSE);
-    }
 }
