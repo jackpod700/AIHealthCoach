@@ -22,7 +22,7 @@ import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
 import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.config.SecurityConfig;
-import com.aihealthcoach.meal.dto.FoodCandidateRow;
+import com.aihealthcoach.meal.entity.Food;
 import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
@@ -76,8 +76,8 @@ class FoodControllerTest {
         verify(mealMapper, never()).searchFoods(eq(""), eq(List.of()));
     }
 
-    private FoodCandidateRow food() {
-        FoodCandidateRow row = new FoodCandidateRow();
+    private Food food() {
+        Food row = new Food();
         row.setFoodCode("1234567890123456789");
         row.setFoodName("Chicken Breast");
         row.setManufacturer("Brand");

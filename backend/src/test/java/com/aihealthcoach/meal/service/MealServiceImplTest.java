@@ -21,7 +21,7 @@ import com.aihealthcoach.meal.dto.MealDto.CreateMealRequest;
 import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
 import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
-import com.aihealthcoach.meal.dto.MealFoodRow;
+import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealErrorCode;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
@@ -117,7 +117,7 @@ class MealServiceImplTest {
 
     @Test
     void findDailyMealsIncludesServingBasisForEditing() {
-        MealFoodRow row = row(MEAL_ID, MEAL_DATE, "BREAKFAST", "1.5", "100", "20", "10", "5");
+        MealFood row = row(MEAL_ID, MEAL_DATE, "BREAKFAST", "1.5", "100", "20", "10", "5");
         row.setServingSize(new BigDecimal("100"));
         row.setServingUnit("g");
         when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of(row));
@@ -202,7 +202,7 @@ class MealServiceImplTest {
         return new MealItemRequest(foodCode, new BigDecimal(quantity));
     }
 
-    private MealFoodRow row(
+    private MealFood row(
             Long mealId,
             LocalDate mealDate,
             String mealType,
@@ -212,7 +212,7 @@ class MealServiceImplTest {
             String protein,
             String fat
     ) {
-        MealFoodRow row = new MealFoodRow();
+        MealFood row = new MealFood();
         row.setMealId(mealId);
         row.setMealDate(mealDate);
         row.setMealType(mealType);

@@ -33,7 +33,7 @@ class ChatMealProposalServiceTest {
     private ChatService chatService;
 
     @InjectMocks
-    private ChatMealProposalService chatMealProposalService;
+    private ChatMealProposalServiceImpl chatMealProposalService;
 
     @Test
     void confirmSavesMealAndAssistantConfirmationMessage() {
@@ -62,7 +62,6 @@ class ChatMealProposalServiceTest {
                 .thenReturn(dailyMeal);
         when(chatService.insert(org.mockito.ArgumentMatchers.any(ChatMessage.class))).thenReturn(savedMessage);
 
-        ChatMealProposalService chatMealProposalService = new ChatMealProposalService(mealService, chatService);
         ConfirmMealProposalResponse response = chatMealProposalService.confirm(userId, request);
 
         assertThat(response.dailyMeal()).isSameAs(dailyMeal);

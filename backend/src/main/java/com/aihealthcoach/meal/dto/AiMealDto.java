@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
+import com.aihealthcoach.meal.entity.Food;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -58,7 +59,7 @@ public class AiMealDto {
             BigDecimal protein,
             BigDecimal fat
     ) {
-        public static FoodCandidateResponse fromRow(FoodCandidateRow row) {
+        public static FoodCandidateResponse fromRow(Food row) {
             return new FoodCandidateResponse(
                     row.getFoodCode(),
                     row.getFoodName(),

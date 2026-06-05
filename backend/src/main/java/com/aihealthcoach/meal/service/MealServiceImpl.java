@@ -19,7 +19,7 @@ import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
 import com.aihealthcoach.meal.dto.MealDto.MealResponse;
 import com.aihealthcoach.meal.dto.MealDto.MonthlyMealDayResponse;
 import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
-import com.aihealthcoach.meal.dto.MealFoodRow;
+import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
 
@@ -36,10 +36,10 @@ public class MealServiceImpl implements MealService {
     @Override
     @Transactional(readOnly = true)
     public DailyMealResponse findDailyMeals(Long userId, LocalDate date) {
-        List<MealFoodRow> rows = mealMapper.findDailyMeals(userId, date);
-        Map<Long, List<MealFoodRow>> groupedRows = new LinkedHashMap<>();
+        List<MealFood> rows = mealMapper.findDailyMeals(userId, date);
+        Map<Long, List<MealFood>> groupedRows = new LinkedHashMap<>();
 
-        for (MealFoodRow row : rows) {
+        for (MealFood row : rows) {
             groupedRows.computeIfAbsent(row.getMealId(), ignored -> new ArrayList<>()).add(row);
         }
 
@@ -66,10 +66,10 @@ public class MealServiceImpl implements MealService {
 
         LocalDate startDate = LocalDate.of(year, month, 1);
         LocalDate endDate = startDate.plusMonths(1);
-        List<MealFoodRow> rows = mealMapper.findMealsBetween(userId, startDate, endDate);
-        Map<LocalDate, List<MealFoodRow>> groupedRows = new LinkedHashMap<>();
+        List<MealFood> rows = mealMapper.findMealsBetween(userId, startDate, endDate);
+        Map<LocalDate, List<MealFood>> groupedRows = new LinkedHashMap<>();
 
-        for (MealFoodRow row : rows) {
+        for (MealFood row : rows) {
             groupedRows.computeIfAbsent(row.getMealDate(), ignored -> new ArrayList<>()).add(row);
         }
 
@@ -130,8 +130,8 @@ public class MealServiceImpl implements MealService {
         }
     }
 
-    private MealResponse toMealResponse(List<MealFoodRow> rows) {
-        MealFoodRow firstRow = rows.get(0);
+    private MealResponse toMealResponse(List<MealFood> rows) {
+        MealFood firstRow = rows.get(0);
         List<MealItemResponse> items = rows.stream()
                 .filter(row -> row.getFoodCode() != null)
                 .map(this::toMealItemResponse)
@@ -148,9 +148,9 @@ public class MealServiceImpl implements MealService {
         );
     }
 
-    private MonthlyMealDayResponse toMonthlyMealDayResponse(LocalDate date, List<MealFoodRow> rows) {
-        Map<Long, List<MealFoodRow>> groupedRows = new LinkedHashMap<>();
-        for (MealFoodRow row : rows) {
+    private MonthlyMealDayResponse toMonthlyMealDayResponse(LocalDate date, List<MealFood> rows) {
+        Map<Long, List<MealFood>> groupedRows = new LinkedHashMap<>();
+        for (MealFood row : rows) {
             groupedRows.computeIfAbsent(row.getMealId(), ignored -> new ArrayList<>()).add(row);
         }
 
@@ -173,7 +173,7 @@ public class MealServiceImpl implements MealService {
         );
     }
 
-    private MealItemResponse toMealItemResponse(MealFoodRow row) {
+    private MealItemResponse toMealItemResponse(MealFood row) {
         BigDecimal quantity = defaultZero(row.getQuantity());
 
         return new MealItemResponse(

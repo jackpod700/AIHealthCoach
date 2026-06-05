@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aihealthcoach.meal.mapper.MealMapper">
-    <resultMap id="mealFoodRow" type="com.aihealthcoach.meal.dto.MealFoodRow">
+    <resultMap id="mealFood" type="com.aihealthcoach.meal.entity.MealFood">
         <id column="meal_id" property="mealId"/>
         <result column="meal_type" property="mealType"/>
         <result column="meal_date" property="mealDate"/>
@@ -18,7 +18,7 @@
         <result column="fat" property="fat"/>
     </resultMap>
 
-    <resultMap id="foodCandidateRow" type="com.aihealthcoach.meal.dto.FoodCandidateRow">
+    <resultMap id="food" type="com.aihealthcoach.meal.entity.Food">
         <id column="food_code" property="foodCode"/>
         <result column="food_name" property="foodName"/>
         <result column="manufacturer" property="manufacturer"/>
@@ -30,7 +30,7 @@
         <result column="fat" property="fat"/>
     </resultMap>
 
-    <select id="findDailyMeals" resultMap="mealFoodRow">
+    <select id="findDailyMeals" resultMap="mealFood">
         SELECT
             m.id AS meal_id,
             m.meal_type,
@@ -63,7 +63,7 @@
             f.name
     </select>
 
-    <select id="findMealsBetween" resultMap="mealFoodRow">
+    <select id="findMealsBetween" resultMap="mealFood">
         SELECT
             m.id AS meal_id,
             m.meal_type,
@@ -136,7 +136,7 @@
         )
     </select>
 
-    <select id="searchFoodCandidates" resultMap="foodCandidateRow">
+    <select id="searchFoodCandidates" resultMap="food">
         SELECT
             code AS food_code,
             name AS food_name,
@@ -170,7 +170,7 @@
         LIMIT #{limit}
     </select>
 
-    <select id="searchFoods" resultMap="foodCandidateRow">
+    <select id="searchFoods" resultMap="food">
         SELECT
             code AS food_code,
             name AS food_name,

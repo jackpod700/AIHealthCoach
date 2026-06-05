@@ -19,7 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealItem;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
-import com.aihealthcoach.meal.dto.FoodCandidateRow;
+import com.aihealthcoach.meal.entity.Food;
 import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
@@ -71,8 +71,8 @@ class AiMealProposalServiceImplTest {
         assertThat(proposal.items().get(1).quantity()).isEqualByComparingTo("2");
     }
 
-    private FoodCandidateRow food(String code, String name, String calories) {
-        FoodCandidateRow row = new FoodCandidateRow();
+    private Food food(String code, String name, String calories) {
+        Food row = new Food();
         row.setFoodCode(code);
         row.setFoodName(name);
         row.setCalories(new BigDecimal(calories));
