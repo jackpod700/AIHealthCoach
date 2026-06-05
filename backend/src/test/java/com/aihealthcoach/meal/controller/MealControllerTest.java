@@ -14,13 +14,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
+import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.service.MealService;
 
 @WebMvcTest(MealController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
 class MealControllerTest {
 
     private static final String TOKEN = "access-token";
@@ -55,6 +57,7 @@ class MealControllerTest {
         mockMvc.perform(delete("/api/meals/{mealId}", MEAL_ID)
                         .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.code").value("MEAL_NOT_FOUND"));
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.error.code").value("MEAL_NOT_FOUND"));
     }
 }

@@ -1,15 +1,16 @@
 package com.aihealthcoach.meal.exception;
 
-import lombok.Getter;
+import com.aihealthcoach.common.error.BusinessException;
 
-@Getter
-public class MealException extends RuntimeException {
-
-    private final MealErrorCode errorCode;
+public class MealException extends BusinessException {
 
     private MealException(MealErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+        super(errorCode);
+    }
+
+    @Override
+    public MealErrorCode getErrorCode() {
+        return (MealErrorCode) super.getErrorCode();
     }
 
     public static MealException invalidMealType() {

@@ -7,12 +7,13 @@ import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import com.aihealthcoach.meal.dto.AiMealDto.FoodCandidateResponse;
+import com.aihealthcoach.meal.entity.Food;
 
 class FoodCandidateResponseTest {
 
     @Test
     void fromRowMapsServingBasis() {
-        FoodCandidateRow row = new FoodCandidateRow();
+        Food row = new Food();
         row.setFoodCode("1234567890123456789");
         row.setFoodName("rice");
         row.setManufacturer("maker");

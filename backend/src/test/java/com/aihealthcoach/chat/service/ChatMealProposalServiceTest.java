@@ -17,9 +17,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalItemRequest;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalRequest;
+import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalResponse;
 import com.aihealthcoach.meal.dto.MealDto.CreateMealRequest;
 import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.service.MealService;
+import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 
 @ExtendWith(MockitoExtension.class)
 class ChatMealProposalServiceTest {
@@ -31,7 +33,7 @@ class ChatMealProposalServiceTest {
     private ChatService chatService;
 
     @InjectMocks
-    private ChatMealProposalService chatMealProposalService;
+    private ChatMealProposalServiceImpl chatMealProposalService;
 
     @Test
     void confirmSavesMealAndAssistantConfirmationMessage() {
@@ -50,7 +52,7 @@ class ChatMealProposalServiceTest {
                 BigDecimal.ZERO,
                 BigDecimal.ZERO
         );
-        var savedMessage = new com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse(
+        ChatMessageResponse savedMessage = new ChatMessageResponse(
                 "ASSISTANT",
                 "점심 식단으로 기록했어요.",
                 null
@@ -60,7 +62,7 @@ class ChatMealProposalServiceTest {
                 .thenReturn(dailyMeal);
         when(chatService.insert(org.mockito.ArgumentMatchers.any(ChatMessage.class))).thenReturn(savedMessage);
 
-        var response = chatMealProposalService.confirm(userId, request);
+        ConfirmMealProposalResponse response = chatMealProposalService.confirm(userId, request);
 
         assertThat(response.dailyMeal()).isSameAs(dailyMeal);
         assertThat(response.messages()).containsExactly(savedMessage);

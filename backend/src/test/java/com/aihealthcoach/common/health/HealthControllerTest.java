@@ -1,6 +1,7 @@
 package com.aihealthcoach.common.health;
 
 import static org.hamcrest.Matchers.is;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -12,11 +13,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+
+import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
+import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.config.SecurityConfig;
+import com.aihealthcoach.user.exception.UserException;
 
 @WebMvcTest(HealthController.class)
-@Import(SecurityConfig.class)
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
 class HealthControllerTest {
 
     @Autowired
@@ -29,7 +34,27 @@ class HealthControllerTest {
     void healthReturnsUpStatus() throws Exception {
         mockMvc.perform(get("/api/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status", is("UP")))
-                .andExpect(jsonPath("$.service", is("AI Health Coach Backend")));
+                .andExpect(jsonPath("$.success", is(true)))
+                .andExpect(jsonPath("$.data.status", is("UP")))
+                .andExpect(jsonPath("$.data.service", is("AI Health Coach Backend")));
+    }
+
+    @Test
+    void protectedApiWithoutTokenReturnsApiResponseError() throws Exception {
+        mockMvc.perform(get("/api/protected"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error.code", is("INVALID_TOKEN")));
+    }
+
+    @Test
+    void protectedApiWithInvalidTokenReturnsApiResponseError() throws Exception {
+        when(jwtTokenProvider.getUserId("invalid-token")).thenThrow(UserException.invalidToken());
+
+        mockMvc.perform(get("/api/protected")
+                        .header("Authorization", "Bearer invalid-token"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success", is(false)))
+                .andExpect(jsonPath("$.error.code", is("INVALID_TOKEN")));
     }
 }

@@ -3,6 +3,7 @@ package com.aihealthcoach.common.auth;
 import java.io.IOException;
 import java.util.List;
 
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -30,19 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final AntPathMatcher pathMatcher = new AntPathMatcher();
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRedisRepository tokenRedisRepository;
-
-    @Override
-    protected boolean shouldNotFilter(HttpServletRequest request) {
-        String requestPath = request.getRequestURI();
-
-        for (String publicPath : SecurityPaths.PUBLIC_PATHS) {
-            if (pathMatcher.match(publicPath, requestPath)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+    private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -56,6 +45,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         String token = authorization.substring(BEARER_PREFIX.length());
+        Long userId;
+
+        try {
+            userId = jwtTokenProvider.getUserId(token);
+        } catch (UserException exception) {
+            // JWT 검증은 컨트롤러에 도달하기 전 필터 단계에서 수행된다.
+            // 따라서 GlobalExceptionHandler 대신 AuthenticationEntryPoint를 통해 공통 에러 응답을 작성한다.
+            SecurityContextHolder.clearContext();
+            jwtAuthenticationEntryPoint.commence(
+                    request,
+                    response,
+                    new BadCredentialsException(exception.getMessage(), exception)
+            );
+            return;
+        }
 
         try {
             jwtTokenProvider.validateAccessToken(token);
@@ -66,7 +70,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 return;
             }
 
-            Long userId = jwtTokenProvider.getUserId(token);
+            userId = jwtTokenProvider.getUserId(token);
 
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     userId,

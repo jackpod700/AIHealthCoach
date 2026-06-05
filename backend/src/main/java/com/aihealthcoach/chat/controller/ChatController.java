@@ -3,6 +3,7 @@ package com.aihealthcoach.chat.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageSendResponse;
@@ -49,7 +50,7 @@ public class ChatController {
         List<ChatMessageResponse> messages = new ArrayList<>();
         Long userId = (Long)authentication.getPrincipal();
         messages.add(chatService.insert(userId, message));
-        var aiResult = aiChatService.generate(message);
+        AiChatResult aiResult = aiChatService.generate(message);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")

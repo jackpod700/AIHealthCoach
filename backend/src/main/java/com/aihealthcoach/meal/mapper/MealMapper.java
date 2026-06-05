@@ -7,15 +7,15 @@ import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
 import com.aihealthcoach.meal.dto.MealDto.MealItemRequest;
-import com.aihealthcoach.meal.dto.FoodCandidateRow;
-import com.aihealthcoach.meal.dto.MealFoodRow;
+import com.aihealthcoach.meal.entity.Food;
+import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 
 @Mapper
 public interface MealMapper {
-    List<MealFoodRow> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
+    List<MealFood> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
 
-    List<MealFoodRow> findMealsBetween(
+    List<MealFood> findMealsBetween(
             @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
@@ -41,9 +41,9 @@ public interface MealMapper {
 
     boolean existsFoodCode(@Param("foodCode") String foodCode);
 
-    List<FoodCandidateRow> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
+    List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
-    List<FoodCandidateRow> searchFoodCandidates(
+    List<Food> searchFoodCandidates(
             @Param("query") String query,
             @Param("tokens") List<Token> tokens,
             @Param("limit") int limit
