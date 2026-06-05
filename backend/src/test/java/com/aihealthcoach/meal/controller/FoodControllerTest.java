@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
 import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
+import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.meal.entity.Food;
 import com.aihealthcoach.meal.mapper.MealMapper;
@@ -40,6 +41,9 @@ class FoodControllerTest {
 
     @MockitoBean
     private JwtTokenProvider jwtTokenProvider;
+
+    @MockitoBean
+    private TokenRedisRepository tokenRedisRepository;
 
     @Test
     void searchFoodsReturnsCandidatesWithoutLimit() throws Exception {
