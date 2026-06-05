@@ -13,8 +13,12 @@ public class ExerciseException extends BusinessException {
         return (ExerciseErrorCode) super.getErrorCode();
     }
 
-    public static ExerciseException physicalActivityNotFound() {
-        return new ExerciseException(ExerciseErrorCode.PHYSICAL_ACTIVITY_NOT_FOUND);
+    public static ExerciseException exerciseActivityOptionNotFound() {
+        return new ExerciseException(ExerciseErrorCode.EXERCISE_ACTIVITY_OPTION_NOT_FOUND);
+    }
+
+    public static ExerciseException invalidIntensityLevel() {
+        return new ExerciseException(ExerciseErrorCode.INVALID_INTENSITY_LEVEL);
     }
 
     public static ExerciseException userWeightNotFound() {

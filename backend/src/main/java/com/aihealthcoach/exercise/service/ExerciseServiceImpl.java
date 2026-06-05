@@ -2,9 +2,9 @@ package com.aihealthcoach.exercise.service;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
-import com.aihealthcoach.exercise.dto.ExerciseDto.PhysicalActivityResponse;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseActivityOptionResponse;
+import com.aihealthcoach.exercise.entity.ExerciseActivityOption;
 import com.aihealthcoach.exercise.entity.ExerciseRecord;
-import com.aihealthcoach.exercise.entity.PhysicalActivity;
 import com.aihealthcoach.exercise.exception.ExerciseException;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
 import com.aihealthcoach.user.entity.UserProfile;
@@ -25,16 +25,18 @@ public class ExerciseServiceImpl implements ExerciseService {
     private final UserMapper userDao;
 
     @Override
-    public List<PhysicalActivityResponse> findPhysicalActivities(String keyword) {
-        return exerciseDao.findPhysicalActivities(keyword).stream().map(PhysicalActivityResponse::fromEntity).toList();
+    public List<ExerciseActivityOptionResponse> findExerciseActivityOptions(String keyword) {
+        return exerciseDao.findExerciseActivityOptions(keyword).stream()
+                .map(ExerciseActivityOptionResponse::fromEntity).toList();
     }
 
     @Override
     public ExerciseRecordResponse insertExerciseRecord(Long userId, ExerciseRecordRequest request) {
-        PhysicalActivity activity = exerciseDao.findPhysicalActivityById(request.physicalActivityId());
+        ExerciseActivityOption activityOption = exerciseDao.findExerciseActivityOptionById(
+                request.exerciseActivityOptionId());
 
-        if (activity == null) {
-            throw ExerciseException.physicalActivityNotFound();
+        if (activityOption == null) {
+            throw ExerciseException.exerciseActivityOptionNotFound();
         }
 
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
@@ -47,11 +49,13 @@ public class ExerciseServiceImpl implements ExerciseService {
             throw ExerciseException.userWeightNotFound();
         }
 
-        Integer caloriesBurned = calculateCaloriesBurned(activity.getMetValue(), userProfile.getCurrentWeightKg(),
+        BigDecimal metValue = resolveMetValue(activityOption, request.intensityLevel());
+        Integer caloriesBurned = calculateCaloriesBurned(metValue, userProfile.getCurrentWeightKg(),
                 request.durationMinutes());
 
         ExerciseRecord savedRecord = exerciseDao.insertExerciseRecord(
-                ExerciseRecord.builder().userId(userId).physicalActivityId(request.physicalActivityId())
+                ExerciseRecord.builder().userId(userId).exerciseActivityOptionId(request.exerciseActivityOptionId())
+                        .intensityLevel(request.intensityLevel())
                         .exerciseDate(request.exerciseDate()).durationMinutes(request.durationMinutes())
                         .caloriesBurned(caloriesBurned).memo(request.memo()).build());
 
@@ -70,6 +74,15 @@ public class ExerciseServiceImpl implements ExerciseService {
         LocalDate endDate = startDate.plusMonths(1);
 
         return exerciseDao.findExerciseDatesInMonth(userId, startDate, endDate);
+    }
+
+    private BigDecimal resolveMetValue(ExerciseActivityOption activityOption, String intensityLevel) {
+        return switch (intensityLevel) {
+            case "LOW" -> activityOption.getLowMetValue();
+            case "MEDIUM" -> activityOption.getMediumMetValue();
+            case "HIGH" -> activityOption.getHighMetValue();
+            default -> throw ExerciseException.invalidIntensityLevel();
+        };
     }
 
     private Integer calculateCaloriesBurned(BigDecimal metValue, BigDecimal weightKg, Integer durationMinutes) {

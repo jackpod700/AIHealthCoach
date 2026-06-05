@@ -2,7 +2,7 @@ package com.aihealthcoach.exercise.controller;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
-import com.aihealthcoach.exercise.dto.ExerciseDto.PhysicalActivityResponse;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseActivityOptionResponse;
 import com.aihealthcoach.exercise.service.ExerciseService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -26,9 +26,9 @@ public class ExerciseController {
     private final ExerciseService exerciseService;
 
     @GetMapping("/physical-activities")
-    public ResponseEntity<List<PhysicalActivityResponse>> findPhysicalActivities(
+    public ResponseEntity<List<ExerciseActivityOptionResponse>> findExerciseActivityOptions(
             @RequestParam(required = false) String keyword) {
-        return ResponseEntity.ok(exerciseService.findPhysicalActivities(keyword));
+        return ResponseEntity.ok(exerciseService.findExerciseActivityOptions(keyword));
     }
 
     @PostMapping("/records")

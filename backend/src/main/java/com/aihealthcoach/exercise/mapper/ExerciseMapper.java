@@ -1,6 +1,7 @@
 package com.aihealthcoach.exercise.mapper;
 
 import com.aihealthcoach.exercise.entity.ExerciseRecord;
+import com.aihealthcoach.exercise.entity.ExerciseActivityOption;
 import com.aihealthcoach.exercise.entity.PhysicalActivity;
 import java.time.LocalDate;
 import java.util.List;
@@ -9,9 +10,9 @@ import org.apache.ibatis.annotations.Param;
 
 @Mapper
 public interface ExerciseMapper {
-    List<PhysicalActivity> findPhysicalActivities(@Param("keyword") String keyword);
+    List<ExerciseActivityOption> findExerciseActivityOptions(@Param("keyword") String keyword);
 
-    PhysicalActivity findPhysicalActivityById(Long id);
+    ExerciseActivityOption findExerciseActivityOptionById(Long id);
 
     void upsertPhysicalActivity(PhysicalActivity physicalActivity);
 
