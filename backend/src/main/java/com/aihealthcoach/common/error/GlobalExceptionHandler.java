@@ -1,14 +1,12 @@
 package com.aihealthcoach.common.error;
 
-import org.springframework.validation.FieldError;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import com.aihealthcoach.common.response.ApiResponse;
-import com.aihealthcoach.user.exception.UserErrorCode;
-import com.aihealthcoach.user.exception.UserException;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
@@ -18,9 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(UserException.class)
-    public ResponseEntity<ApiResponse<Void>> handleUserException(UserException exception) {
-        UserErrorCode errorCode = exception.getErrorCode();
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ApiResponse<Void>> handleBusinessException(BusinessException exception) {
+        ErrorCode errorCode = exception.getErrorCode();
 
         return ResponseEntity
                 .status(errorCode.getStatus())

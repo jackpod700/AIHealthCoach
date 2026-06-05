@@ -1,0 +1,205 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.meal.mapper.MealMapper">
+    <resultMap id="mealFood" type="com.aihealthcoach.meal.entity.MealFood">
+        <id column="meal_id" property="mealId"/>
+        <result column="meal_type" property="mealType"/>
+        <result column="meal_date" property="mealDate"/>
+        <result column="food_code" property="foodCode"/>
+        <result column="food_name" property="foodName"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
+        <result column="quantity" property="quantity"/>
+        <result column="calories" property="calories"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="fat" property="fat"/>
+    </resultMap>
+
+    <resultMap id="food" type="com.aihealthcoach.meal.entity.Food">
+        <id column="food_code" property="foodCode"/>
+        <result column="food_name" property="foodName"/>
+        <result column="manufacturer" property="manufacturer"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
+        <result column="calories" property="calories"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="fat" property="fat"/>
+    </resultMap>
+
+    <select id="findDailyMeals" resultMap="mealFood">
+        SELECT
+            m.id AS meal_id,
+            m.meal_type,
+            m.meal_date,
+            mi.food_code,
+            mi.quantity,
+            f.name AS food_name,
+            f.manufacturer,
+            f.serving_size,
+            f.serving_unit,
+            f.calories,
+            f.carbohydrate,
+            f.protein,
+            f.fat
+        FROM meals m
+        LEFT JOIN meal_items mi
+            ON mi.meal_id = m.id
+        LEFT JOIN foods f
+            ON f.code = mi.food_code
+        WHERE m.user_id = #{userId}
+          AND m.meal_date = #{date}
+        ORDER BY
+            CASE m.meal_type
+                WHEN 'BREAKFAST' THEN 1
+                WHEN 'LUNCH' THEN 2
+                WHEN 'DINNER' THEN 3
+                WHEN 'SNACK' THEN 4
+                ELSE 5
+            END,
+            f.name
+    </select>
+
+    <select id="findMealsBetween" resultMap="mealFood">
+        SELECT
+            m.id AS meal_id,
+            m.meal_type,
+            m.meal_date,
+            mi.food_code,
+            mi.quantity,
+            f.name AS food_name,
+            f.manufacturer,
+            f.serving_size,
+            f.serving_unit,
+            f.calories,
+            f.carbohydrate,
+            f.protein,
+            f.fat
+        FROM meals m
+        LEFT JOIN meal_items mi
+            ON mi.meal_id = m.id
+        LEFT JOIN foods f
+            ON f.code = mi.food_code
+        WHERE m.user_id = #{userId}
+          AND m.meal_date &gt;= #{startDate}
+          AND m.meal_date &lt; #{endDate}
+        ORDER BY
+            m.meal_date,
+            CASE m.meal_type
+                WHEN 'BREAKFAST' THEN 1
+                WHEN 'LUNCH' THEN 2
+                WHEN 'DINNER' THEN 3
+                WHEN 'SNACK' THEN 4
+                ELSE 5
+            END,
+            f.name
+    </select>
+
+    <select id="findMealIdByUserTypeDate" resultType="long">
+        SELECT id
+        FROM meals
+        WHERE user_id = #{userId}
+          AND meal_type = #{mealType}
+          AND meal_date = #{mealDate}
+    </select>
+
+    <select id="insertMeal" resultType="long">
+        INSERT INTO meals (user_id, meal_type, meal_date)
+        VALUES (#{userId}, #{mealType}, #{mealDate})
+        RETURNING id
+    </select>
+
+    <delete id="deleteMealItems">
+        DELETE FROM meal_items
+        WHERE meal_id = #{mealId}
+    </delete>
+
+    <delete id="deleteMeal">
+        DELETE FROM meals
+        WHERE id = #{mealId}
+          AND user_id = #{userId}
+    </delete>
+
+    <insert id="insertMealItem">
+        INSERT INTO meal_items (meal_id, food_code, quantity)
+        VALUES (#{mealId}, #{item.foodCode}, #{item.quantity})
+    </insert>
+
+    <select id="existsFoodCode" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM foods
+            WHERE code = #{foodCode}
+        )
+    </select>
+
+    <select id="searchFoodCandidates" resultMap="food">
+        SELECT
+            code AS food_code,
+            name AS food_name,
+            manufacturer,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        FROM foods
+        WHERE
+        <foreach collection="tokens" item="token" separator=" AND ">
+            (
+                name ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+            )
+        </foreach>
+        ORDER BY
+            CASE
+                WHEN name = #{query} THEN 0
+                WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
+                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
+                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                ELSE 4
+            END,
+            name,
+            manufacturer
+        LIMIT #{limit}
+    </select>
+
+    <select id="searchFoods" resultMap="food">
+        SELECT
+            code AS food_code,
+            name AS food_name,
+            manufacturer,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        FROM foods
+        WHERE
+        <foreach collection="tokens" item="token" separator=" AND ">
+            (
+                name ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+            )
+        </foreach>
+        ORDER BY
+            CASE
+                WHEN name = #{query} THEN 0
+                WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
+                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
+                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                ELSE 4
+            END,
+            name,
+            manufacturer
+    </select>
+</mapper>

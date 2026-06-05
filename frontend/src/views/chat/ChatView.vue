@@ -3,16 +3,28 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
+import MealProposalCard from "../../components/chat/MealProposalCard.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
+
+const mealTypeMeta = {
+  BREAKFAST: { label: "아침", dot: "yellow" },
+  LUNCH: { label: "점심", dot: "orange" },
+  DINNER: { label: "저녁", dot: "navy" },
+  SNACK: { label: "간식", dot: "yellow" },
+};
+
+const todayDateKey = computed(() => toDateKey(new Date()));
 
 const todayLabel = computed(() => {
   return new Intl.DateTimeFormat("ko-KR", {
@@ -30,6 +42,23 @@ const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
 
+const todayMeals = computed(() => {
+  return mealStore.dailyMeal?.meals || [];
+});
+
+const hasTodayMeals = computed(() => todayMeals.value.length > 0);
+
+const todayTotals = computed(() => {
+  const dailyMeal = mealStore.dailyMeal;
+
+  return {
+    calories: toNumber(dailyMeal?.dailyTotalCalories),
+    carbohydrate: toNumber(dailyMeal?.dailyTotalCarbohydrate),
+    protein: toNumber(dailyMeal?.dailyTotalProtein),
+    fat: toNumber(dailyMeal?.dailyTotalFat),
+  };
+});
+
 marked.setOptions({
   breaks: true,
   gfm: true,
@@ -38,6 +67,7 @@ marked.setOptions({
 onMounted(async () => {
   await Promise.all([
     chatStore.loadMessages(),
+    mealStore.loadDailyMeal(todayDateKey.value),
     profileStore.loadProfile(),
   ]);
 
@@ -64,6 +94,24 @@ async function sendMessage() {
     return;
   }
 
+  await mealStore.loadDailyMeal(todayDateKey.value);
+  await scrollToBottom();
+}
+
+async function confirmMealProposal(payload) {
+  const response = await chatStore.confirmMealProposal(payload);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (response?.dailyMeal) {
+    mealStore.dailyMeal = response.dailyMeal;
+  } else {
+    await mealStore.loadDailyMeal(todayDateKey.value);
+  }
+
   await scrollToBottom();
 }
 
@@ -88,6 +136,35 @@ function formatMessageTime(value) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function mealLabel(mealType) {
+  return mealTypeMeta[mealType]?.label || mealType;
+}
+
+function mealDot(mealType) {
+  return mealTypeMeta[mealType]?.dot || "yellow";
+}
+
+function mealFoodNames(meal) {
+  return meal.items?.map((item) => item.foodName).join(" + ") || mealLabel(meal.mealType);
+}
+
+function toNumber(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) ? numberValue : 0;
+}
+
+function formatNumber(value) {
+  return Math.round(toNumber(value)).toLocaleString("ko-KR");
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
 }
 
 function renderMarkdown(content = "") {
@@ -191,8 +268,17 @@ function sanitizeHtml(html = "") {
               </div>
             </template>
 
-            <div class="chat-api-note">
-              식사 분석 표, 후보 음식, 확정 저장 UI는 채팅 응답의 구조화 데이터 API 연결이 필요합니다.
+            <div v-if="chatStore.mealProposal" class="message-row coach">
+              <div class="coach-icon">
+                <i class="pi pi-briefcase"></i>
+              </div>
+              <MealProposalCard
+                :proposal="chatStore.mealProposal"
+                :is-confirming="chatStore.isConfirmingMeal"
+                :error="chatStore.mealProposalError"
+                @confirm="confirmMealProposal"
+                @dismiss="chatStore.dismissMealProposal"
+              />
             </div>
           </div>
 
@@ -218,44 +304,59 @@ function sanitizeHtml(html = "") {
             <span>{{ todayLabel }}</span>
           </div>
 
-          <section class="api-needed-panel">
-            <strong>오늘 식단 요약 API 연결 필요</strong>
-            <p>
-              칼로리, 탄수화물, 단백질, 지방 합계는 일별 식단 조회 API가 연결되면 표시할 수 있습니다.
-            </p>
-          </section>
+          <div v-if="mealStore.dailyError" class="api-needed-panel">
+            <strong>오늘 식단 정보를 불러오지 못했어요</strong>
+            <p>{{ mealStore.dailyError }}</p>
+          </div>
 
-          <section class="calorie-card pending-api">
+          <section class="calorie-card" :class="{ 'pending-api': !hasTodayMeals }">
             <span>오늘 섭취 칼로리</span>
-            <strong>-<small>/ 목표 kcal</small></strong>
+            <strong>
+              {{ hasTodayMeals ? formatNumber(todayTotals.calories) : "-" }}<small>/ 목표 kcal API 필요</small>
+            </strong>
             <div class="progress-track">
               <i></i>
             </div>
-            <p>GET /api/meals/daily 연결 필요</p>
+            <p v-if="hasTodayMeals">일일 식단 조회 API 기준으로 계산됐어요</p>
+            <p v-else>아직 오늘 식단 기록이 없어요</p>
           </section>
 
-          <div class="macro-grid pending-api">
+          <div class="macro-grid" :class="{ 'pending-api': !hasTodayMeals }">
             <div>
               <span>단백질</span>
-              <strong>-g</strong>
+              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.protein) : "-" }}g</strong>
               <i></i>
             </div>
             <div>
               <span>탄수</span>
-              <strong>-g</strong>
+              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.carbohydrate) : "-" }}g</strong>
               <i></i>
             </div>
             <div>
               <span>지방</span>
-              <strong>-g</strong>
+              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.fat) : "-" }}g</strong>
               <i></i>
             </div>
           </div>
 
           <section class="today-log">
             <h2>오늘의 기록</h2>
-            <div class="api-list-empty">
-              식사/운동 기록 목록 API 연결 필요
+
+            <article v-for="meal in todayMeals" :key="meal.mealId">
+              <time>{{ mealLabel(meal.mealType) }}</time>
+              <i :class="['dot', mealDot(meal.mealType)]"></i>
+              <div>
+                <strong>{{ mealFoodNames(meal) }}</strong>
+                <span>{{ mealLabel(meal.mealType) }} · {{ formatNumber(meal.totalCalories) }} kcal</span>
+              </div>
+            </article>
+
+            <div v-if="!mealStore.isLoadingDaily && !hasTodayMeals" class="api-list-empty">
+              오늘 저장된 식단 기록이 없어요.
+            </div>
+
+            <div class="api-list-empty compact">
+              운동 기록 API 연결 필요
             </div>
           </section>
         </aside>

@@ -2,8 +2,10 @@ import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
 import LoginView from "../views/auth/LoginView.vue";
 import SignupView from "../views/auth/SignupView.vue";
+import CalendarView from "../views/calendar/CalendarView.vue";
 import ChatView from "../views/chat/ChatView.vue";
 import ProfileView from "../views/profile/ProfileView.vue";
+import DailyRecordView from "../views/records/DailyRecordView.vue";
 import NotFoundView from "../views/error/NotFoundView.vue";
 
 const router = createRouter({
@@ -30,6 +32,22 @@ const router = createRouter({
       path: "/chat",
       name: "chat",
       component: ChatView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: "/calendar",
+      name: "calendar",
+      component: CalendarView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: "/records",
+      name: "records",
+      component: DailyRecordView,
       meta: {
         requiresAuth: true,
       },

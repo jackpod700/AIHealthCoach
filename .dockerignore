@@ -1,0 +1,4 @@
+data/foods/build/
+backend/target/
+frontend/dist/
+**/.git/

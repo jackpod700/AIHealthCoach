@@ -1,15 +1,16 @@
 package com.aihealthcoach.user.exception;
 
-import lombok.Getter;
+import com.aihealthcoach.common.error.BusinessException;
 
-@Getter
-public class UserException extends RuntimeException {
-
-    private final UserErrorCode errorCode;
+public class UserException extends BusinessException {
 
     private UserException(UserErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+        super(errorCode);
+    }
+
+    @Override
+    public UserErrorCode getErrorCode() {
+        return (UserErrorCode) super.getErrorCode();
     }
 
     public static UserException duplicateEmail() {

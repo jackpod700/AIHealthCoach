@@ -1,13 +1,16 @@
 import { defineStore } from "pinia";
-import { fetchChatMessages, postChatMessage } from "../api/chatApi";
+import { confirmMealProposal, fetchChatMessages, postChatMessage } from "../api/chatApi";
 import { useAuthStore } from "./authStore";
 
 export const useChatStore = defineStore("chat", {
   state: () => ({
     messages: [],
+    mealProposal: null,
     isLoading: false,
     isSending: false,
+    isConfirmingMeal: false,
     error: "",
+    mealProposalError: "",
     summary: {
       mealCount: 0,
       exerciseCount: 0,
@@ -27,7 +30,9 @@ export const useChatStore = defineStore("chat", {
   actions: {
     clearMessages() {
       this.messages = [];
+      this.mealProposal = null;
       this.error = "";
+      this.mealProposalError = "";
       this.refreshSummary();
     },
     async loadMessages() {
@@ -89,6 +94,7 @@ export const useChatStore = defineStore("chat", {
         const response = await postChatMessage(authStore.accessToken, authStore.userId, trimmedContent);
         const newMessages = Array.isArray(response) ? response : response?.messages || [];
         this.replacePendingMessages(requestId, newMessages);
+        this.mealProposal = response?.mealProposal?.items?.length ? response.mealProposal : null;
         this.refreshSummary();
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
@@ -102,6 +108,39 @@ export const useChatStore = defineStore("chat", {
       } finally {
         this.isSending = false;
       }
+    },
+    async confirmMealProposal(payload) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated || this.isConfirmingMeal) {
+        return null;
+      }
+
+      this.isConfirmingMeal = true;
+      this.mealProposalError = "";
+
+      try {
+        const response = await confirmMealProposal(authStore.accessToken, payload);
+        const newMessages = response?.messages || [];
+        this.messages.push(...newMessages);
+        this.mealProposal = null;
+        this.refreshSummary();
+        return response;
+      } catch (error) {
+        if (authStore.handleAuthFailure(error)) {
+          this.clearMessages();
+          return null;
+        }
+
+        this.mealProposalError = error.message;
+        return null;
+      } finally {
+        this.isConfirmingMeal = false;
+      }
+    },
+    dismissMealProposal() {
+      this.mealProposal = null;
+      this.mealProposalError = "";
     },
     replacePendingMessages(requestId, newMessages) {
       this.messages = this.messages.filter((message) => !message.clientId?.startsWith(requestId));

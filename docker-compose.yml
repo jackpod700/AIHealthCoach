@@ -16,13 +16,28 @@ services:
       timeout: 5s
       retries: 5
 
+  data-importer:
+    build:
+      context: .
+      dockerfile: data/Dockerfile
+    container_name: ai-health-data-importer
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGHOST: postgres
+      PGDATABASE: ai_health_coach
+      PGUSER: postgres
+      PGPASSWORD: postgres
+    restart: "no"
+
   backend:
     build:
       context: ./backend
     container_name: ai-health-backend
     depends_on:
-      postgres:
-        condition: service_healthy
+      data-importer:
+        condition: service_completed_successfully
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/ai_health_coach
       DB_USERNAME: postgres
@@ -39,7 +54,8 @@ services:
       context: ./frontend
     container_name: ai-health-frontend
     depends_on:
-      - backend
+      backend:
+        condition: service_started
     ports:
       - "5173:80"
 
