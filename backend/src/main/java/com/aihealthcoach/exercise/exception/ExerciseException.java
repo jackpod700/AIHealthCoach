@@ -1,15 +1,16 @@
 package com.aihealthcoach.exercise.exception;
 
-import lombok.Getter;
+import com.aihealthcoach.common.error.BusinessException;
 
-@Getter
-public class ExerciseException extends RuntimeException {
-
-    private final ExerciseErrorCode errorCode;
+public class ExerciseException extends BusinessException {
 
     private ExerciseException(ExerciseErrorCode errorCode) {
-        super(errorCode.getMessage());
-        this.errorCode = errorCode;
+        super(errorCode);
+    }
+
+    @Override
+    public ExerciseErrorCode getErrorCode() {
+        return (ExerciseErrorCode) super.getErrorCode();
     }
 
     public static ExerciseException physicalActivityNotFound() {
