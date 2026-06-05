@@ -4,6 +4,8 @@ import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseActivityOptionResponse;
 import com.aihealthcoach.exercise.service.ExerciseService;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
@@ -17,10 +19,12 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 @RestController
 @RequestMapping("/api/exercise")
 @RequiredArgsConstructor
+@Validated
 public class ExerciseController {
 
     private final ExerciseService exerciseService;
@@ -47,7 +51,12 @@ public class ExerciseController {
     }
 
     @GetMapping("/records/calendar")
-    public ResponseEntity<List<LocalDate>> findExerciseDatesInMonth(@RequestParam int year, @RequestParam int month,
+    public ResponseEntity<List<LocalDate>> findExerciseDatesInMonth(
+            @RequestParam int year,
+            @RequestParam
+            @Min(value = 1, message = "월은 1 이상이어야 합니다.")
+            @Max(value = 12, message = "월은 12 이하이어야 합니다.")
+            int month,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(exerciseService.findExerciseDatesInMonth(userId, year, month));
