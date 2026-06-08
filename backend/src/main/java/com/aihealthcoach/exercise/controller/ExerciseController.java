@@ -14,7 +14,9 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -40,6 +42,15 @@ public class ExerciseController {
             @Valid @RequestBody ExerciseRecordRequest request, Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(exerciseService.insertExerciseRecord(userId, request));
+    }
+
+    @PutMapping("/records/{recordId}")
+    public ResponseEntity<ExerciseRecordResponse> updateExerciseRecord(
+            @PathVariable Long recordId,
+            @Valid @RequestBody ExerciseRecordRequest request,
+            Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return ResponseEntity.ok(exerciseService.updateExerciseRecord(userId, recordId, request));
     }
 
     @GetMapping("/records")

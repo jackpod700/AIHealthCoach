@@ -152,6 +152,61 @@
         JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
     </select>
 
+    <select id="updateExerciseRecord"
+        parameterType="com.aihealthcoach.exercise.entity.ExerciseRecord"
+        resultMap="exerciseRecord">
+        WITH updated AS (
+            UPDATE exercise_records
+            <set>
+                <if test="exerciseActivityOptionId != null">
+                    exercise_activity_option_id = #{exerciseActivityOptionId},
+                </if>
+                <if test="intensityLevel != null">
+                    intensity_level = #{intensityLevel},
+                </if>
+                <if test="exerciseDate != null">
+                    exercise_date = #{exerciseDate},
+                </if>
+                <if test="durationMinutes != null">
+                    duration_minutes = #{durationMinutes},
+                </if>
+                <if test="caloriesBurned != null">
+                    calories_burned = #{caloriesBurned},
+                </if>
+                <if test="memo != null">
+                    memo = #{memo},
+                </if>
+                updated_at = NOW()
+            </set>
+            WHERE id = #{id}
+                AND user_id = #{userId}
+            RETURNING
+                id,
+                user_id,
+                exercise_activity_option_id,
+                intensity_level,
+                exercise_date,
+                duration_minutes,
+                calories_burned,
+                memo,
+                created_at,
+                updated_at
+        )
+        SELECT
+            er.id,
+            er.user_id,
+            er.intensity_level,
+            er.exercise_date,
+            er.duration_minutes,
+            er.calories_burned,
+            er.memo,
+            er.created_at,
+            er.updated_at,
+            <include refid="exerciseActivityOptionColumns"/>
+        FROM updated er
+        JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
+    </select>
+
     <select id="findExerciseRecordsByDate" resultMap="exerciseRecord">
         SELECT
             er.id,

@@ -18,6 +18,8 @@ public interface ExerciseMapper {
 
     ExerciseRecord insertExerciseRecord(ExerciseRecord exerciseRecord);
 
+    ExerciseRecord updateExerciseRecord(ExerciseRecord exerciseRecord);
+
     List<ExerciseRecord> findExerciseRecordsByDate(
         @Param("userId") Long userId,
         @Param("exerciseDate") LocalDate exerciseDate);

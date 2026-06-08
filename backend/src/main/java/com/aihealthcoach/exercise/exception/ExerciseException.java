@@ -17,6 +17,10 @@ public class ExerciseException extends BusinessException {
         return new ExerciseException(ExerciseErrorCode.EXERCISE_ACTIVITY_OPTION_NOT_FOUND);
     }
 
+    public static ExerciseException exerciseRecordNotFound() {
+        return new ExerciseException(ExerciseErrorCode.EXERCISE_RECORD_NOT_FOUND);
+    }
+
     public static ExerciseException invalidIntensityLevel() {
         return new ExerciseException(ExerciseErrorCode.INVALID_INTENSITY_LEVEL);
     }

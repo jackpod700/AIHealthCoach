@@ -1567,8 +1567,9 @@
   margin-top: 12px;
 }
 
-.record-exercise-list article {
+.record-exercise-item {
   display: flex;
+  width: 100%;
   min-height: 38px;
   align-items: center;
   justify-content: space-between;
@@ -1576,6 +1577,17 @@
   border-radius: 10px;
   padding: 9px 12px;
   background: #f3fbf7;
+  text-align: left;
+  transition:
+    background 140ms ease,
+    box-shadow 140ms ease,
+    transform 140ms ease;
+}
+
+.record-exercise-item:hover {
+  background: #eaf8f1;
+  box-shadow: 0 10px 22px rgb(82 168 131 / 12%);
+  transform: translateY(-1px);
 }
 
 .record-exercise-list strong,
@@ -1602,6 +1614,100 @@
   font-style: normal;
   font-weight: 900;
   white-space: nowrap;
+}
+
+.exercise-selected-activity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 10px;
+  border: 1px solid #d9ecdf;
+  border-radius: 10px;
+  padding: 11px 12px;
+  background: #f3fbf7;
+}
+
+.exercise-selected-activity strong,
+.exercise-selected-activity span {
+  display: block;
+}
+
+.exercise-selected-activity strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.exercise-selected-activity span {
+  color: #508068;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.exercise-edit-fields {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.exercise-edit-fields label {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.exercise-edit-fields label span {
+  color: var(--ink);
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.exercise-edit-fields input {
+  width: 100%;
+  min-width: 0;
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0 14px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 800;
+  outline: none;
+}
+
+.exercise-edit-fields input:focus {
+  border-color: var(--navy);
+  box-shadow: 0 0 0 2px rgb(32 63 102 / 8%);
+}
+
+.exercise-intensity-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.exercise-intensity-options button {
+  height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+  color: #6f7b8a;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.exercise-intensity-options button.selected {
+  border-color: #52a883;
+  background: #f3fbf7;
+  color: #2f7a5b;
+  box-shadow: 0 0 0 1px rgb(82 168 131 / 10%);
+}
+
+.exercise-memo-field {
+  grid-column: 1 / -1;
 }
 
 .muted-card {

@@ -32,6 +32,39 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     @Override
     public ExerciseRecordResponse insertExerciseRecord(Long userId, ExerciseRecordRequest request) {
+        ExerciseRecord newRecord = buildExerciseRecord(userId, null, request);
+        ExerciseRecord savedRecord = exerciseDao.insertExerciseRecord(newRecord);
+
+        return ExerciseRecordResponse.fromEntity(savedRecord);
+    }
+
+    @Override
+    public ExerciseRecordResponse updateExerciseRecord(Long userId, Long recordId, ExerciseRecordRequest request) {
+        ExerciseRecord updateRecord = buildExerciseRecord(userId, recordId, request);
+        ExerciseRecord savedRecord = exerciseDao.updateExerciseRecord(updateRecord);
+
+        if (savedRecord == null) {
+            throw ExerciseException.exerciseRecordNotFound();
+        }
+
+        return ExerciseRecordResponse.fromEntity(savedRecord);
+    }
+
+    @Override
+    public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate) {
+        return exerciseDao.findExerciseRecordsByDate(userId, exerciseDate).stream()
+                .map(ExerciseRecordResponse::fromEntity).toList();
+    }
+
+    @Override
+    public List<LocalDate> findExerciseDatesInMonth(Long userId, int year, int month) {
+        LocalDate startDate = LocalDate.of(year, month, 1);
+        LocalDate endDate = startDate.plusMonths(1);
+
+        return exerciseDao.findExerciseDatesInMonth(userId, startDate, endDate);
+    }
+
+    private ExerciseRecord buildExerciseRecord(Long userId, Long recordId, ExerciseRecordRequest request) {
         ExerciseActivityOption activityOption = exerciseDao.findExerciseActivityOptionById(
                 request.exerciseActivityOptionId());
 
@@ -53,27 +86,16 @@ public class ExerciseServiceImpl implements ExerciseService {
         Integer caloriesBurned = calculateCaloriesBurned(metValue, userProfile.getCurrentWeightKg(),
                 request.durationMinutes());
 
-        ExerciseRecord savedRecord = exerciseDao.insertExerciseRecord(
-                ExerciseRecord.builder().userId(userId).exerciseActivityOptionId(request.exerciseActivityOptionId())
-                        .intensityLevel(request.intensityLevel())
-                        .exerciseDate(request.exerciseDate()).durationMinutes(request.durationMinutes())
-                        .caloriesBurned(caloriesBurned).memo(request.memo()).build());
-
-        return ExerciseRecordResponse.fromEntity(savedRecord);
-    }
-
-    @Override
-    public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate) {
-        return exerciseDao.findExerciseRecordsByDate(userId, exerciseDate).stream()
-                .map(ExerciseRecordResponse::fromEntity).toList();
-    }
-
-    @Override
-    public List<LocalDate> findExerciseDatesInMonth(Long userId, int year, int month) {
-        LocalDate startDate = LocalDate.of(year, month, 1);
-        LocalDate endDate = startDate.plusMonths(1);
-
-        return exerciseDao.findExerciseDatesInMonth(userId, startDate, endDate);
+        return ExerciseRecord.builder()
+                .id(recordId)
+                .userId(userId)
+                .exerciseActivityOptionId(request.exerciseActivityOptionId())
+                .intensityLevel(request.intensityLevel())
+                .exerciseDate(request.exerciseDate())
+                .durationMinutes(request.durationMinutes())
+                .caloriesBurned(caloriesBurned)
+                .memo(request.memo())
+                .build();
     }
 
     private BigDecimal resolveMetValue(ExerciseActivityOption activityOption, String intensityLevel) {

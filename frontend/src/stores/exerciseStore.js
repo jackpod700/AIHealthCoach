@@ -4,6 +4,7 @@ import {
   fetchMonthlyExerciseDates,
   saveExerciseRecord,
   searchExerciseActivities,
+  updateExerciseRecord,
 } from "../api/exerciseApi";
 import { useAuthStore } from "./authStore";
 
@@ -107,6 +108,33 @@ export const useExerciseStore = defineStore("exercise", {
 
       try {
         await saveExerciseRecord(authStore.accessToken, record);
+        await this.loadDailyExerciseRecords(record.exerciseDate);
+        const [year, month] = record.exerciseDate.split("-").map(Number);
+        await this.loadMonthlyExerciseDates(year, month);
+        return true;
+      } catch (error) {
+        if (authStore.handleAuthFailure(error)) {
+          return false;
+        }
+
+        this.saveRecordError = error.message;
+        return false;
+      } finally {
+        this.isSavingRecord = false;
+      }
+    },
+    async updateRecord(recordId, record) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated) {
+        return false;
+      }
+
+      this.isSavingRecord = true;
+      this.saveRecordError = "";
+
+      try {
+        await updateExerciseRecord(authStore.accessToken, recordId, record);
         await this.loadDailyExerciseRecords(record.exerciseDate);
         const [year, month] = record.exerciseDate.split("-").map(Number);
         await this.loadMonthlyExerciseDates(year, month);

@@ -11,6 +11,8 @@ public interface ExerciseService {
 
     public ExerciseRecordResponse insertExerciseRecord(Long userId, ExerciseRecordRequest request);
 
+    public ExerciseRecordResponse updateExerciseRecord(Long userId, Long recordId, ExerciseRecordRequest request);
+
     public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate);
 
     public List<LocalDate> findExerciseDatesInMonth(Long userId, int year, int month);

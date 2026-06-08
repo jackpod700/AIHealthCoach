@@ -23,6 +23,17 @@ export function saveExerciseRecord(accessToken, record) {
   });
 }
 
+export function updateExerciseRecord(accessToken, recordId, record) {
+  return apiRequest(`/api/exercise/records/${recordId}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(record),
+  });
+}
+
 export function fetchDailyExerciseRecords(accessToken, date) {
   const searchParams = new URLSearchParams({
     date,
