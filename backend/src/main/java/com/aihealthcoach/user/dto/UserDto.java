@@ -42,6 +42,13 @@ public class UserDto {
     public record LogoutResponse(
         String message
     ) {
+        private static final String DEFAULT_MESSAGE = "정상적으로 로그아웃되었습니다.";
+
+        public LogoutResponse {
+            if (message == null) {
+                message = DEFAULT_MESSAGE;
+            }
+        }
     }
         
     @Builder

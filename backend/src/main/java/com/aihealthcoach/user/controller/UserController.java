@@ -87,9 +87,7 @@ public class UserController {
 
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie.toString())
-            .body(LogoutResponse.builder()
-                .message("정상적으로 로그아웃되었습니다.")
-                .build());
+            .body(LogoutResponse.builder().build());
     }
 
     @PostMapping("/token/refresh")
