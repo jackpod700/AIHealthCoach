@@ -1136,10 +1136,6 @@
   gap: 6px;
 }
 
-.calendar-legend .needs-api {
-  color: #9aa3ae;
-}
-
 .calendar-legend i,
 .calendar-dots i {
   display: inline-block;
@@ -1168,8 +1164,9 @@
   background: #8ea0b4;
 }
 
-.calendar-legend i.exercise {
-  background: var(--navy);
+.calendar-legend i.exercise,
+.calendar-dots i.exercise {
+  background: #52a883;
 }
 
 .calendar-content {
@@ -1473,6 +1470,10 @@
   background: var(--navy);
 }
 
+.record-icon.exercise {
+  background: #52a883;
+}
+
 .record-icon.disabled {
   border: 1px dashed #eadfce;
   background: #fffaf3;
@@ -1558,6 +1559,49 @@
 .record-food-list b {
   color: var(--navy);
   font-weight: 900;
+}
+
+.record-exercise-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.record-exercise-list article {
+  display: flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-radius: 10px;
+  padding: 9px 12px;
+  background: #f3fbf7;
+}
+
+.record-exercise-list strong,
+.record-exercise-list span {
+  display: block;
+}
+
+.record-exercise-list strong {
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.record-exercise-list span {
+  margin-top: 3px;
+  color: #6f7b8a;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.record-exercise-list em {
+  color: #2f7a5b;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 900;
+  white-space: nowrap;
 }
 
 .muted-card {

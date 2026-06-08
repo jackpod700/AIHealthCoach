@@ -3,10 +3,12 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAuthStore } from "../../stores/authStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const route = useRoute();
@@ -53,7 +55,10 @@ const meals = computed(() => {
 });
 
 const recordCount = computed(() => meals.value.length);
-const hasRecords = computed(() => recordCount.value > 0);
+const exerciseRecords = computed(() => exerciseStore.dailyRecords || []);
+const exerciseCount = computed(() => exerciseRecords.value.length);
+const totalRecordCount = computed(() => recordCount.value + exerciseCount.value);
+const hasRecords = computed(() => totalRecordCount.value > 0);
 
 const dailyTotals = computed(() => {
   const dailyMeal = mealStore.dailyMeal;
@@ -72,6 +77,7 @@ const canSaveMeal = computed(() => {
 
 onMounted(async () => {
   await Promise.all([
+    exerciseStore.loadDailyExerciseRecords(selectedDate.value),
     mealStore.loadDailyMeal(selectedDate.value),
     profileStore.loadProfile(),
   ]);
@@ -83,7 +89,10 @@ onMounted(async () => {
 
 watch(selectedDate, async (date) => {
   closeEditMeal();
-  await mealStore.loadDailyMeal(date);
+  await Promise.all([
+    exerciseStore.loadDailyExerciseRecords(date),
+    mealStore.loadDailyMeal(date),
+  ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
@@ -256,6 +265,24 @@ function itemCalories(item) {
   return `${formatNumber(item.calories)} kcal`;
 }
 
+function exerciseIntensityLabel(intensityLevel) {
+  const labels = {
+    LOW: "하",
+    MEDIUM: "중",
+    HIGH: "상",
+  };
+
+  return labels[intensityLevel] || intensityLevel;
+}
+
+function exerciseMeta(record) {
+  return [
+    exerciseIntensityLabel(record.intensityLevel),
+    `${record.durationMinutes}분`,
+    `${formatNumber(record.metValue)} MET`,
+  ].join(" · ");
+}
+
 function baseCalories(item) {
   const quantity = toNumber(item.quantity);
 
@@ -294,7 +321,7 @@ function goToChat() {
         </div>
         <div class="streak-chip">
           <i></i>
-          {{ isToday ? "오늘" : "선택 날짜" }} · 기록 {{ recordCount }}건
+          {{ isToday ? "오늘" : "선택 날짜" }} · 기록 {{ totalRecordCount }}건
         </div>
       </header>
 
@@ -303,8 +330,12 @@ function goToChat() {
           {{ mealStore.dailyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingDaily" class="record-loading">
-          일일 식단 기록을 불러오는 중입니다...
+        <div v-if="exerciseStore.dailyError" class="record-error">
+          {{ exerciseStore.dailyError }}
+        </div>
+
+        <div v-if="mealStore.isLoadingDaily || exerciseStore.isLoadingDaily" class="record-loading">
+          일일 기록을 불러오는 중입니다...
         </div>
 
         <template v-else-if="hasRecords">
@@ -313,13 +344,13 @@ function goToChat() {
               <span>섭취</span>
               <strong>{{ formatNumber(dailyTotals.calories) }}<small>kcal</small></strong>
             </div>
-            <div class="api-needed">
+            <div>
               <span>운동 소모</span>
-              <strong>-<small>API 필요</small></strong>
+              <strong>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
             </div>
             <div>
               <span>총 칼로리</span>
-              <strong>{{ formatNumber(dailyTotals.calories) }}<small>/ 목표 API 필요</small></strong>
+              <strong>{{ formatNumber(dailyTotals.calories - exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
             </div>
             <div>
               <span>단백질 · 탄수 · 지방</span>
@@ -357,12 +388,31 @@ function goToChat() {
             <article class="record-timeline-row empty-slot">
               <div class="record-time">운동</div>
               <div class="record-line">
-                <span class="record-icon disabled">
+                <span :class="['record-icon', exerciseCount ? 'exercise' : 'disabled']">
                   <i class="pi pi-bolt"></i>
                 </span>
               </div>
-              <div class="record-card muted-card">
-                운동 기록 API가 연결되면 여기에 소모 칼로리와 운동 상세가 표시됩니다.
+              <div v-if="exerciseCount" class="record-card">
+                <div class="record-card-head">
+                  <div>
+                    <strong>운동</strong>
+                    <span>{{ exerciseCount }}건</span>
+                  </div>
+                  <em>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }} kcal</em>
+                </div>
+
+                <div class="record-exercise-list">
+                  <article v-for="record in exerciseRecords" :key="record.id">
+                    <div>
+                      <strong>{{ record.activityNameKo }}</strong>
+                      <span>{{ exerciseMeta(record) }}</span>
+                    </div>
+                    <em>{{ formatNumber(record.caloriesBurned) }} kcal</em>
+                  </article>
+                </div>
+              </div>
+              <div v-else class="record-card muted-card">
+                아직 운동 기록이 없습니다.
               </div>
             </article>
           </section>

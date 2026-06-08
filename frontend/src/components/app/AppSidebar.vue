@@ -3,11 +3,13 @@ import { computed } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const route = useRoute();
@@ -53,6 +55,7 @@ function isActive(item) {
 function logout() {
   authStore.logout();
   chatStore.clearMessages();
+  exerciseStore.clearExercise();
   mealStore.clearMeals();
   profileStore.clearProfile();
   router.push("/login");
