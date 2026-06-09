@@ -3,7 +3,6 @@ set -eu
 
 python ./exercise/scripts/prepare_exercise.py
 
-cp ./foods/build/processed-foods.csv /tmp/processed-foods.csv
 cp ./exercise/build/processed-exercise.csv /tmp/processed-exercise.csv
 cp ./exercise/build/exercise-activity-options.csv /tmp/exercise-activity-options.csv
 
