@@ -20,7 +20,7 @@ public class MealDto {
     }
 
     public record MealItemRequest(
-            @NotBlank String foodCode,
+            @NotNull Long foodId,
             @NotNull @Positive BigDecimal quantity
     ) {
     }
@@ -65,9 +65,9 @@ public class MealDto {
     }
 
     public record MealItemResponse(
-            String foodCode,
+            Long foodId,
             String foodName,
-            String manufacturer,
+            String brand,
             BigDecimal servingSize,
             String servingUnit,
             BigDecimal quantity,

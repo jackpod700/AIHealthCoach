@@ -42,7 +42,7 @@ class ChatMealProposalServiceTest {
         ConfirmMealProposalRequest request = new ConfirmMealProposalRequest(
                 mealDate,
                 "LUNCH",
-                List.of(new ConfirmMealProposalItemRequest("1234567890123456789", new BigDecimal("1")))
+                List.of(new ConfirmMealProposalItemRequest(1234567890123456789L, new BigDecimal("1")))
         );
         DailyMealResponse dailyMeal = new DailyMealResponse(
                 mealDate,

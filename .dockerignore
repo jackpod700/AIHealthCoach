@@ -1,4 +1,8 @@
-data/foods/build/
+data/foods/cache/
+data/foods/build/crawl-*.txt
+data/foods/build/crawl-*.json
+data/foods/build/fatsecret-foods.csv
+data/foods/build/fatsecret-import-errors.csv
 backend/target/
 frontend/dist/
 **/.git/

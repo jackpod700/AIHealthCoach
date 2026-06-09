@@ -29,6 +29,7 @@ services:
       PGDATABASE: ai_health_coach
       PGUSER: postgres
       PGPASSWORD: postgres
+      FOOD_IMPORT_ENABLED: ${FOOD_IMPORT_ENABLED:-false}
     restart: "no"
 
   backend:

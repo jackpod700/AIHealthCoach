@@ -109,9 +109,9 @@ function openEditMeal(meal) {
   editForm.mealId = meal.mealId;
   editForm.mealType = meal.mealType;
   editForm.items = meal.items.map((item) => ({
-    foodCode: item.foodCode,
+    foodId: item.foodId,
     foodName: item.foodName,
-    manufacturer: item.manufacturer,
+    brand: item.brand,
     servingSize: item.servingSize,
     servingUnit: item.servingUnit,
     calories: item.calories,
@@ -136,15 +136,15 @@ function closeEditMeal() {
 }
 
 function addFood(food) {
-  const existingItem = editForm.items.find((item) => item.foodCode === food.foodCode);
+  const existingItem = editForm.items.find((item) => item.foodId === food.foodId);
 
   if (existingItem) {
     existingItem.quantity = roundQuantity(Number(existingItem.quantity) + 1);
   } else {
     editForm.items.push({
-      foodCode: food.foodCode,
+      foodId: food.foodId,
       foodName: food.foodName,
-      manufacturer: food.manufacturer,
+      brand: food.brand,
       servingSize: food.servingSize,
       servingUnit: food.servingUnit,
       calories: food.calories,
@@ -157,8 +157,8 @@ function addFood(food) {
   mealStore.clearFoodSearch();
 }
 
-function removeFood(foodCode) {
-  editForm.items = editForm.items.filter((item) => item.foodCode !== foodCode);
+function removeFood(foodId) {
+  editForm.items = editForm.items.filter((item) => item.foodId !== foodId);
 }
 
 function updateQuantity(item, value) {
@@ -174,7 +174,7 @@ async function saveEditedMeal() {
     mealDate: selectedDate.value,
     mealType: editForm.mealType,
     items: editForm.items.map((item) => ({
-      foodCode: item.foodCode,
+      foodId: item.foodId,
       quantity: Number(item.quantity),
     })),
   });
@@ -347,7 +347,7 @@ function goToChat() {
                 </div>
 
                 <div class="record-food-list">
-              <span v-for="item in meal.items" :key="`${meal.mealId}-${item.foodCode}`">
+              <span v-for="item in meal.items" :key="`${meal.mealId}-${item.foodId}`">
                 {{ item.foodName }} <b>{{ itemCalories(item) }}</b>
               </span>
                 </div>
@@ -409,21 +409,21 @@ function goToChat() {
           <div v-else-if="mealStore.foodSearchResults.length" class="food-search-results">
             <button
               v-for="food in mealStore.foodSearchResults"
-              :key="food.foodCode"
+              :key="food.foodId"
               type="button"
               @click="addFood(food)"
             >
               <strong>{{ food.foodName }}</strong>
-              <span>{{ food.manufacturer || "제조사 정보 없음" }} · {{ servingLabel(food) }} · {{ formatNumber(food.calories) }} kcal</span>
+              <span>{{ food.brand || "제조사 정보 없음" }} · {{ servingLabel(food) }} · {{ formatNumber(food.calories) }} kcal</span>
             </button>
           </div>
         </div>
 
         <div class="meal-edit-items">
-          <article v-for="item in editForm.items" :key="item.foodCode" class="meal-edit-item">
+          <article v-for="item in editForm.items" :key="item.foodId" class="meal-edit-item">
             <div>
               <strong>{{ item.foodName }}</strong>
-              <span>{{ item.manufacturer || "제조사 정보 없음" }} · {{ servingCalorieLabel(item) }}</span>
+              <span>{{ item.brand || "제조사 정보 없음" }} · {{ servingCalorieLabel(item) }}</span>
             </div>
             <label>
               <span>배수</span>
@@ -435,7 +435,7 @@ function goToChat() {
                 @input="updateQuantity(item, $event.target.value)"
               />
             </label>
-            <button type="button" aria-label="음식 제거" @click="removeFood(item.foodCode)">
+            <button type="button" aria-label="음식 제거" @click="removeFood(item.foodId)">
               <i class="pi pi-trash"></i>
             </button>
           </article>

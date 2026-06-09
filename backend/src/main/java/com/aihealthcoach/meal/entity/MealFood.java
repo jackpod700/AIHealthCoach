@@ -12,9 +12,9 @@ public class MealFood {
     private Long mealId;
     private String mealType;
     private LocalDate mealDate;
-    private String foodCode;
+    private Long foodId;
     private String foodName;
-    private String manufacturer;
+    private String brand;
     private BigDecimal servingSize;
     private String servingUnit;
     private BigDecimal quantity;

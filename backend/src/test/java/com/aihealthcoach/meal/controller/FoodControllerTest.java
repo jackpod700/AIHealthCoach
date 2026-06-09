@@ -82,9 +82,9 @@ class FoodControllerTest {
 
     private Food food() {
         Food row = new Food();
-        row.setFoodCode("1234567890123456789");
+        row.setFoodId(1234567890123456789L);
         row.setFoodName("Chicken Breast");
-        row.setManufacturer("Brand");
+        row.setBrand("Brand");
         row.setServingSize(new BigDecimal("100"));
         row.setServingUnit("g");
         row.setCalories(new BigDecimal("120"));
