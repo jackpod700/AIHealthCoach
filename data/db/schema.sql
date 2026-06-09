@@ -39,59 +39,33 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 
 CREATE TABLE IF NOT EXISTS foods (
-    code CHAR(19) PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    manufacturer VARCHAR(255),
-    serving_size NUMERIC(6,2) NOT NULL DEFAULT 100.00,
-    serving_unit VARCHAR(10) NOT NULL DEFAULT 'g',
-    calories NUMERIC(8,2) NOT NULL DEFAULT 0.00,
-    carbohydrate NUMERIC(8,2) NOT NULL DEFAULT 0.00,
-    protein NUMERIC(8,2) NOT NULL DEFAULT 0.00,
-    nat NUMERIC(8,2),
-    fat NUMERIC(8,2) NOT NULL DEFAULT 0.00,
-    sugar NUMERIC(8,2),
-    water NUMERIC(8,2),
-    dietary_fiber NUMERIC(8,2),
-    calcium NUMERIC(8,2),
-    iron NUMERIC(8,2),
-    phosphorus NUMERIC(8,2),
-    potassium NUMERIC(8,2),
-    vitamin_a NUMERIC(8,2),
-    vitamin_c NUMERIC(8,2),
-    vitamin_d NUMERIC(8,2),
-    cholesterol NUMERIC(8,2),
-    saturated_fat NUMERIC(8,2),
-    trans_fat NUMERIC(8,2),
+    id BIGSERIAL PRIMARY KEY,
+    source_key VARCHAR(40) NOT NULL,
+    source_url TEXT NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    brand VARCHAR(255),
+    serving_description VARCHAR(100),
+    serving_key VARCHAR(100) GENERATED ALWAYS AS (COALESCE(serving_description, '')) STORED,
+    serving_size NUMERIC(8,2),
+    serving_unit VARCHAR(20),
+    calories NUMERIC(8,2),
+    fat NUMERIC(8,2),
+    carbohydrate NUMERIC(8,2),
+    protein NUMERIC(8,2),
+    content_hash VARCHAR(64) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
+    CONSTRAINT uq_foods_source_serving
+        UNIQUE (source_key, serving_key),
     CONSTRAINT chk_foods_name_not_blank
         CHECK (length(trim(name)) > 0),
-    CONSTRAINT chk_foods_serving_size_positive
-        CHECK (serving_size > 0),
-    CONSTRAINT chk_foods_required_nutrients_non_negative
+    CONSTRAINT chk_foods_nutrients_non_negative
         CHECK (
-            calories >= 0
-            AND carbohydrate >= 0
-            AND protein >= 0
-            AND fat >= 0
-        ),
-    CONSTRAINT chk_foods_optional_nutrients_non_negative
-        CHECK (
-            (nat IS NULL OR nat >= 0)
-            AND (sugar IS NULL OR sugar >= 0)
-            AND (water IS NULL OR water >= 0)
-            AND (dietary_fiber IS NULL OR dietary_fiber >= 0)
-            AND (calcium IS NULL OR calcium >= 0)
-            AND (iron IS NULL OR iron >= 0)
-            AND (phosphorus IS NULL OR phosphorus >= 0)
-            AND (potassium IS NULL OR potassium >= 0)
-            AND (vitamin_a IS NULL OR vitamin_a >= 0)
-            AND (vitamin_c IS NULL OR vitamin_c >= 0)
-            AND (vitamin_d IS NULL OR vitamin_d >= 0)
-            AND (cholesterol IS NULL OR cholesterol >= 0)
-            AND (saturated_fat IS NULL OR saturated_fat >= 0)
-            AND (trans_fat IS NULL OR trans_fat >= 0)
+            (calories IS NULL OR calories >= 0)
+            AND (fat IS NULL OR fat >= 0)
+            AND (carbohydrate IS NULL OR carbohydrate >= 0)
+            AND (protein IS NULL OR protein >= 0)
         )
 );
 
@@ -113,11 +87,12 @@ CREATE TABLE IF NOT EXISTS meals (
 
 CREATE TABLE IF NOT EXISTS meal_items (
     meal_id BIGINT NOT NULL,
-    food_code CHAR(19) NOT NULL,
+    -- food_id CHAR(19) NOT NULL,
+    food_id BIGINT NOT NULL,
     quantity NUMERIC(8,2) NOT NULL DEFAULT 1.00,
 
     CONSTRAINT pk_meal_items
-        PRIMARY KEY (meal_id, food_code),
+        PRIMARY KEY (meal_id, food_id),
     CONSTRAINT chk_meal_items_quantity_positive
         CHECK (quantity > 0),
     CONSTRAINT fk_meal_items_meal
@@ -125,8 +100,8 @@ CREATE TABLE IF NOT EXISTS meal_items (
         REFERENCES meals(id)
         ON DELETE CASCADE,
     CONSTRAINT fk_meal_items_food
-        FOREIGN KEY (food_code)
-        REFERENCES foods(code)
+        FOREIGN KEY (food_id)
+        REFERENCES foods(id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_meals_user_date

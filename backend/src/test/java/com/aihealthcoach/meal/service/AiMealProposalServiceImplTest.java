@@ -73,7 +73,7 @@ class AiMealProposalServiceImplTest {
 
     private Food food(String code, String name, String calories) {
         Food row = new Food();
-        row.setFoodCode(code);
+        row.setFoodId(Long.valueOf(code));
         row.setFoodName(name);
         row.setCalories(new BigDecimal(calories));
         row.setCarbohydrate(BigDecimal.ZERO);

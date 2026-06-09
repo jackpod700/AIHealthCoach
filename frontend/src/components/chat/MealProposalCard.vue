@@ -34,7 +34,7 @@ const mealLabel = computed(() => {
 const canConfirm = computed(() => {
   return props.proposal.items.every((item, index) => {
     const selection = selections[index];
-    return selection?.foodCode && Number(selection.quantity) > 0;
+    return selection?.foodId && Number(selection.quantity) > 0;
   });
 });
 
@@ -49,7 +49,7 @@ watch(
       const firstCandidate = item.candidates?.[0];
 
       selections[index] = {
-        foodCode: firstCandidate?.foodCode || "",
+        foodId: firstCandidate?.foodId || "",
         quantity: roundQuantity(item.quantity || 1),
       };
     });
@@ -57,8 +57,8 @@ watch(
   { immediate: true }
 );
 
-function selectCandidate(index, foodCode) {
-  selections[index].foodCode = foodCode;
+function selectCandidate(index, foodId) {
+  selections[index].foodId = foodId;
 }
 
 function updateQuantity(index, value) {
@@ -76,7 +76,7 @@ function roundQuantity(value) {
 }
 
 function selectedCandidate(item, index) {
-  return item.candidates?.find((candidate) => candidate.foodCode === selections[index]?.foodCode);
+  return item.candidates?.find((candidate) => candidate.foodId === selections[index]?.foodId);
 }
 
 function formatNumber(value) {
@@ -101,7 +101,7 @@ function confirm() {
     mealDate: props.proposal.mealDate,
     mealType: props.proposal.mealType,
     items: props.proposal.items.map((item, index) => ({
-      foodCode: selections[index].foodCode,
+      foodId: selections[index].foodId,
       quantity: Number(selections[index].quantity),
     })),
   });
@@ -147,14 +147,14 @@ function confirm() {
         <div v-if="item.candidates?.length" class="meal-candidate-list">
           <button
             v-for="candidate in item.candidates"
-            :key="candidate.foodCode"
+            :key="candidate.foodId"
             type="button"
-            :class="{ selected: selections[index]?.foodCode === candidate.foodCode }"
-            @click="selectCandidate(index, candidate.foodCode)"
+            :class="{ selected: selections[index]?.foodId === candidate.foodId }"
+            @click="selectCandidate(index, candidate.foodId)"
           >
             <strong>{{ candidate.foodName }}</strong>
             <span>
-              {{ candidate.manufacturer || "제조사 정보 없음" }} · {{ servingLabel(candidate) }} · {{ formatNumber(candidate.calories) }} kcal
+              {{ candidate.brand || "제조사 정보 없음" }} · {{ servingLabel(candidate) }} · {{ formatNumber(candidate.calories) }} kcal
             </span>
           </button>
         </div>

@@ -118,13 +118,13 @@ public class MealServiceImpl implements MealService {
     }
 
     private void validateItems(List<MealItemRequest> items) {
-        Set<String> foodCodes = new HashSet<>();
+        Set<Long> foodIds = new HashSet<>();
 
         for (MealItemRequest item : items) {
-            if (!foodCodes.add(item.foodCode())) {
+            if (!foodIds.add(item.foodId())) {
                 throw MealException.invalidMealItem();
             }
-            if (!mealMapper.existsFoodCode(item.foodCode())) {
+            if (!mealMapper.existsFoodId(item.foodId())) {
                 throw MealException.foodNotFound();
             }
         }
@@ -133,7 +133,7 @@ public class MealServiceImpl implements MealService {
     private MealResponse toMealResponse(List<MealFood> rows) {
         MealFood firstRow = rows.get(0);
         List<MealItemResponse> items = rows.stream()
-                .filter(row -> row.getFoodCode() != null)
+                .filter(row -> row.getFoodId() != null)
                 .map(this::toMealItemResponse)
                 .toList();
 
@@ -177,9 +177,9 @@ public class MealServiceImpl implements MealService {
         BigDecimal quantity = defaultZero(row.getQuantity());
 
         return new MealItemResponse(
-                row.getFoodCode(),
+                row.getFoodId(),
                 row.getFoodName(),
-                row.getManufacturer(),
+                row.getBrand(),
                 row.getServingSize(),
                 row.getServingUnit(),
                 quantity,

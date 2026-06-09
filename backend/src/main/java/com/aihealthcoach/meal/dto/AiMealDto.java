@@ -49,9 +49,9 @@ public class AiMealDto {
     }
 
     public record FoodCandidateResponse(
-            String foodCode,
+            Long foodId,
             String foodName,
-            String manufacturer,
+            String brand,
             BigDecimal servingSize,
             String servingUnit,
             BigDecimal calories,
@@ -61,9 +61,9 @@ public class AiMealDto {
     ) {
         public static FoodCandidateResponse fromRow(Food row) {
             return new FoodCandidateResponse(
-                    row.getFoodCode(),
+                    row.getFoodId(),
                     row.getFoodName(),
-                    row.getManufacturer(),
+                    row.getBrand(),
                     row.getServingSize(),
                     row.getServingUnit(),
                     row.getCalories(),
@@ -82,7 +82,7 @@ public class AiMealDto {
     }
 
     public record ConfirmMealProposalItemRequest(
-            @NotBlank String foodCode,
+            @NotNull Long foodId,
             @NotNull @Positive BigDecimal quantity
     ) {
     }

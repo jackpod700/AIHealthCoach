@@ -27,7 +27,7 @@ public class ChatMealProposalServiceImpl implements ChatMealProposalService {
                 request.mealDate(),
                 request.mealType(),
                 request.items().stream()
-                        .map(item -> new MealItemRequest(item.foodCode(), item.quantity()))
+                        .map(item -> new MealItemRequest(item.foodId(), item.quantity()))
                         .toList()
         );
         DailyMealResponse dailyMeal = mealService.createMeal(userId, createMealRequest);

@@ -14,9 +14,9 @@ class FoodCandidateResponseTest {
     @Test
     void fromRowMapsServingBasis() {
         Food row = new Food();
-        row.setFoodCode("1234567890123456789");
+        row.setFoodId(1234567890123456789L);
         row.setFoodName("rice");
-        row.setManufacturer("maker");
+        row.setBrand("maker");
         row.setServingSize(new BigDecimal("100.00"));
         row.setServingUnit("g");
         row.setCalories(new BigDecimal("150.00"));

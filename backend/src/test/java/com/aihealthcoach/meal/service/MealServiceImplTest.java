@@ -32,7 +32,7 @@ class MealServiceImplTest {
     private static final Long USER_ID = 1L;
     private static final Long MEAL_ID = 10L;
     private static final LocalDate MEAL_DATE = LocalDate.of(2026, 5, 30);
-    private static final String FOOD_CODE = "1234567890123456789";
+    private static final Long FOOD_CODE = 1234567890123456789L;
 
     @Mock
     private MealMapper mealMapper;
@@ -44,7 +44,7 @@ class MealServiceImplTest {
     void createMealInsertsNewMealAndItems() {
         CreateMealRequest request = request("BREAKFAST", item(FOOD_CODE, "1.5"));
 
-        when(mealMapper.existsFoodCode(FOOD_CODE)).thenReturn(true);
+        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
         when(mealMapper.findMealIdByUserTypeDate(USER_ID, "BREAKFAST", MEAL_DATE)).thenReturn(null);
         when(mealMapper.insertMeal(USER_ID, "BREAKFAST", MEAL_DATE)).thenReturn(MEAL_ID);
         when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of());
@@ -60,7 +60,7 @@ class MealServiceImplTest {
     void createMealOverwritesExistingMealItems() {
         CreateMealRequest request = request("LUNCH", item(FOOD_CODE, "2"));
 
-        when(mealMapper.existsFoodCode(FOOD_CODE)).thenReturn(true);
+        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
         when(mealMapper.findMealIdByUserTypeDate(USER_ID, "LUNCH", MEAL_DATE)).thenReturn(MEAL_ID);
         when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of());
 
@@ -87,7 +87,7 @@ class MealServiceImplTest {
     void createMealRejectsUnknownFood() {
         CreateMealRequest request = request("DINNER", item(FOOD_CODE, "1"));
 
-        when(mealMapper.existsFoodCode(FOOD_CODE)).thenReturn(false);
+        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(false);
 
         assertThatThrownBy(() -> mealService.createMeal(USER_ID, request))
                 .isInstanceOf(MealException.class)
@@ -105,7 +105,7 @@ class MealServiceImplTest {
                 item(FOOD_CODE, "2")
         );
 
-        when(mealMapper.existsFoodCode(FOOD_CODE)).thenReturn(true);
+        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
 
         assertThatThrownBy(() -> mealService.createMeal(USER_ID, request))
                 .isInstanceOf(MealException.class)
@@ -198,7 +198,7 @@ class MealServiceImplTest {
         return new CreateMealRequest(MEAL_DATE, mealType, List.of(items));
     }
 
-    private MealItemRequest item(String foodCode, String quantity) {
+    private MealItemRequest item(Long foodCode, String quantity) {
         return new MealItemRequest(foodCode, new BigDecimal(quantity));
     }
 
@@ -216,7 +216,7 @@ class MealServiceImplTest {
         row.setMealId(mealId);
         row.setMealDate(mealDate);
         row.setMealType(mealType);
-        row.setFoodCode(FOOD_CODE + mealId + quantity);
+        row.setFoodId(Long.valueOf(FOOD_CODE + mealId + quantity));
         row.setQuantity(new BigDecimal(quantity));
         row.setCalories(new BigDecimal(calories));
         row.setCarbohydrate(new BigDecimal(carbohydrate));

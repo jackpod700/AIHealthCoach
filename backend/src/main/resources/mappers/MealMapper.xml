@@ -6,9 +6,9 @@
         <id column="meal_id" property="mealId"/>
         <result column="meal_type" property="mealType"/>
         <result column="meal_date" property="mealDate"/>
-        <result column="food_code" property="foodCode"/>
+        <result column="food_id" property="foodId"/>
         <result column="food_name" property="foodName"/>
-        <result column="manufacturer" property="manufacturer"/>
+        <result column="brand" property="brand"/>
         <result column="serving_size" property="servingSize"/>
         <result column="serving_unit" property="servingUnit"/>
         <result column="quantity" property="quantity"/>
@@ -19,9 +19,9 @@
     </resultMap>
 
     <resultMap id="food" type="com.aihealthcoach.meal.entity.Food">
-        <id column="food_code" property="foodCode"/>
+        <id column="food_id" property="foodId"/>
         <result column="food_name" property="foodName"/>
-        <result column="manufacturer" property="manufacturer"/>
+        <result column="brand" property="brand"/>
         <result column="serving_size" property="servingSize"/>
         <result column="serving_unit" property="servingUnit"/>
         <result column="calories" property="calories"/>
@@ -35,10 +35,10 @@
             m.id AS meal_id,
             m.meal_type,
             m.meal_date,
-            mi.food_code,
+            mi.food_id AS food_id,
             mi.quantity,
             f.name AS food_name,
-            f.manufacturer,
+            f.brand,
             f.serving_size,
             f.serving_unit,
             f.calories,
@@ -49,7 +49,7 @@
         LEFT JOIN meal_items mi
             ON mi.meal_id = m.id
         LEFT JOIN foods f
-            ON f.code = mi.food_code
+            ON f.id = mi.food_id
         WHERE m.user_id = #{userId}
           AND m.meal_date = #{date}
         ORDER BY
@@ -68,10 +68,10 @@
             m.id AS meal_id,
             m.meal_type,
             m.meal_date,
-            mi.food_code,
+            mi.food_id AS food_id,
             mi.quantity,
             f.name AS food_name,
-            f.manufacturer,
+            f.brand,
             f.serving_size,
             f.serving_unit,
             f.calories,
@@ -82,7 +82,7 @@
         LEFT JOIN meal_items mi
             ON mi.meal_id = m.id
         LEFT JOIN foods f
-            ON f.code = mi.food_code
+            ON f.id = mi.food_id
         WHERE m.user_id = #{userId}
           AND m.meal_date &gt;= #{startDate}
           AND m.meal_date &lt; #{endDate}
@@ -124,23 +124,23 @@
     </delete>
 
     <insert id="insertMealItem">
-        INSERT INTO meal_items (meal_id, food_code, quantity)
-        VALUES (#{mealId}, #{item.foodCode}, #{item.quantity})
+        INSERT INTO meal_items (meal_id, food_id, quantity)
+        VALUES (#{mealId}, #{item.foodId}, #{item.quantity})
     </insert>
 
-    <select id="existsFoodCode" resultType="boolean">
+    <select id="existsFoodId" resultType="boolean">
         SELECT EXISTS (
             SELECT 1
             FROM foods
-            WHERE code = #{foodCode}
+            WHERE id = #{foodId}
         )
     </select>
 
     <select id="searchFoodCandidates" resultMap="food">
         SELECT
-            code AS food_code,
+            id AS food_id,
             name AS food_name,
-            manufacturer,
+            brand,
             serving_size,
             serving_unit,
             calories,
@@ -152,29 +152,29 @@
         <foreach collection="tokens" item="token" separator=" AND ">
             (
                 name ILIKE CONCAT('%', #{token.value}, '%')
-                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
                 OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
             )
         </foreach>
         ORDER BY
             CASE
                 WHEN name = #{query} THEN 0
                 WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
-                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
-                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                WHEN COALESCE(brand, '') = #{query} THEN 2
+                WHEN COALESCE(brand, '') ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
             name,
-            manufacturer
+            brand
         LIMIT #{limit}
     </select>
 
     <select id="searchFoods" resultMap="food">
         SELECT
-            code AS food_code,
+            id AS food_id,
             name AS food_name,
-            manufacturer,
+            brand,
             serving_size,
             serving_unit,
             calories,
@@ -186,20 +186,20 @@
         <foreach collection="tokens" item="token" separator=" AND ">
             (
                 name ILIKE CONCAT('%', #{token.value}, '%')
-                OR COALESCE(manufacturer, '') ILIKE CONCAT('%', #{token.value}, '%')
+                OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
                 OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                OR REGEXP_REPLACE(COALESCE(manufacturer, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
             )
         </foreach>
         ORDER BY
             CASE
                 WHEN name = #{query} THEN 0
                 WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
-                WHEN COALESCE(manufacturer, '') = #{query} THEN 2
-                WHEN COALESCE(manufacturer, '') ILIKE CONCAT(#{query}, '%') THEN 3
+                WHEN COALESCE(brand, '') = #{query} THEN 2
+                WHEN COALESCE(brand, '') ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
             name,
-            manufacturer
+            brand
     </select>
 </mapper>

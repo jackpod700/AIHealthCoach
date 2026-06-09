@@ -39,7 +39,7 @@ public interface MealMapper {
 
     void insertMealItem(@Param("mealId") Long mealId, @Param("item") MealItemRequest item);
 
-    boolean existsFoodCode(@Param("foodCode") String foodCode);
+    boolean existsFoodId(@Param("foodId") Long foodId);
 
     List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
