@@ -6,3 +6,4 @@ data/foods/cache/
 data/nutrition-importer/input/*
 !data/nutrition-importer/input/.gitkeep
 
+data/exercise/build/

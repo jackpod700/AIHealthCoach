@@ -4,11 +4,14 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.common.auth.JwtTokenProvider;
-import com.aihealthcoach.user.dto.LoginRequest;
-import com.aihealthcoach.user.dto.LoginResponse;
-import com.aihealthcoach.user.dto.SignupRequest;
-import com.aihealthcoach.user.dto.UserProfileResponse;
-import com.aihealthcoach.user.dto.UserProfileUpdateRequest;
+import com.aihealthcoach.common.auth.TokenRedisRepository;
+import com.aihealthcoach.user.dto.UserDto.LoginRequest;
+import com.aihealthcoach.user.dto.UserDto.LoginResponse;
+import com.aihealthcoach.user.dto.UserDto.LoginResult;
+import com.aihealthcoach.user.dto.UserDto.SignupRequest;
+import com.aihealthcoach.user.dto.UserDto.TokenRefreshResponse;
+import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
+import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
@@ -23,24 +26,25 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userDao;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
+    private final TokenRedisRepository tokenRedisRepository;
 
     @Override
     public LoginResponse signup(SignupRequest request) {
-        User existingUser = userDao.findUserByEmail(request.getEmail());
+        User existingUser = userDao.findUserByEmail(request.email());
 
         if (existingUser != null){
             throw UserException.duplicateEmail();
         }
 
         User newUser = User.builder()
-                        .email(request.getEmail())
-                        .password(passwordEncoder.encode(request.getPassword()))
-                        .nickname(request.getNickname())
+                        .email(request.email())
+                        .password(passwordEncoder.encode(request.password()))
+                        .nickname(request.nickname())
                         .build();
         
         userDao.insertUser(newUser);
 
-        User savedUser = userDao.findUserByEmail(request.getEmail());
+        User savedUser = userDao.findUserByEmail(request.email());
 
         UserProfile profile = UserProfile.builder()
                                 .userId(savedUser.getId())
@@ -56,25 +60,82 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public LoginResponse login(LoginRequest request) {
-        User existingUser = userDao.findUserByEmail(request.getEmail());
+    public LoginResult login(LoginRequest request) {
+        User existingUser = userDao.findUserByEmail(request.email());
 
         if (existingUser == null){
             throw UserException.userNotFound();
         }
 
-        if (!passwordEncoder.matches(request.getPassword(), existingUser.getPassword())) {
+        if (!passwordEncoder.matches(request.password(), existingUser.getPassword())) {
             throw UserException.invalidPassword();
         }
 
         String accessToken = jwtTokenProvider.createAccessToken(existingUser.getId());
+        String refreshToken = jwtTokenProvider.createRefreshToken(existingUser.getId());
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        tokenRedisRepository.saveRefreshToken(
+            existingUser.getId(), 
+            refreshTokenId, 
+            refreshToken, 
+            jwtTokenProvider.getRemaining(refreshToken));
         
-        return LoginResponse.builder()
-                .userId(existingUser.getId())
-                .email(existingUser.getEmail())
-                .nickname(existingUser.getNickname())
-                .accessToken(accessToken)
-                .build();  
+        LoginResponse response = LoginResponse.builder()
+            .userId(existingUser.getId())
+            .email(existingUser.getEmail())
+            .nickname(existingUser.getNickname())
+            .accessToken(accessToken)
+            .build();
+
+        return LoginResult.builder()
+            .response(response)
+            .refreshToken(refreshToken)
+            .build(); 
+    }
+
+    @Override
+    public void logout(String accessToken, String refreshToken) {
+        jwtTokenProvider.validateAccessToken(accessToken);
+        jwtTokenProvider.validateRefreshToken(refreshToken);
+        
+        Long accessTokenUserId = jwtTokenProvider.getUserId(accessToken);
+        Long refreshTokenUserId = jwtTokenProvider.getUserId(refreshToken);
+
+        if (!accessTokenUserId.equals(refreshTokenUserId)) {
+            throw UserException.invalidToken();
+        }
+
+        String accessTokenId = jwtTokenProvider.getTokenId(accessToken);
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        tokenRedisRepository.blacklistAccessToken(
+            accessTokenId,
+            jwtTokenProvider.getRemaining(accessToken));
+            
+        tokenRedisRepository.deleteRefreshToken(refreshTokenUserId, refreshTokenId);
+    }
+    
+    @Override
+    public TokenRefreshResponse refreshAccessToken(String refreshToken) {
+        jwtTokenProvider.validateRefreshToken(refreshToken);
+
+        Long userId = jwtTokenProvider.getUserId(refreshToken);
+        String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
+
+        String savedRefreshToken = tokenRedisRepository
+            .findRefreshToken(userId, refreshTokenId)
+            .orElseThrow(UserException::invalidToken);
+
+        if (!savedRefreshToken.equals(refreshToken)) {
+            throw UserException.invalidToken();
+        }
+
+        String newAccessToken = jwtTokenProvider.createAccessToken(userId);
+
+        return TokenRefreshResponse.builder()
+            .accessToken(newAccessToken)
+            .build();
     }
 
     @Override

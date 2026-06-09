@@ -119,3 +119,80 @@ BEGIN
             UNIQUE (user_id, meal_type, meal_date);
     END IF;
 END $$;
+
+CREATE TABLE IF NOT EXISTS physical_activities (
+    id BIGSERIAL PRIMARY KEY,
+    compendium_code VARCHAR(20) NOT NULL UNIQUE,
+    compendium_version VARCHAR(20) NOT NULL,
+    major_heading VARCHAR(100) NOT NULL,
+    met_value DECIMAL(4,1) NOT NULL,
+    description TEXT NOT NULL
+);
+
+ALTER TABLE physical_activities
+    ADD COLUMN IF NOT EXISTS major_heading VARCHAR(100);
+
+CREATE TABLE IF NOT EXISTS exercise_activity_options (
+    id BIGSERIAL PRIMARY KEY,
+    physical_activity_id BIGINT NOT NULL,
+    compendium_code VARCHAR(20) NOT NULL,
+    compendium_version VARCHAR(20) NOT NULL,
+    major_heading VARCHAR(100) NOT NULL,
+    met_value DECIMAL(4,1) NOT NULL,
+    source_description TEXT NOT NULL,
+    activity_name_ko VARCHAR(100) NOT NULL,
+    intensity_level VARCHAR(10) NOT NULL,
+    met_source VARCHAR(20) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_exercise_activity_options_name_intensity
+        UNIQUE (activity_name_ko, intensity_level),
+
+    CONSTRAINT fk_exercise_activity_options_physical_activity
+        FOREIGN KEY (physical_activity_id)
+        REFERENCES physical_activities(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_exercise_activity_options_intensity
+        CHECK (intensity_level IN ('LOW', 'MEDIUM', 'HIGH')),
+
+    CONSTRAINT chk_exercise_activity_options_met_source
+        CHECK (met_source IN ('COMPENDIUM', 'ESTIMATED')),
+
+    CONSTRAINT chk_exercise_activity_options_met_positive
+        CHECK (met_value >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_activity_options_search
+    ON exercise_activity_options(activity_name_ko, intensity_level);
+
+CREATE TABLE IF NOT EXISTS exercise_records (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    physical_activity_id BIGINT NOT NULL,
+    exercise_date DATE NOT NULL,
+    duration_minutes INTEGER NOT NULL,
+    calories_burned INTEGER NOT NULL,
+    memo TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_exercise_records_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_exercise_records_activity
+        FOREIGN KEY (physical_activity_id)
+        REFERENCES physical_activities(id),
+
+    CONSTRAINT chk_exercise_duration_positive
+        CHECK (duration_minutes > 0),
+
+    CONSTRAINT chk_exercise_calories_non_negative
+        CHECK (calories_burned >= 0)
+);
+
+CREATE INDEX IF NOT EXISTS idx_exercise_records_user_date
+    ON exercise_records(user_id, exercise_date);
