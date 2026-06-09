@@ -184,12 +184,24 @@ CSV 쓰기는 메인 프로세스만 담당합니다. worker는 HTML 파일을 �
 
 `import-foods.sql`은 `/tmp/foods.csv`를 읽어서 `foods` 테이블에 upsert합니다.
 
-직접 psql로 실행하려면 먼저 CSV를 컨테이너에서 접근 가능한 위치로 복사해야 합니다. Docker 기반 data-importer를 사용할 경우에는 import 스크립트에서 다음 조건을 만족해야 합니다.
+직접 psql로 실행하려면 먼저 CSV를 컨테이너에서 접근 가능한 위치로 복사해야 합니다. Docker 기반 data-importer를 사용할 경우에는 `FOOD_IMPORT_ENABLED=true`일 때만 음식 데이터를 import합니다.
 
 ```text
 data/foods/foods.csv
   -> /tmp/foods.csv
   -> data/foods/import-foods.sql 실행
+```
+
+`.env` 또는 실행 환경에 다음 값을 설정합니다.
+
+```env
+FOOD_IMPORT_ENABLED=true
+```
+
+그 다음 data-importer를 다시 실행합니다.
+
+```powershell
+docker compose up --build --force-recreate data-importer
 ```
 
 적재 후 확인 쿼리는 다음과 같습니다.
@@ -242,7 +254,3 @@ python -m unittest data/foods/crawl/test_parse_fatsecret.py data/foods/crawl/tes
 ```powershell
 python -m py_compile data/foods/crawl/crawl_fatsecret.py data/foods/crawl/parse_fatsecret.py data/foods/crawl/prepare_fatsecret_foods.py
 ```
-
-## 현재 남은 정리 포인트
-
-`data/Dockerfile`과 `data/scripts/import_data.sh`에 예전 `data/fatsecret` 경로를 참조하는 부분이 남아 있으면 Docker import 단계에서 실패할 수 있습니다. 이 README는 새 `data/foods` 구조 기준으로 정리했으므로, Docker import 흐름도 같은 기준으로 맞추는 작업이 필요합니다.
