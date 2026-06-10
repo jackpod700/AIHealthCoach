@@ -4,6 +4,7 @@ import LoginView from "../views/auth/LoginView.vue";
 import SignupView from "../views/auth/SignupView.vue";
 import CalendarView from "../views/calendar/CalendarView.vue";
 import ChatView from "../views/chat/ChatView.vue";
+import FoodSearchView from "../views/foods/FoodSearchView.vue";
 import ProfileView from "../views/profile/ProfileView.vue";
 import DailyRecordView from "../views/records/DailyRecordView.vue";
 import NotFoundView from "../views/error/NotFoundView.vue";
@@ -48,6 +49,14 @@ const router = createRouter({
       path: "/records",
       name: "records",
       component: DailyRecordView,
+      meta: {
+        requiresAuth: true,
+      },
+    },
+    {
+      path: "/foods",
+      name: "foods",
+      component: FoodSearchView,
       meta: {
         requiresAuth: true,
       },

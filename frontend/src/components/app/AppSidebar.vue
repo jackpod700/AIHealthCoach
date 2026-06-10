@@ -17,6 +17,7 @@ const navItems = [
   { label: "대화", icon: "pi pi-comment", to: "/chat" },
   { label: "캘린더", icon: "pi pi-calendar", to: "/calendar" },
   { label: "일일 기록", icon: "pi pi-file", to: "/records" },
+  { label: "음식 검색", icon: "pi pi-search", to: "/foods" },
   { label: "프로필", icon: "pi pi-user", to: "/profile" },
 ];
 
