@@ -41,6 +41,17 @@ public interface MealMapper {
 
     boolean existsFoodId(@Param("foodId") Long foodId);
 
+    long countFoodGroups(@Param("query") String query, @Param("tokens") List<Token> tokens);
+
+    List<String> findFoodGroupSourceKeys(
+            @Param("query") String query,
+            @Param("tokens") List<Token> tokens,
+            @Param("limit") int limit,
+            @Param("offset") int offset
+    );
+
+    List<Food> findFoodsBySourceKeys(@Param("sourceKeys") List<String> sourceKeys);
+
     List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
     List<Food> searchFoodCandidates(

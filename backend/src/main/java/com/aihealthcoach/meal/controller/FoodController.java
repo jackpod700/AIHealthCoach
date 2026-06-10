@@ -9,9 +9,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aihealthcoach.meal.dto.AiMealDto.FoodCandidateResponse;
-import com.aihealthcoach.meal.mapper.MealMapper;
-import com.aihealthcoach.meal.util.FoodSearchQuery;
-import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
+import com.aihealthcoach.meal.dto.FoodDto.FoodSearchPageResponse;
+import com.aihealthcoach.meal.service.FoodService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -20,23 +19,21 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class FoodController {
 
-    private final MealMapper mealMapper;
+    private final FoodService foodService;
+
+    @GetMapping
+    public ResponseEntity<FoodSearchPageResponse> searchFoodGroups(
+            @RequestParam(required = false, defaultValue = "") String query,
+            @RequestParam(required = false, defaultValue = "1") int page,
+            @RequestParam(required = false, defaultValue = "20") int size
+    ) {
+        return ResponseEntity.ok(foodService.searchFoodGroups(query, page, size));
+    }
 
     @GetMapping("/search")
     public ResponseEntity<List<FoodCandidateResponse>> searchFoods(
             @RequestParam String query
     ) {
-        String trimmedQuery = FoodSearchQuery.normalize(query);
-        List<Token> tokens = FoodSearchQuery.tokens(trimmedQuery);
-
-        if (tokens.isEmpty()) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        List<FoodCandidateResponse> foods = mealMapper.searchFoods(trimmedQuery, tokens).stream()
-                .map(FoodCandidateResponse::fromRow)
-                .toList();
-
-        return ResponseEntity.ok(foods);
+        return ResponseEntity.ok(foodService.searchFoods(query));
     }
 }

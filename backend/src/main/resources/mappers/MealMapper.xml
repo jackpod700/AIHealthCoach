@@ -20,8 +20,10 @@
 
     <resultMap id="food" type="com.aihealthcoach.meal.entity.Food">
         <id column="food_id" property="foodId"/>
+        <result column="source_key" property="sourceKey"/>
         <result column="food_name" property="foodName"/>
         <result column="brand" property="brand"/>
+        <result column="serving_description" property="servingDescription"/>
         <result column="serving_size" property="servingSize"/>
         <result column="serving_unit" property="servingUnit"/>
         <result column="calories" property="calories"/>
@@ -136,11 +138,104 @@
         )
     </select>
 
+    <!--
+        음식 검색 공통 조건.
+        공백으로 나눈 모든 token이 음식명 또는 제조사명에 포함되어야 하며,
+        "치즈 버거" / "치즈버거"처럼 띄어쓰기 차이가 있어도 찾을 수 있도록 compactValue도 비교한다.
+        tokens가 비어 있으면 WHERE 절을 만들지 않아 음식 조회 화면의 기본 목록을 반환할 수 있다.
+    -->
+    <sql id="foodSearchCondition">
+        <where>
+            <if test="tokens != null and tokens.size() > 0">
+                <foreach collection="tokens" item="token" separator=" AND ">
+                    (
+                        name ILIKE CONCAT('%', #{token.value}, '%')
+                        OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
+                        OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                        OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
+                    )
+                </foreach>
+            </if>
+        </where>
+    </sql>
+
+    <!--
+        음식 조회 화면의 전체 개수.
+        DB row 개수가 아니라 source_key 기준 음식 그룹 개수를 센다.
+    -->
+    <select id="countFoodGroups" resultType="long">
+        SELECT COUNT(*)
+        FROM (
+            SELECT source_key
+            FROM foods
+            <include refid="foodSearchCondition"/>
+            GROUP BY source_key
+        ) matched_food_groups
+    </select>
+
+    <!--
+        음식 조회 화면의 페이지 기준 목록.
+        여러 serving row를 가진 같은 음식은 source_key 하나로 묶고,
+        이 단계에서는 현재 페이지에 들어갈 source_key만 가져온다.
+    -->
+    <select id="findFoodGroupSourceKeys" resultType="string">
+        SELECT source_key
+        FROM foods
+        <include refid="foodSearchCondition"/>
+        GROUP BY source_key
+        ORDER BY
+            CASE
+                WHEN MIN(name) = #{query} THEN 0
+                WHEN MIN(name) ILIKE CONCAT(#{query}, '%') THEN 1
+                WHEN MIN(COALESCE(brand, '')) = #{query} THEN 2
+                WHEN MIN(COALESCE(brand, '')) ILIKE CONCAT(#{query}, '%') THEN 3
+                ELSE 4
+            END,
+            MIN(name),
+            MIN(COALESCE(brand, '')),
+            source_key
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <!--
+        위에서 선택된 source_key들의 모든 serving row를 가져온다.
+        FoodServiceImpl에서 source_key별로 다시 묶어 servings 배열 응답을 만든다.
+    -->
+    <select id="findFoodsBySourceKeys" resultMap="food">
+        SELECT
+            id AS food_id,
+            source_key,
+            name AS food_name,
+            brand,
+            serving_description,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        FROM foods
+        WHERE source_key IN
+        <foreach collection="sourceKeys" item="sourceKey" open="(" separator="," close=")">
+            #{sourceKey}
+        </foreach>
+        ORDER BY
+            source_key,
+            serving_size NULLS LAST,
+            serving_unit NULLS LAST,
+            serving_description NULLS LAST,
+            id
+    </select>
+
+    <!-- AI 식단 후보 검색용: 후보 개수 제한이 있고, 선택 가능한 foodId row를 그대로 반환한다. -->
     <select id="searchFoodCandidates" resultMap="food">
         SELECT
             id AS food_id,
+            source_key,
             name AS food_name,
             brand,
+            serving_description,
             serving_size,
             serving_unit,
             calories,
@@ -170,11 +265,14 @@
         LIMIT #{limit}
     </select>
 
+    <!-- 수동 식단 작성/수정 검색용: 특정 foodId를 바로 선택해야 하므로 그룹화하지 않고 row 단위로 반환한다. -->
     <select id="searchFoods" resultMap="food">
         SELECT
             id AS food_id,
+            source_key,
             name AS food_name,
             brand,
+            serving_description,
             serving_size,
             serving_unit,
             calories,

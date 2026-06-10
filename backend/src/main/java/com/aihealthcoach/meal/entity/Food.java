@@ -9,8 +9,10 @@ import lombok.Setter;
 @Setter
 public class Food {
     private Long foodId;
+    private String sourceKey;
     private String foodName;
     private String brand;
+    private String servingDescription;
     private BigDecimal servingSize;
     private String servingUnit;
     private BigDecimal calories;
