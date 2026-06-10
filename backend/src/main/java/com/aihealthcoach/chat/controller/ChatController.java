@@ -9,6 +9,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageSendResponse;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.service.AiChatService;
+import com.aihealthcoach.chat.service.AiExerciseProposalService;
 import com.aihealthcoach.chat.service.ChatMealProposalService;
 import com.aihealthcoach.chat.service.ChatService;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalRequest;
@@ -37,6 +38,7 @@ public class ChatController {
     private final ChatService chatService;
     private final AiChatService aiChatService;
     private final AiMealProposalService aiMealProposalService;
+    private final AiExerciseProposalService aiExerciseProposalService;
     private final ChatMealProposalService chatMealProposalService;
 
     @GetMapping("/messages")
@@ -58,7 +60,8 @@ public class ChatController {
                 .build()));
         return ResponseEntity.ok(new ChatMessageSendResponse(
                 messages,
-                aiMealProposalService.createProposal(aiResult.mealExtraction())
+                aiMealProposalService.createProposal(aiResult.mealExtraction()),
+                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction())
         ));
     }
 

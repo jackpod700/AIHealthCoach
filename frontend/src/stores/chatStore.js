@@ -6,11 +6,14 @@ export const useChatStore = defineStore("chat", {
   state: () => ({
     messages: [],
     mealProposal: null,
+    exerciseProposal: null,
     isLoading: false,
     isSending: false,
     isConfirmingMeal: false,
+    isConfirmingExercise: false,
     error: "",
     mealProposalError: "",
+    exerciseProposalError: "",
     summary: {
       mealCount: 0,
       exerciseCount: 0,
@@ -31,8 +34,10 @@ export const useChatStore = defineStore("chat", {
     clearMessages() {
       this.messages = [];
       this.mealProposal = null;
+      this.exerciseProposal = null;
       this.error = "";
       this.mealProposalError = "";
+      this.exerciseProposalError = "";
       this.refreshSummary();
     },
     async loadMessages() {
@@ -95,6 +100,7 @@ export const useChatStore = defineStore("chat", {
         const newMessages = Array.isArray(response) ? response : response?.messages || [];
         this.replacePendingMessages(requestId, newMessages);
         this.mealProposal = response?.mealProposal?.items?.length ? response.mealProposal : null;
+        this.exerciseProposal = response?.exerciseProposal?.activityKeyword ? response.exerciseProposal : null;
         this.refreshSummary();
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
@@ -138,9 +144,33 @@ export const useChatStore = defineStore("chat", {
         this.isConfirmingMeal = false;
       }
     },
+    startConfirmingExercise() {
+      if (this.isConfirmingExercise) {
+        return false;
+      }
+
+      this.isConfirmingExercise = true;
+      this.exerciseProposalError = "";
+      return true;
+    },
+    finishConfirmingExercise() {
+      this.isConfirmingExercise = false;
+    },
+    completeExerciseProposal() {
+      this.exerciseProposal = null;
+      this.exerciseProposalError = "";
+      this.refreshSummary();
+    },
+    failExerciseProposal(message) {
+      this.exerciseProposalError = message;
+    },
     dismissMealProposal() {
       this.mealProposal = null;
       this.mealProposalError = "";
+    },
+    dismissExerciseProposal() {
+      this.exerciseProposal = null;
+      this.exerciseProposalError = "";
     },
     replacePendingMessages(requestId, newMessages) {
       this.messages = this.messages.filter((message) => !message.clientId?.startsWith(requestId));

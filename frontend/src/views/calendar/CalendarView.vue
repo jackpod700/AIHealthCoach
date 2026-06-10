@@ -3,10 +3,12 @@ import { computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAuthStore } from "../../stores/authStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const router = useRouter();
@@ -36,12 +38,14 @@ const calendarCells = computed(() => {
     const cellDate = new Date(cursor);
     const dateKey = toDateKey(cellDate);
     const summary = mealStore.monthlyDaysByDate[dateKey];
+    const hasExerciseRecord = Boolean(exerciseStore.monthlyDatesByDate[dateKey]);
 
     cells.push({
       dateKey,
       day: cellDate.getDate(),
       isCurrentMonth: cellDate.getMonth() === monthIndex,
       isToday: dateKey === todayDateKey.value,
+      hasExerciseRecord,
       summary,
     });
   }
@@ -51,6 +55,7 @@ const calendarCells = computed(() => {
 
 onMounted(async () => {
   await Promise.all([
+    exerciseStore.loadMonthlyExerciseDates(mealStore.selectedYear, mealStore.selectedMonth),
     mealStore.loadMonthlyMeals(),
     profileStore.loadProfile(),
   ]);
@@ -62,7 +67,13 @@ onMounted(async () => {
 
 async function moveMonth(offset) {
   const nextDate = new Date(mealStore.selectedYear, mealStore.selectedMonth - 1 + offset, 1);
-  await mealStore.loadMonthlyMeals(nextDate.getFullYear(), nextDate.getMonth() + 1);
+  const year = nextDate.getFullYear();
+  const month = nextDate.getMonth() + 1;
+
+  await Promise.all([
+    exerciseStore.loadMonthlyExerciseDates(year, month),
+    mealStore.loadMonthlyMeals(year, month),
+  ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
@@ -88,6 +99,16 @@ function toDateKey(date) {
 
 function visibleMealTypes(summary) {
   return (summary?.mealTypes || []).filter((mealType) => mealTypeMeta[mealType]);
+}
+
+function calendarDotLabel(cell) {
+  const labels = visibleMealTypes(cell.summary).map((mealType) => mealTypeMeta[mealType].label);
+
+  if (cell.hasExerciseRecord) {
+    labels.push("운동");
+  }
+
+  return labels.length ? `${labels.join(", ")} 기록` : "기록 없음";
 }
 
 function formatCalories(value) {
@@ -127,7 +148,7 @@ function formatCalories(value) {
           </span>
           <span class="needs-api">
             <i class="exercise"></i>
-            운동 API 필요
+            운동
           </span>
         </div>
       </header>
@@ -137,8 +158,12 @@ function formatCalories(value) {
           {{ mealStore.monthlyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingMonthly" class="calendar-loading">
-          월별 식단 기록을 불러오는 중입니다...
+        <div v-if="exerciseStore.monthlyError" class="calendar-error">
+          {{ exerciseStore.monthlyError }}
+        </div>
+
+        <div v-if="mealStore.isLoadingMonthly || exerciseStore.isLoadingMonthly" class="calendar-loading">
+          월별 기록을 불러오는 중입니다...
         </div>
 
         <div class="calendar-weekdays">
@@ -155,7 +180,7 @@ function formatCalories(value) {
             class="calendar-cell"
             :class="{
               muted: !cell.isCurrentMonth,
-              recorded: cell.summary,
+              recorded: cell.summary || cell.hasExerciseRecord,
               today: cell.isToday,
             }"
             @click="openDailyRecord(cell.dateKey)"
@@ -169,13 +194,14 @@ function formatCalories(value) {
               {{ formatCalories(cell.summary.totalCalories) }}
             </p>
 
-            <div class="calendar-dots" :aria-label="cell.summary ? `${cell.summary.mealCount}개 식단 기록` : '기록 없음'">
+            <div class="calendar-dots" :aria-label="calendarDotLabel(cell)">
               <i
                 v-for="mealType in visibleMealTypes(cell.summary)"
                 :key="mealType"
                 :class="mealTypeMeta[mealType].className"
                 :title="mealTypeMeta[mealType].label"
               ></i>
+              <i v-if="cell.hasExerciseRecord" class="exercise" title="운동"></i>
             </div>
           </button>
         </div>

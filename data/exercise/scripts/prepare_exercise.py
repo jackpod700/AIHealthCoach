@@ -28,14 +28,20 @@ OUTPUT_COLUMNS = [
     "description",
 ]
 ACTIVITY_OPTION_COLUMNS = [
-    "compendium_code",
-    "compendium_version",
-    "major_heading",
-    "met_value",
-    "source_description",
     "activity_name_ko",
-    "intensity_level",
-    "met_source",
+    "major_heading",
+    "low_compendium_code",
+    "low_met_value",
+    "low_source_description",
+    "low_met_source",
+    "medium_compendium_code",
+    "medium_met_value",
+    "medium_source_description",
+    "medium_met_source",
+    "high_compendium_code",
+    "high_met_value",
+    "high_source_description",
+    "high_met_source",
 ]
 INTENSITY_LEVELS = ("LOW", "MEDIUM", "HIGH")
 ESTIMATED_INTENSITY_FACTORS = {
@@ -57,14 +63,20 @@ class ParsedRow:
 
 @dataclass(frozen=True)
 class ActivityOptionRow:
-    compendium_code: str
-    compendium_version: str
-    major_heading: str
-    met_value: str
-    source_description: str
     activity_name_ko: str
-    intensity_level: str
-    met_source: str
+    major_heading: str
+    low_compendium_code: str
+    low_met_value: str
+    low_source_description: str
+    low_met_source: str
+    medium_compendium_code: str
+    medium_met_value: str
+    medium_source_description: str
+    medium_met_source: str
+    high_compendium_code: str
+    high_met_value: str
+    high_source_description: str
+    high_met_source: str
 
 
 def find_compendium_csv() -> Path:
@@ -722,23 +734,38 @@ def build_activity_options(rows: list[ParsedRow]) -> list[ActivityOptionRow]:
         if {intensity_level for intensity_level, _ in representative_rows} != set(INTENSITY_LEVELS):
             continue
 
-        for intensity_level, row in representative_rows:
-            options.append(
-                ActivityOptionRow(
-                    compendium_code=row.compendium_code,
-                    compendium_version=row.compendium_version,
-                    major_heading=row.major_heading,
-                    met_value=row.met_value,
-                    source_description=row.description,
-                    activity_name_ko=activity_name_ko,
-                    intensity_level=intensity_level,
-                    met_source=met_source,
-                )
-            )
+        rows_by_intensity = {intensity_level: row for intensity_level, row in representative_rows}
+        low_row = rows_by_intensity["LOW"]
+        medium_row = rows_by_intensity["MEDIUM"]
+        high_row = rows_by_intensity["HIGH"]
 
-    invalid_levels = {option.intensity_level for option in options} - set(INTENSITY_LEVELS)
-    if invalid_levels:
-        raise RuntimeError(f"Invalid intensity levels: {sorted(invalid_levels)}")
+        options.append(
+            ActivityOptionRow(
+                activity_name_ko=activity_name_ko,
+                major_heading=medium_row.major_heading,
+                low_compendium_code=low_row.compendium_code,
+                low_met_value=low_row.met_value,
+                low_source_description=low_row.description,
+                low_met_source=met_source,
+                medium_compendium_code=medium_row.compendium_code,
+                medium_met_value=medium_row.met_value,
+                medium_source_description=medium_row.description,
+                medium_met_source=met_source,
+                high_compendium_code=high_row.compendium_code,
+                high_met_value=high_row.met_value,
+                high_source_description=high_row.description,
+                high_met_source=met_source,
+            )
+        )
+
+    invalid_met_sources = {
+        met_source
+        for option in options
+        for met_source in (option.low_met_source, option.medium_met_source, option.high_met_source)
+        if met_source not in {"COMPENDIUM", "ESTIMATED"}
+    }
+    if invalid_met_sources:
+        raise RuntimeError(f"Invalid MET sources: {sorted(invalid_met_sources)}")
 
     return options
 
@@ -766,14 +793,20 @@ def write_activity_options(path: Path, rows: list[ActivityOptionRow]) -> None:
         for row in rows:
             writer.writerow(
                 {
-                    "compendium_code": row.compendium_code,
-                    "compendium_version": row.compendium_version,
-                    "major_heading": row.major_heading,
-                    "met_value": row.met_value,
-                    "source_description": row.source_description,
                     "activity_name_ko": row.activity_name_ko,
-                    "intensity_level": row.intensity_level,
-                    "met_source": row.met_source,
+                    "major_heading": row.major_heading,
+                    "low_compendium_code": row.low_compendium_code,
+                    "low_met_value": row.low_met_value,
+                    "low_source_description": row.low_source_description,
+                    "low_met_source": row.low_met_source,
+                    "medium_compendium_code": row.medium_compendium_code,
+                    "medium_met_value": row.medium_met_value,
+                    "medium_source_description": row.medium_source_description,
+                    "medium_met_source": row.medium_met_source,
+                    "high_compendium_code": row.high_compendium_code,
+                    "high_met_value": row.high_met_value,
+                    "high_source_description": row.high_source_description,
+                    "high_met_source": row.high_met_source,
                 }
             )
 

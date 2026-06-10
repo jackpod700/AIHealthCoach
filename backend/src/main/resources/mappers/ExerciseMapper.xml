@@ -2,57 +2,78 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aihealthcoach.exercise.mapper.ExerciseMapper">
-    <resultMap id="physicalActivity" type="com.aihealthcoach.exercise.entity.PhysicalActivity">
-        <id column="physical_activity_id" property="id"/>
-        <result column="physical_activity_id" property="id"/>
-        <result column="compendium_code" property="compendiumCode"/>
-        <result column="compendium_version" property="compendiumVersion"/>
-        <result column="major_heading" property="majorHeading"/>
-        <result column="met_value" property="metValue"/>
-        <result column="description" property="description"/>
+    <resultMap id="exerciseActivityOption" type="com.aihealthcoach.exercise.entity.ExerciseActivityOption">
+        <id column="exercise_activity_option_id" property="id"/>
+        <result column="exercise_activity_option_id" property="id"/>
+        <result column="activity_name_ko" property="activityNameKo"/>
+        <result column="option_major_heading" property="majorHeading"/>
+        <result column="low_physical_activity_id" property="lowPhysicalActivityId"/>
+        <result column="low_met_value" property="lowMetValue"/>
+        <result column="low_source_description" property="lowSourceDescription"/>
+        <result column="low_met_source" property="lowMetSource"/>
+        <result column="medium_physical_activity_id" property="mediumPhysicalActivityId"/>
+        <result column="medium_met_value" property="mediumMetValue"/>
+        <result column="medium_source_description" property="mediumSourceDescription"/>
+        <result column="medium_met_source" property="mediumMetSource"/>
+        <result column="high_physical_activity_id" property="highPhysicalActivityId"/>
+        <result column="high_met_value" property="highMetValue"/>
+        <result column="high_source_description" property="highSourceDescription"/>
+        <result column="high_met_source" property="highMetSource"/>
     </resultMap>
 
     <resultMap id="exerciseRecord" type="com.aihealthcoach.exercise.entity.ExerciseRecord">
         <id column="id" property="id"/>
         <result column="user_id" property="userId"/>
-        <result column="physical_activity_id" property="physicalActivityId"/>
+        <result column="exercise_activity_option_id" property="exerciseActivityOptionId"/>
+        <result column="intensity_level" property="intensityLevel"/>
         <result column="exercise_date" property="exerciseDate"/>
         <result column="duration_minutes" property="durationMinutes"/>
         <result column="calories_burned" property="caloriesBurned"/>
         <result column="memo" property="memo"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
-        <association property="physicalActivity" resultMap="physicalActivity"/>
+        <association property="exerciseActivityOption" resultMap="exerciseActivityOption"/>
     </resultMap>
 
-    <select id="findPhysicalActivities" resultMap="physicalActivity">
+    <sql id="exerciseActivityOptionColumns">
+        eao.id AS exercise_activity_option_id,
+        eao.activity_name_ko,
+        eao.major_heading AS option_major_heading,
+        eao.low_physical_activity_id,
+        eao.low_met_value,
+        eao.low_source_description,
+        eao.low_met_source,
+        eao.medium_physical_activity_id,
+        eao.medium_met_value,
+        eao.medium_source_description,
+        eao.medium_met_source,
+        eao.high_physical_activity_id,
+        eao.high_met_value,
+        eao.high_source_description,
+        eao.high_met_source
+    </sql>
+
+    <select id="findExerciseActivityOptions" resultMap="exerciseActivityOption">
         SELECT
-            id AS physical_activity_id,
-            compendium_code,
-            compendium_version,
-            major_heading,
-            met_value,
-            description
-        FROM physical_activities
+            <include refid="exerciseActivityOptionColumns"/>
+        FROM exercise_activity_options eao
         <where>
             <if test="keyword != null and keyword != ''">
-                description ILIKE CONCAT('%', #{keyword}, '%')
-                OR major_heading ILIKE CONCAT('%', #{keyword}, '%')
+                eao.activity_name_ko ILIKE CONCAT('%', #{keyword}, '%')
+                OR eao.low_source_description ILIKE CONCAT('%', #{keyword}, '%')
+                OR eao.medium_source_description ILIKE CONCAT('%', #{keyword}, '%')
+                OR eao.high_source_description ILIKE CONCAT('%', #{keyword}, '%')
+                OR eao.major_heading ILIKE CONCAT('%', #{keyword}, '%')
             </if>
         </where>
-        ORDER BY major_heading, description
+        ORDER BY eao.activity_name_ko
     </select>
 
-    <select id="findPhysicalActivityById" parameterType="Long" resultMap="physicalActivity">
+    <select id="findExerciseActivityOptionById" parameterType="Long" resultMap="exerciseActivityOption">
         SELECT
-            id AS physical_activity_id,
-            compendium_code,
-            compendium_version,
-            major_heading,
-            met_value,
-            description
-        FROM physical_activities
-        WHERE id = #{id}
+            <include refid="exerciseActivityOptionColumns"/>
+        FROM exercise_activity_options eao
+        WHERE eao.id = #{id}
     </select>
 
     <insert id="upsertPhysicalActivity" parameterType="com.aihealthcoach.exercise.entity.PhysicalActivity">
@@ -81,65 +102,127 @@
     <select id="insertExerciseRecord"
         parameterType="com.aihealthcoach.exercise.entity.ExerciseRecord"
         resultMap="exerciseRecord">
-        INSERT INTO exercise_records (
-            user_id,
-            physical_activity_id,
-            exercise_date,
-            duration_minutes,
-            calories_burned,
-            memo,
-            created_at,
-            updated_at
+        WITH inserted AS (
+            INSERT INTO exercise_records (
+                user_id,
+                exercise_activity_option_id,
+                intensity_level,
+                exercise_date,
+                duration_minutes,
+                calories_burned,
+                memo,
+                created_at,
+                updated_at
+            )
+            VALUES (
+                #{userId},
+                #{exerciseActivityOptionId},
+                #{intensityLevel},
+                #{exerciseDate},
+                #{durationMinutes},
+                #{caloriesBurned},
+                #{memo},
+                NOW(),
+                NOW()
+            )
+            RETURNING
+                id,
+                user_id,
+                exercise_activity_option_id,
+                intensity_level,
+                exercise_date,
+                duration_minutes,
+                calories_burned,
+                memo,
+                created_at,
+                updated_at
         )
-        VALUES (
-            #{userId},
-            #{physicalActivityId},
-            #{exerciseDate},
-            #{durationMinutes},
-            #{caloriesBurned},
-            #{memo},
-            NOW(),
-            NOW()
-        )
-        RETURNING
-            id,
-            user_id,
-            physical_activity_id,
-            exercise_date,
-            duration_minutes,
-            calories_burned,
-            memo,
-            created_at,
-            updated_at,
-            (SELECT id FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS physical_activity_id,
-            (SELECT compendium_code FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS compendium_code,
-            (SELECT compendium_version FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS compendium_version,
-            (SELECT major_heading FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS major_heading,
-            (SELECT met_value FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS met_value,
-            (SELECT description FROM physical_activities WHERE id = exercise_records.physical_activity_id) AS description
-    </select>
-
-    <select id="findExerciseRecordsByDate" resultMap="exerciseRecord">
         SELECT
             er.id,
             er.user_id,
-            er.physical_activity_id,
+            er.intensity_level,
             er.exercise_date,
             er.duration_minutes,
             er.calories_burned,
             er.memo,
             er.created_at,
             er.updated_at,
-            pa.id AS physical_activity_id,
-            pa.compendium_code,
-            pa.compendium_version,
-            pa.major_heading,
-            pa.met_value,
-            pa.description
+            <include refid="exerciseActivityOptionColumns"/>
+        FROM inserted er
+        JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
+    </select>
+
+    <select id="updateExerciseRecord"
+        parameterType="com.aihealthcoach.exercise.entity.ExerciseRecord"
+        resultMap="exerciseRecord">
+        WITH updated AS (
+            UPDATE exercise_records
+            <set>
+                <if test="exerciseActivityOptionId != null">
+                    exercise_activity_option_id = #{exerciseActivityOptionId},
+                </if>
+                <if test="intensityLevel != null">
+                    intensity_level = #{intensityLevel},
+                </if>
+                <if test="exerciseDate != null">
+                    exercise_date = #{exerciseDate},
+                </if>
+                <if test="durationMinutes != null">
+                    duration_minutes = #{durationMinutes},
+                </if>
+                <if test="caloriesBurned != null">
+                    calories_burned = #{caloriesBurned},
+                </if>
+                <if test="memo != null">
+                    memo = #{memo},
+                </if>
+                updated_at = NOW()
+            </set>
+            WHERE id = #{id}
+                AND user_id = #{userId}
+            RETURNING
+                id,
+                user_id,
+                exercise_activity_option_id,
+                intensity_level,
+                exercise_date,
+                duration_minutes,
+                calories_burned,
+                memo,
+                created_at,
+                updated_at
+        )
+        SELECT
+            er.id,
+            er.user_id,
+            er.intensity_level,
+            er.exercise_date,
+            er.duration_minutes,
+            er.calories_burned,
+            er.memo,
+            er.created_at,
+            er.updated_at,
+            <include refid="exerciseActivityOptionColumns"/>
+        FROM updated er
+        JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
+    </select>
+
+    <select id="findExerciseRecordsByDate" resultMap="exerciseRecord">
+        SELECT
+            er.id,
+            er.user_id,
+            er.intensity_level,
+            er.exercise_date,
+            er.duration_minutes,
+            er.calories_burned,
+            er.memo,
+            er.created_at,
+            er.updated_at,
+            <include refid="exerciseActivityOptionColumns"/>
         FROM exercise_records er
-        JOIN physical_activities pa ON pa.id = er.physical_activity_id
+        JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
         WHERE er.user_id = #{userId}
-          AND er.exercise_date = #{exerciseDate}
+            AND er.exercise_date = #{exerciseDate}
         ORDER BY er.created_at, er.id
     </select>
 
@@ -147,8 +230,8 @@
         SELECT DISTINCT exercise_date
         FROM exercise_records
         WHERE user_id = #{userId}
-          AND exercise_date &gt;= #{startDate}
-          AND exercise_date &lt; #{endDate}
+            AND exercise_date &gt;= #{startDate}
+            AND exercise_date &lt; #{endDate}
         ORDER BY exercise_date
     </select>
 </mapper>

@@ -3,23 +3,38 @@ import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAuthStore } from "../../stores/authStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const route = useRoute();
 const router = useRouter();
 
 const foodQuery = ref("");
+const exerciseQuery = ref("");
 const searchRequestId = ref(0);
+const exerciseSearchRequestId = ref(0);
 let foodSearchTimer = null;
+let exerciseSearchTimer = null;
 const editForm = reactive({
   open: false,
   mealId: null,
   mealType: "",
   items: [],
+});
+const exerciseEditForm = reactive({
+  open: false,
+  recordId: null,
+  exerciseActivityOptionId: null,
+  activityNameKo: "",
+  intensityLevel: "MEDIUM",
+  exerciseDate: "",
+  durationMinutes: 30,
+  memo: "",
 });
 
 const mealTypeMeta = {
@@ -53,7 +68,10 @@ const meals = computed(() => {
 });
 
 const recordCount = computed(() => meals.value.length);
-const hasRecords = computed(() => recordCount.value > 0);
+const exerciseRecords = computed(() => exerciseStore.dailyRecords || []);
+const exerciseCount = computed(() => exerciseRecords.value.length);
+const totalRecordCount = computed(() => recordCount.value + exerciseCount.value);
+const hasRecords = computed(() => totalRecordCount.value > 0);
 
 const dailyTotals = computed(() => {
   const dailyMeal = mealStore.dailyMeal;
@@ -70,8 +88,19 @@ const canSaveMeal = computed(() => {
   return editForm.items.length > 0 && editForm.items.every((item) => Number(item.quantity) > 0);
 });
 
+const canSaveExercise = computed(() => {
+  return Boolean(
+    exerciseEditForm.recordId &&
+      exerciseEditForm.exerciseActivityOptionId &&
+      /^\d{4}-\d{2}-\d{2}$/.test(exerciseEditForm.exerciseDate) &&
+      ["LOW", "MEDIUM", "HIGH"].includes(exerciseEditForm.intensityLevel) &&
+      Number(exerciseEditForm.durationMinutes) > 0
+  );
+});
+
 onMounted(async () => {
   await Promise.all([
+    exerciseStore.loadDailyExerciseRecords(selectedDate.value),
     mealStore.loadDailyMeal(selectedDate.value),
     profileStore.loadProfile(),
   ]);
@@ -83,7 +112,11 @@ onMounted(async () => {
 
 watch(selectedDate, async (date) => {
   closeEditMeal();
-  await mealStore.loadDailyMeal(date);
+  closeEditExercise();
+  await Promise.all([
+    exerciseStore.loadDailyExerciseRecords(date),
+    mealStore.loadDailyMeal(date),
+  ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
@@ -101,6 +134,20 @@ watch(foodQuery, (query) => {
     }
 
     await mealStore.searchMealFoods(query);
+  }, 250);
+});
+
+watch(exerciseQuery, (query) => {
+  const currentRequestId = exerciseSearchRequestId.value + 1;
+  exerciseSearchRequestId.value = currentRequestId;
+
+  window.clearTimeout(exerciseSearchTimer);
+  exerciseSearchTimer = window.setTimeout(async () => {
+    if (exerciseSearchRequestId.value !== currentRequestId) {
+      return;
+    }
+
+    await exerciseStore.searchActivities(query);
   }, 250);
 });
 
@@ -133,6 +180,43 @@ function closeEditMeal() {
   editForm.items = [];
   foodQuery.value = "";
   mealStore.clearFoodSearch();
+}
+
+function openEditExercise(record) {
+  exerciseEditForm.open = true;
+  exerciseEditForm.recordId = record.id;
+  exerciseEditForm.exerciseActivityOptionId = record.exerciseActivityOptionId;
+  exerciseEditForm.activityNameKo = record.activityNameKo;
+  exerciseEditForm.intensityLevel = record.intensityLevel || "MEDIUM";
+  exerciseEditForm.exerciseDate = record.exerciseDate || selectedDate.value;
+  exerciseEditForm.durationMinutes = Number(record.durationMinutes || 30);
+  exerciseEditForm.memo = record.memo || "";
+  exerciseQuery.value = record.activityNameKo || "";
+  exerciseStore.clearActivitySearch();
+
+  nextTick(() => {
+    document.querySelector(".exercise-edit-modal input")?.focus();
+  });
+}
+
+function closeEditExercise() {
+  exerciseEditForm.open = false;
+  exerciseEditForm.recordId = null;
+  exerciseEditForm.exerciseActivityOptionId = null;
+  exerciseEditForm.activityNameKo = "";
+  exerciseEditForm.intensityLevel = "MEDIUM";
+  exerciseEditForm.exerciseDate = "";
+  exerciseEditForm.durationMinutes = 30;
+  exerciseEditForm.memo = "";
+  exerciseQuery.value = "";
+  exerciseStore.clearActivitySearch();
+}
+
+function selectExerciseActivity(activity) {
+  exerciseEditForm.exerciseActivityOptionId = activity.id;
+  exerciseEditForm.activityNameKo = activity.activityNameKo;
+  exerciseQuery.value = activity.activityNameKo;
+  exerciseStore.clearActivitySearch();
 }
 
 function addFood(food) {
@@ -208,6 +292,38 @@ async function deleteEditedMeal() {
   }
 }
 
+async function saveEditedExercise() {
+  if (!canSaveExercise.value) {
+    return;
+  }
+
+  const targetDate = exerciseEditForm.exerciseDate;
+  const saved = await exerciseStore.updateRecord(exerciseEditForm.recordId, {
+    exerciseActivityOptionId: exerciseEditForm.exerciseActivityOptionId,
+    intensityLevel: exerciseEditForm.intensityLevel,
+    exerciseDate: targetDate,
+    durationMinutes: Number(exerciseEditForm.durationMinutes),
+    memo: exerciseEditForm.memo,
+  });
+
+  if (saved) {
+    closeEditExercise();
+
+    if (targetDate !== selectedDate.value) {
+      router.replace({
+        path: "/records",
+        query: {
+          date: targetDate,
+        },
+      });
+    }
+  }
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
+}
+
 function normalizeDateQuery(value) {
   if (typeof value !== "string") {
     return "";
@@ -248,12 +364,50 @@ function formatNumber(value) {
   return Math.round(toNumber(value)).toLocaleString("ko-KR");
 }
 
+function formatMet(value) {
+  const numberValue = toNumber(value);
+
+  return numberValue.toLocaleString("ko-KR", {
+    maximumFractionDigits: 1,
+  });
+}
+
 function mealMeta(mealType) {
   return mealTypeMeta[mealType] || { label: mealType, icon: "pi pi-circle", className: "snack" };
 }
 
 function itemCalories(item) {
   return `${formatNumber(item.calories)} kcal`;
+}
+
+function exerciseIntensityLabel(intensityLevel) {
+  const labels = {
+    LOW: "하",
+    MEDIUM: "중",
+    HIGH: "상",
+  };
+
+  return labels[intensityLevel] || intensityLevel;
+}
+
+function exerciseMeta(record) {
+  return [
+    exerciseIntensityLabel(record.intensityLevel),
+    `${record.durationMinutes}분`,
+    `${formatMet(record.metValue)} MET`,
+  ].join(" · ");
+}
+
+function exerciseActivityMeta(activity) {
+  const metValues = [activity.low?.metValue, activity.medium?.metValue, activity.high?.metValue]
+    .map(toNumber)
+    .filter((value) => value > 0);
+
+  if (!metValues.length) {
+    return activity.majorHeading || "운동 옵션";
+  }
+
+  return `${activity.majorHeading || "운동 옵션"} · ${metValues.map((value) => `${formatMet(value)} MET`).join(" / ")}`;
 }
 
 function baseCalories(item) {
@@ -294,7 +448,7 @@ function goToChat() {
         </div>
         <div class="streak-chip">
           <i></i>
-          {{ isToday ? "오늘" : "선택 날짜" }} · 기록 {{ recordCount }}건
+          {{ isToday ? "오늘" : "선택 날짜" }} · 기록 {{ totalRecordCount }}건
         </div>
       </header>
 
@@ -303,8 +457,12 @@ function goToChat() {
           {{ mealStore.dailyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingDaily" class="record-loading">
-          일일 식단 기록을 불러오는 중입니다...
+        <div v-if="exerciseStore.dailyError" class="record-error">
+          {{ exerciseStore.dailyError }}
+        </div>
+
+        <div v-if="mealStore.isLoadingDaily || exerciseStore.isLoadingDaily" class="record-loading">
+          일일 기록을 불러오는 중입니다...
         </div>
 
         <template v-else-if="hasRecords">
@@ -313,13 +471,13 @@ function goToChat() {
               <span>섭취</span>
               <strong>{{ formatNumber(dailyTotals.calories) }}<small>kcal</small></strong>
             </div>
-            <div class="api-needed">
+            <div>
               <span>운동 소모</span>
-              <strong>-<small>API 필요</small></strong>
+              <strong>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
             </div>
             <div>
               <span>총 칼로리</span>
-              <strong>{{ formatNumber(dailyTotals.calories) }}<small>/ 목표 API 필요</small></strong>
+              <strong>{{ formatNumber(dailyTotals.calories - exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
             </div>
             <div>
               <span>단백질 · 탄수 · 지방</span>
@@ -357,12 +515,37 @@ function goToChat() {
             <article class="record-timeline-row empty-slot">
               <div class="record-time">운동</div>
               <div class="record-line">
-                <span class="record-icon disabled">
+                <span :class="['record-icon', exerciseCount ? 'exercise' : 'disabled']">
                   <i class="pi pi-bolt"></i>
                 </span>
               </div>
-              <div class="record-card muted-card">
-                운동 기록 API가 연결되면 여기에 소모 칼로리와 운동 상세가 표시됩니다.
+              <div v-if="exerciseCount" class="record-card">
+                <div class="record-card-head">
+                  <div>
+                    <strong>운동</strong>
+                    <span>{{ exerciseCount }}건</span>
+                  </div>
+                  <em>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }} kcal</em>
+                </div>
+
+                <div class="record-exercise-list">
+                  <button
+                    v-for="record in exerciseRecords"
+                    :key="record.id"
+                    type="button"
+                    class="record-exercise-item"
+                    @click="openEditExercise(record)"
+                  >
+                    <div>
+                      <strong>{{ record.activityNameKo }}</strong>
+                      <span>{{ exerciseMeta(record) }} · 클릭해서 수정</span>
+                    </div>
+                    <em>{{ formatNumber(record.caloriesBurned) }} kcal</em>
+                  </button>
+                </div>
+              </div>
+              <div v-else class="record-card muted-card">
+                아직 운동 기록이 없습니다.
               </div>
             </article>
           </section>
@@ -463,6 +646,103 @@ function goToChat() {
               @click="saveEditedMeal"
             >
               {{ mealStore.isSavingMeal ? "저장 중..." : "수정 저장" }}
+            </button>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+    <div v-if="exerciseEditForm.open" class="meal-edit-backdrop" @click.self="closeEditExercise">
+      <section class="meal-edit-modal exercise-edit-modal" role="dialog" aria-modal="true" aria-label="운동 수정">
+        <header>
+          <div>
+            <p class="deco">Edit Exercise</p>
+            <h2>운동 수정</h2>
+          </div>
+          <button type="button" aria-label="닫기" @click="closeEditExercise">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+
+        <div class="meal-edit-search exercise-edit-search">
+          <label>
+            <span>운동 검색</span>
+            <input v-model="exerciseQuery" placeholder="운동명을 입력하세요" />
+          </label>
+
+          <div v-if="exerciseEditForm.activityNameKo" class="exercise-selected-activity">
+            <strong>{{ exerciseEditForm.activityNameKo }}</strong>
+            <span>선택된 운동</span>
+          </div>
+
+          <div v-if="exerciseStore.isSearchingActivities" class="food-search-state">
+            검색 중입니다...
+          </div>
+
+          <div v-else-if="exerciseStore.activitySearchError" class="food-search-state error">
+            {{ exerciseStore.activitySearchError }}
+          </div>
+
+          <div v-else-if="exerciseStore.activitySearchResults.length" class="food-search-results exercise-search-results">
+            <button
+              v-for="activity in exerciseStore.activitySearchResults"
+              :key="activity.id"
+              type="button"
+              @click="selectExerciseActivity(activity)"
+            >
+              <strong>{{ activity.activityNameKo }}</strong>
+              <span>{{ exerciseActivityMeta(activity) }}</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="exercise-edit-fields">
+          <label>
+            <span>강도</span>
+            <div class="exercise-intensity-options">
+              <button
+                v-for="level in ['LOW', 'MEDIUM', 'HIGH']"
+                :key="level"
+                type="button"
+                :class="{ selected: exerciseEditForm.intensityLevel === level }"
+                @click="exerciseEditForm.intensityLevel = level"
+              >
+                {{ exerciseIntensityLabel(level) }}
+              </button>
+            </div>
+          </label>
+
+          <label>
+            <span>운동 날짜</span>
+            <input v-model="exerciseEditForm.exerciseDate" type="date" />
+          </label>
+
+          <label>
+            <span>운동 시간</span>
+            <input v-model="exerciseEditForm.durationMinutes" type="number" min="1" step="1" />
+          </label>
+
+          <label class="exercise-memo-field">
+            <span>메모</span>
+            <input v-model="exerciseEditForm.memo" placeholder="메모를 입력하세요" />
+          </label>
+        </div>
+
+        <p v-if="exerciseStore.saveRecordError" class="meal-edit-error">
+          {{ exerciseStore.saveRecordError }}
+        </p>
+
+        <footer>
+          <span></span>
+          <div>
+            <button class="meal-edit-cancel" type="button" @click="closeEditExercise">취소</button>
+            <button
+              class="meal-edit-save"
+              type="button"
+              :disabled="!canSaveExercise || exerciseStore.isSavingRecord"
+              @click="saveEditedExercise"
+            >
+              {{ exerciseStore.isSavingRecord ? "저장 중..." : "수정 저장" }}
             </button>
           </div>
         </footer>

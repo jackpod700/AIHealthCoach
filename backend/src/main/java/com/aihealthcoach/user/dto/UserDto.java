@@ -3,6 +3,8 @@ package com.aihealthcoach.user.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 import lombok.Builder;
 
 public class UserDto {
@@ -35,11 +37,28 @@ public class UserDto {
         String accessToken
     ) {
     }
+
+    @Builder
+    public record LogoutResponse(
+        String message
+    ) {
+        private static final String DEFAULT_MESSAGE = "정상적으로 로그아웃되었습니다.";
+
+        public LogoutResponse {
+            if (message == null) {
+                message = DEFAULT_MESSAGE;
+            }
+        }
+    }
         
     @Builder
     public record SignupRequest (
+        @NotBlank(message = "이메일은 필수입니다.")
+        @Email(message = "이메일 형식이 올바르지 않습니다.")
         String email,
+        @NotBlank(message = "비밀번호는 필수입니다.")
         String password,
+        @NotBlank(message = "닉네임은 필수입니다.")
         String nickname) {
     }
 
