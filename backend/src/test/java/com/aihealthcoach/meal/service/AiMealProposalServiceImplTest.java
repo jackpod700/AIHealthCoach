@@ -47,9 +47,9 @@ class AiMealProposalServiceImplTest {
         when(clock.instant()).thenReturn(Instant.parse("2026-06-02T03:30:00Z"));
         when(clock.getZone()).thenReturn(SEOUL);
         when(mealMapper.searchFoodCandidates("김치찌개", List.of(new Token("김치찌개", "김치찌개")), 5))
-                .thenReturn(List.of(food("F001", "김치찌개", "80")));
+                .thenReturn(List.of(food(1001L, "김치찌개", "80")));
         when(mealMapper.searchFoodCandidates("밥", List.of(new Token("밥", "밥")), 5))
-                .thenReturn(List.of(food("F002", "밥", "150")));
+                .thenReturn(List.of(food(1002L, "밥", "150")));
         ExtractedMealResult extracted = new ExtractedMealResult(
                 true,
                 null,
@@ -67,13 +67,13 @@ class AiMealProposalServiceImplTest {
         assertThat(proposal.defaultsApplied()).containsExactlyInAnyOrder("mealDate", "mealType", "quantity");
         assertThat(proposal.items()).hasSize(2);
         assertThat(proposal.items().get(0).quantity()).isEqualByComparingTo("1");
-        assertThat(proposal.items().get(0).candidates()).extracting("foodCode").containsExactly("F001");
+        assertThat(proposal.items().get(0).candidates()).extracting("foodId").containsExactly(1001L);
         assertThat(proposal.items().get(1).quantity()).isEqualByComparingTo("2");
     }
 
-    private Food food(String code, String name, String calories) {
+    private Food food(Long foodId, String name, String calories) {
         Food row = new Food();
-        row.setFoodId(Long.valueOf(code));
+        row.setFoodId(foodId);
         row.setFoodName(name);
         row.setCalories(new BigDecimal(calories));
         row.setCarbohydrate(BigDecimal.ZERO);

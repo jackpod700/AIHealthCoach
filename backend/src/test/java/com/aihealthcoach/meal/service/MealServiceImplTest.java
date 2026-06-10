@@ -216,7 +216,7 @@ class MealServiceImplTest {
         row.setMealId(mealId);
         row.setMealDate(mealDate);
         row.setMealType(mealType);
-        row.setFoodId(Long.valueOf(FOOD_CODE + mealId + quantity));
+        row.setFoodId(FOOD_CODE + mealId + Math.abs(quantity.hashCode()));
         row.setQuantity(new BigDecimal(quantity));
         row.setCalories(new BigDecimal(calories));
         row.setCarbohydrate(new BigDecimal(carbohydrate));
