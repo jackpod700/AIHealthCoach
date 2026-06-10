@@ -1,17 +1,20 @@
 <script setup>
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const route = useRoute();
 const router = useRouter();
+const logoutPromptOpen = ref(false);
 
 const navItems = [
   { label: "대화", icon: "pi pi-comment", to: "/chat" },
@@ -51,9 +54,19 @@ function isActive(item) {
   return item.to !== "#" && route.path === item.to;
 }
 
+function toggleLogoutPrompt() {
+  logoutPromptOpen.value = !logoutPromptOpen.value;
+}
+
+function closeLogoutPrompt() {
+  logoutPromptOpen.value = false;
+}
+
 function logout() {
+  logoutPromptOpen.value = false;
   authStore.logout();
   chatStore.clearMessages();
+  exerciseStore.clearExercise();
   mealStore.clearMeals();
   profileStore.clearProfile();
   router.push("/login");
@@ -86,13 +99,34 @@ function logout() {
       </RouterLink>
     </nav>
 
-    <div class="sidebar-user">
+    <div
+      class="sidebar-user"
+      :class="{ open: logoutPromptOpen }"
+      role="button"
+      tabindex="0"
+      @click="toggleLogoutPrompt"
+      @keydown.enter.prevent="toggleLogoutPrompt"
+      @keydown.space.prevent="toggleLogoutPrompt"
+    >
       <div class="sidebar-avatar">{{ avatarInitial }}</div>
       <div>
         <strong>{{ displayName }}</strong>
         <span>{{ goalLabel }}</span>
       </div>
-      <button class="sidebar-logout" type="button" @click="logout">로그아웃</button>
+
+      <i class="pi pi-sign-out sidebar-user-action" aria-hidden="true"></i>
+
+      <div v-if="logoutPromptOpen" class="sidebar-logout-popover" role="dialog" aria-label="로그아웃 확인" @click.stop>
+        <div class="sidebar-logout-icon">
+          <i class="pi pi-sign-out"></i>
+        </div>
+        <strong>로그아웃하시겠습니까?</strong>
+        <span>현재 계정에서 나가고 로그인 화면으로 이동합니다.</span>
+        <div class="sidebar-logout-actions">
+          <button class="sidebar-logout-cancel" type="button" @click="closeLogoutPrompt">취소</button>
+          <button class="sidebar-logout-confirm" type="button" @click="logout">로그아웃</button>
+        </div>
+      </div>
     </div>
   </aside>
 </template>

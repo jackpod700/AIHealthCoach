@@ -13,6 +13,7 @@ const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
 const signupStep = ref(1);
+const signupValidationError = ref("");
 
 const signupForm = reactive({
   nickname: "",
@@ -51,6 +52,15 @@ function updateGoalPeriod(delta) {
 
 async function submitSignup() {
   if (signupStep.value < 3) {
+    if (signupStep.value === 1 && !validateAccountStep()) {
+      return;
+    }
+
+    if (signupStep.value === 2 && !validateBodyInfoStep()) {
+      return;
+    }
+
+    signupValidationError.value = "";
     nextSignupStep();
     return;
   }
@@ -59,10 +69,20 @@ async function submitSignup() {
     return;
   }
 
+  if (!validateAccountStep()) {
+    signupStep.value = 1;
+    return;
+  }
+
+  if (!validateBodyInfoStep()) {
+    signupStep.value = 2;
+    return;
+  }
+
   await authStore.signup({
-    email: signupForm.email,
-    password: signupForm.password,
-    nickname: signupForm.nickname,
+    email: signupForm.email.trim(),
+    password: signupForm.password.trim(),
+    nickname: signupForm.nickname.trim(),
   });
 
   if (authStore.isAuthenticated) {
@@ -75,6 +95,42 @@ async function submitSignup() {
     router.push("/chat");
   }
 }
+
+function validateAccountStep() {
+  const nickname = signupForm.nickname.trim();
+  const email = signupForm.email.trim();
+  const password = signupForm.password.trim();
+
+  if (!nickname || !email || !password) {
+    signupValidationError.value = "닉네임, 이메일, 비밀번호를 모두 입력해주세요.";
+    return false;
+  }
+
+  if (!isValidEmail(email)) {
+    signupValidationError.value = "이메일 형식에 맞게 입력해주세요.";
+    return false;
+  }
+
+  signupValidationError.value = "";
+  return true;
+}
+
+function isValidEmail(value) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+function validateBodyInfoStep() {
+  const heightCm = Number(signupForm.heightCm);
+  const currentWeightKg = Number(signupForm.currentWeightKg);
+
+  if (!Number.isFinite(heightCm) || heightCm <= 0 || !Number.isFinite(currentWeightKg) || currentWeightKg <= 0) {
+    signupValidationError.value = "키와 현재 체중은 0보다 큰 값으로 입력해주세요.";
+    return false;
+  }
+
+  signupValidationError.value = "";
+  return true;
+}
 </script>
 
 <template>
@@ -83,7 +139,7 @@ async function submitSignup() {
       <AuthBrand compact />
       <SignupStepper :steps="signupSteps" :active-step="signupStep" />
 
-      <form class="signup-card" @submit.prevent="submitSignup">
+      <form class="signup-card" novalidate @submit.prevent="submitSignup">
         <template v-if="signupStep === 1">
           <p class="deco">Create Account</p>
           <h1>계정을 만들어볼까요?</h1>
@@ -125,14 +181,14 @@ async function submitSignup() {
             <label>
               <span>키</span>
               <div class="unit-field">
-                <input v-model="signupForm.heightCm" inputmode="decimal" placeholder="168" />
+                <input v-model="signupForm.heightCm" inputmode="decimal" min="0.1" placeholder="168" step="0.1" type="number" />
                 <em>cm</em>
               </div>
             </label>
             <label>
               <span>현재 체중</span>
               <div class="unit-field">
-                <input v-model="signupForm.currentWeightKg" inputmode="decimal" placeholder="65.2" />
+                <input v-model="signupForm.currentWeightKg" inputmode="decimal" min="0.1" placeholder="65.2" step="0.1" type="number" />
                 <em>kg</em>
               </div>
             </label>
@@ -195,8 +251,8 @@ async function submitSignup() {
           </div>
         </template>
 
-        <div v-if="authStore.signupError" class="login-error">
-          {{ authStore.signupError }}
+        <div v-if="signupValidationError || authStore.signupError" class="login-error signup-error">
+          {{ signupValidationError || authStore.signupError }}
         </div>
 
         <div class="signup-actions">

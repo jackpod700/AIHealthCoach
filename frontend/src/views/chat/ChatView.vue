@@ -3,14 +3,17 @@ import { computed, nextTick, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
+import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
 const router = useRouter();
@@ -112,6 +115,29 @@ async function confirmMealProposal(payload) {
     await mealStore.loadDailyMeal(todayDateKey.value);
   }
 
+  await scrollToBottom();
+}
+
+async function confirmExerciseProposal(payload) {
+  if (!chatStore.startConfirmingExercise()) {
+    return;
+  }
+
+  const saved = await exerciseStore.saveRecord(payload);
+
+  if (!authStore.isAuthenticated) {
+    chatStore.finishConfirmingExercise();
+    router.replace("/login");
+    return;
+  }
+
+  if (saved) {
+    chatStore.completeExerciseProposal();
+  } else {
+    chatStore.failExerciseProposal(exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.");
+  }
+
+  chatStore.finishConfirmingExercise();
   await scrollToBottom();
 }
 
@@ -278,6 +304,19 @@ function sanitizeHtml(html = "") {
                 :error="chatStore.mealProposalError"
                 @confirm="confirmMealProposal"
                 @dismiss="chatStore.dismissMealProposal"
+              />
+            </div>
+
+            <div v-if="chatStore.exerciseProposal" class="message-row coach">
+              <div class="coach-icon">
+                <i class="pi pi-bolt"></i>
+              </div>
+              <ExerciseProposalCard
+                :proposal="chatStore.exerciseProposal"
+                :is-confirming="chatStore.isConfirmingExercise"
+                :error="chatStore.exerciseProposalError"
+                @confirm="confirmExerciseProposal"
+                @dismiss="chatStore.dismissExerciseProposal"
               />
             </div>
           </div>

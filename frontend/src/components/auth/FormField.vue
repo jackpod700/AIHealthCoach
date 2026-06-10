@@ -1,4 +1,6 @@
 <script setup>
+import { ref } from "vue";
+
 defineProps({
   label: {
     type: String,
@@ -35,18 +37,21 @@ defineProps({
 });
 
 const emit = defineEmits(["update:modelValue"]);
+const isFocused = ref(false);
 </script>
 
 <template>
   <label>
     <span>{{ label }}</span>
-    <div class="field-shell" :class="{ focused }">
+    <div class="field-shell" :class="{ focused: focused || isFocused }">
       <i :class="icon"></i>
       <input
         :value="modelValue"
         :type="type"
         :autocomplete="autocomplete"
         :placeholder="placeholder"
+        @blur="isFocused = false"
+        @focus="isFocused = true"
         @input="emit('update:modelValue', $event.target.value)"
       />
       <i v-if="showActionIcon" class="pi pi-eye field-action"></i>

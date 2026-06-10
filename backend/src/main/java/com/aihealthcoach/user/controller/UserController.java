@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.aihealthcoach.user.dto.UserDto.LoginRequest;
 import com.aihealthcoach.user.dto.UserDto.LoginResponse;
 import com.aihealthcoach.user.dto.UserDto.LoginResult;
+import com.aihealthcoach.user.dto.UserDto.LogoutResponse;
 import com.aihealthcoach.user.dto.UserDto.SignupRequest;
 import com.aihealthcoach.user.dto.UserDto.TokenRefreshResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
@@ -14,6 +15,7 @@ import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.service.UserService;
 
 import io.swagger.v3.oas.annotations.Parameter;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +48,7 @@ public class UserController {
     private String cookieSameSite;
 
     @PostMapping("/signup")
-    public ResponseEntity<LoginResponse> signup(@RequestBody SignupRequest request){
+    public ResponseEntity<LoginResponse> signup(@Valid @RequestBody SignupRequest request){
         return ResponseEntity.ok(userService.signup(request));
     }
 
@@ -67,7 +69,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(
+    public ResponseEntity<LogoutResponse> logout(
         @Parameter(hidden = true) @RequestHeader(HttpHeaders.AUTHORIZATION) String authorization,
         @Parameter(hidden = true) @CookieValue("refreshToken") String refreshToken) {
 
@@ -83,9 +85,9 @@ public class UserController {
             .maxAge(0)
             .build();
 
-        return ResponseEntity.noContent()
+        return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, expiredRefreshCookie.toString())
-            .build();
+            .body(LogoutResponse.builder().build());
     }
 
     @PostMapping("/token/refresh")

@@ -4,6 +4,8 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import com.aihealthcoach.chat.entity.ChatMessage;
+import com.aihealthcoach.exercise.dto.AiExerciseDto.ExerciseProposalResponse;
+import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
 
@@ -56,13 +58,15 @@ public class ChatDto {
 
     public record ChatMessageSendResponse(
             List<ChatMessageResponse> messages,
-            MealProposalResponse mealProposal
+            MealProposalResponse mealProposal,
+            ExerciseProposalResponse exerciseProposal
     ) {
     }
 
     public record AiChatResult(
             String assistantMessage,
-            ExtractedMealResult mealExtraction
+            ExtractedMealResult mealExtraction,
+            ExtractedExerciseResult exerciseExtraction
     ) {
     }
 

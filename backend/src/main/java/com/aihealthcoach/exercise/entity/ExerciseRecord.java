@@ -14,12 +14,13 @@ import lombok.NoArgsConstructor;
 public class ExerciseRecord {
     private Long id;
     private Long userId;
-    private Long physicalActivityId;
+    private Long exerciseActivityOptionId;
+    private String intensityLevel;
     private LocalDate exerciseDate;
     private Integer durationMinutes;
     private Integer caloriesBurned;
     private String memo;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
-    private PhysicalActivity physicalActivity;
+    private ExerciseActivityOption exerciseActivityOption;
 }
