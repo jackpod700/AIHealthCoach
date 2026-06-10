@@ -13,7 +13,7 @@ CREATE TEMP TABLE staging_foods (
     content_hash VARCHAR(64)
 );
 
-\copy staging_foods (source_key, source_url, name, brand, serving_description, serving_size, serving_unit, calories, fat, carbohydrate, protein, content_hash) FROM '/tmp/foods.csv' WITH (FORMAT csv, HEADER true);
+\copy staging_foods (source_key,source_url,name,brand,serving_description,serving_size,serving_unit,calories,fat,carbohydrate,protein,content_hash) FROM '/tmp/foods.csv' WITH (FORMAT csv, HEADER true);
 
 INSERT INTO foods (
     source_key,
@@ -57,6 +57,7 @@ FROM (
         protein,
         content_hash
     FROM staging_foods
+    WHERE NULLIF(TRIM(serving_description), '') IS NOT NULL
     ORDER BY
         source_key,
         COALESCE(serving_description, ''),
