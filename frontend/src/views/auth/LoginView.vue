@@ -61,7 +61,6 @@ async function submitLogin() {
             type="password"
             autocomplete="current-password"
             placeholder="비밀번호를 입력하세요"
-            focused
             show-action-icon
           />
 
