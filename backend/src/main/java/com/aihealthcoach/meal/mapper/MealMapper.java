@@ -54,9 +54,4 @@ public interface MealMapper {
 
     List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
-    List<Food> searchFoodCandidates(
-            @Param("query") String query,
-            @Param("tokens") List<Token> tokens,
-            @Param("limit") int limit
-    );
 }

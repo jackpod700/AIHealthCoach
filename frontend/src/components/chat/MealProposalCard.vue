@@ -1,5 +1,7 @@
 <script setup>
-import { computed, reactive, watch } from "vue";
+import { computed, onBeforeUnmount, reactive, watch } from "vue";
+import { searchFoods } from "../../api/mealApi";
+import { useAuthStore } from "../../stores/authStore";
 
 const props = defineProps({
   proposal: {
@@ -17,8 +19,11 @@ const props = defineProps({
 });
 
 const emit = defineEmits(["confirm", "dismiss"]);
+const authStore = useAuthStore();
 
-const selections = reactive({});
+const itemStates = reactive({});
+const searchTimers = new Map();
+const searchSequences = reactive({});
 
 const mealTypeLabels = {
   BREAKFAST: "아침",
@@ -32,37 +37,121 @@ const mealLabel = computed(() => {
 });
 
 const canConfirm = computed(() => {
-  return props.proposal.items.every((item, index) => {
-    const selection = selections[index];
-    return selection?.foodId && Number(selection.quantity) > 0;
+  return props.proposal.items.every((_, index) => {
+    const state = itemStates[index];
+    return state?.foodId && Number(state.quantity) > 0 && !state.isSearching;
   });
 });
 
 watch(
   () => props.proposal,
   (proposal) => {
-    Object.keys(selections).forEach((key) => {
-      delete selections[key];
+    resetSearchTimers();
+    Object.keys(itemStates).forEach((key) => {
+      delete itemStates[key];
+      delete searchSequences[key];
     });
 
     proposal.items.forEach((item, index) => {
-      const firstCandidate = item.candidates?.[0];
+      const candidates = item.candidates || [];
+      const firstCandidate = candidates[0];
 
-      selections[index] = {
+      itemStates[index] = {
+        editableName: item.extractedName || "",
+        candidates,
         foodId: firstCandidate?.foodId || "",
         quantity: roundQuantity(item.quantity || 1),
+        isSearching: false,
+        searchError: "",
       };
+      searchSequences[index] = 0;
     });
   },
   { immediate: true }
 );
 
+onBeforeUnmount(() => {
+  resetSearchTimers();
+});
+
 function selectCandidate(index, foodId) {
-  selections[index].foodId = foodId;
+  itemStates[index].foodId = foodId;
 }
 
 function updateQuantity(index, value) {
-  selections[index].quantity = roundQuantity(value);
+  itemStates[index].quantity = roundQuantity(value);
+}
+
+function updateEditableName(index, value) {
+  const state = itemStates[index];
+  state.editableName = value;
+  state.foodId = "";
+  state.searchError = "";
+
+  const query = value.trim();
+  if (!query) {
+    state.candidates = [];
+    state.isSearching = false;
+    clearSearchTimer(index);
+    return;
+  }
+
+  state.isSearching = true;
+  clearSearchTimer(index);
+  searchTimers.set(
+    index,
+    window.setTimeout(() => {
+      void searchCandidates(index, query);
+    }, 250)
+  );
+}
+
+async function searchCandidates(index, query) {
+  const state = itemStates[index];
+  if (!state) {
+    return;
+  }
+
+  const sequence = (searchSequences[index] || 0) + 1;
+  searchSequences[index] = sequence;
+
+  try {
+    const candidates = await searchFoods(authStore.accessToken, query);
+    if (searchSequences[index] !== sequence) {
+      return;
+    }
+
+    state.candidates = candidates;
+    state.foodId = candidates[0]?.foodId || "";
+    state.searchError = "";
+  } catch (error) {
+    if (authStore.handleAuthFailure(error)) {
+      return;
+    }
+
+    if (searchSequences[index] === sequence) {
+      state.candidates = [];
+      state.foodId = "";
+      state.searchError = error.message;
+    }
+  } finally {
+    if (searchSequences[index] === sequence) {
+      state.isSearching = false;
+    }
+  }
+}
+
+function clearSearchTimer(index) {
+  const timer = searchTimers.get(index);
+  if (timer) {
+    window.clearTimeout(timer);
+    searchTimers.delete(index);
+  }
+}
+
+function resetSearchTimers() {
+  searchTimers.forEach((timer) => window.clearTimeout(timer));
+  searchTimers.clear();
 }
 
 function roundQuantity(value) {
@@ -75,8 +164,9 @@ function roundQuantity(value) {
   return Math.round(numberValue * 10) / 10;
 }
 
-function selectedCandidate(item, index) {
-  return item.candidates?.find((candidate) => candidate.foodId === selections[index]?.foodId);
+function selectedCandidate(index) {
+  const state = itemStates[index];
+  return state?.candidates?.find((candidate) => candidate.foodId === state.foodId);
 }
 
 function formatNumber(value) {
@@ -100,9 +190,9 @@ function confirm() {
   emit("confirm", {
     mealDate: props.proposal.mealDate,
     mealType: props.proposal.mealType,
-    items: props.proposal.items.map((item, index) => ({
-      foodId: selections[index].foodId,
-      quantity: Number(selections[index].quantity),
+    items: props.proposal.items.map((_, index) => ({
+      foodId: itemStates[index].foodId,
+      quantity: Number(itemStates[index].quantity),
     })),
   });
 }
@@ -131,11 +221,19 @@ function confirm() {
     <div class="meal-proposal-items">
       <section v-for="(item, index) in proposal.items" :key="`${item.extractedName}-${index}`">
         <div class="meal-proposal-item-head">
-          <strong>{{ item.extractedName }}</strong>
+          <label class="meal-proposal-name-field">
+            <span>AI가 추출한 음식명</span>
+            <input
+              :value="itemStates[index]?.editableName"
+              type="text"
+              placeholder="음식명을 입력하세요"
+              @input="updateEditableName(index, $event.target.value)"
+            />
+          </label>
           <label>
             <span>배수</span>
             <input
-              :value="selections[index]?.quantity"
+              :value="itemStates[index]?.quantity"
               type="number"
               min="0.1"
               step="0.1"
@@ -144,27 +242,36 @@ function confirm() {
           </label>
         </div>
 
-        <div v-if="item.candidates?.length" class="meal-candidate-list">
+        <p v-if="itemStates[index]?.isSearching" class="meal-candidate-status">검색 중...</p>
+        <p v-else-if="itemStates[index]?.searchError" class="meal-candidate-empty">
+          {{ itemStates[index].searchError }}
+        </p>
+
+        <div v-if="itemStates[index]?.candidates?.length" class="meal-candidate-list">
           <button
-            v-for="candidate in item.candidates"
+            v-for="candidate in itemStates[index].candidates"
             :key="candidate.foodId"
             type="button"
-            :class="{ selected: selections[index]?.foodId === candidate.foodId }"
+            :class="{ selected: itemStates[index]?.foodId === candidate.foodId }"
             @click="selectCandidate(index, candidate.foodId)"
           >
             <strong>{{ candidate.foodName }}</strong>
             <span>
-              {{ candidate.brand || "제조사 정보 없음" }} · {{ servingLabel(candidate) }} · {{ formatNumber(candidate.calories) }} kcal
+              {{ candidate.brand || "제조사 정보 없음" }} · {{ servingLabel(candidate) }} ·
+              {{ formatNumber(candidate.calories) }} kcal
             </span>
           </button>
         </div>
 
-        <div v-else class="meal-candidate-empty">
-          매칭된 음식 후보가 없어서 기록할 수 없어요.
+        <div
+          v-else-if="!itemStates[index]?.isSearching && !itemStates[index]?.searchError"
+          class="meal-candidate-empty"
+        >
+          매칭되는 음식 후보가 없어요. 이름을 다시 입력해주세요.
         </div>
 
-        <p v-if="selectedCandidate(item, index)" class="meal-selected-summary">
-          선택됨: {{ selectedCandidate(item, index).foodName }}
+        <p v-if="selectedCandidate(index)" class="meal-selected-summary">
+          선택됨: {{ selectedCandidate(index).foodName }}
         </p>
       </section>
     </div>

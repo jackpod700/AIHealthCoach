@@ -21,13 +21,15 @@ import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AiChatServiceImpl implements AiChatService {
 
-    private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024L * 1024L;
-    private static final long MAX_TOTAL_IMAGE_SIZE_BYTES = 50L * 1024L * 1024L;
+    private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024L;
+    private static final long MAX_TOTAL_IMAGE_SIZE_BYTES = 50L * 1024L;
     private static final String DEFAULT_IMAGE_MESSAGE = "사진을 분석해서 식단 후보를 만들어줘.";
 
     private final ChatClient chatClient;
@@ -38,12 +40,17 @@ public class AiChatServiceImpl implements AiChatService {
 
     @Override
     public AiChatResult generate(ChatMessageRequest userMessage) {
-        String content = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
-                .user(userMessage.content())
-                .call()
-                .content();
+        try {
+            AiChatResult result = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
+                    .user(userMessage.content())
+                    .call()
+                    .entity(AiChatResult.class);
 
-        return parseAiResult(content);
+            return normalizeAiResult(result);
+        } catch (Exception exception) {
+            log.warn("Failed to map AI chat response to AiChatResult.", exception);
+            return fallback();
+        }
     }
 
     @Override
@@ -51,15 +58,20 @@ public class AiChatServiceImpl implements AiChatService {
         validateImages(images);
 
         String userText = normalizeImageMessage(content);
-        String responseContent = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
-                .user(user -> {
-                    user.text(userText);
-                    images.forEach(image -> user.media(toMimeType(image), image.getResource()));
-                })
-                .call()
-                .content();
+        try {
+            AiChatResult result = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
+                    .user(user -> {
+                        user.text(userText);
+                        images.forEach(image -> user.media(toMimeType(image), image.getResource()));
+                    })
+                    .call()
+                    .entity(AiChatResult.class);
 
-        return parseAiResult(responseContent);
+            return normalizeAiResult(result);
+        } catch (Exception exception) {
+            log.warn("Failed to map AI image response to AiChatResult.", exception);
+            return fallback();
+        }
     }
 
     String systemPrompt(LocalDate today) {
@@ -70,23 +82,22 @@ public class AiChatServiceImpl implements AiChatService {
         try {
             objectMapper.findAndRegisterModules();
             AiChatResult result = objectMapper.readValue(content, AiChatResult.class);
-            if (result.assistantMessage() == null || result.assistantMessage().isBlank()) {
-                return fallback();
-            }
-            if (result.mealExtraction() == null) {
-                return new AiChatResult(
-                        result.assistantMessage(),
-                        ExtractedMealResult.noMeal(),
-                        result.exerciseExtraction() == null ? ExtractedExerciseResult.noExercise() : result.exerciseExtraction()
-                );
-            }
-            if (result.exerciseExtraction() == null) {
-                return new AiChatResult(result.assistantMessage(), result.mealExtraction(), ExtractedExerciseResult.noExercise());
-            }
-            return result;
+            return normalizeAiResult(result);
         } catch (Exception exception) {
             return fallback();
         }
+    }
+
+    private AiChatResult normalizeAiResult(AiChatResult result) {
+        if (result == null || result.assistantMessage() == null || result.assistantMessage().isBlank()) {
+            return fallback();
+        }
+
+        return new AiChatResult(
+                result.assistantMessage(),
+                result.mealExtraction() == null ? ExtractedMealResult.noMeal() : result.mealExtraction(),
+                result.exerciseExtraction() == null ? ExtractedExerciseResult.noExercise() : result.exerciseExtraction()
+        );
     }
 
     private AiChatResult fallback() {

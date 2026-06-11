@@ -23,7 +23,6 @@ public class AiPromptFactory {
                 The user may attach one or more images.
                 First decide whether the images clearly contain food.
                 If no food is visible, return mealIntent false and explain in Korean that food was not found.
-                If food is visible but uncertain, do not invent details. Ask the user for more information and return mealIntent false.
                 If food is visible, extract likely food names and simple quantity multipliers.
                 Use the user's optional text to infer mealDate and mealType when possible.
                 Do not claim the meal has been saved. The user must confirm the proposal first.

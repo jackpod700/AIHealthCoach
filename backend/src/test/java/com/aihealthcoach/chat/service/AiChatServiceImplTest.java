@@ -104,6 +104,20 @@ class AiChatServiceImplTest {
     }
 
     @Test
+    void generateWithImagesRejectsImageOverGmsLimit() {
+        AiChatServiceImpl service = newService();
+        MockMultipartFile largeImage = new MockMultipartFile(
+                "images",
+                "meal.jpg",
+                "image/jpeg",
+                new byte[(10 * 1024) + 1]
+        );
+
+        assertThatThrownBy(() -> service.generateWithImages("", List.of(largeImage)))
+                .isInstanceOf(ChatException.class);
+    }
+
+    @Test
     void imagePromptIncludesNonFoodImageRules() {
         AiPromptFactory promptFactory = new AiPromptFactory();
 
