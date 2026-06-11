@@ -960,6 +960,7 @@
 }
 
 .chat-composer {
+  position: relative;
   display: grid;
   min-height: 56px;
   grid-template-columns: 1fr 36px 36px 44px;
@@ -971,6 +972,85 @@
   padding: 0 9px 0 20px;
   background: #fff;
   box-shadow: 0 8px 18px rgb(47 74 60 / 5%);
+}
+
+.chat-image-input {
+  position: absolute;
+  right: 97px;
+  width: 36px;
+  height: 36px;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.image-attachment-tray {
+  display: grid;
+  gap: 8px;
+  margin: 0 28px 10px;
+  border: 1px solid #eee5d8;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fffaf3;
+  box-shadow: 0 8px 18px rgb(47 74 60 / 4%);
+}
+
+.image-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.image-attachment-list figure {
+  position: relative;
+  display: grid;
+  width: 92px;
+  gap: 6px;
+  margin: 0;
+}
+
+.image-attachment-list img {
+  width: 92px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #eadfce;
+}
+
+.image-attachment-list figcaption {
+  overflow: hidden;
+  color: #7a8491;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-attachment-list figure button {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eadfce;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--navy);
+  font-size: 10px;
+  box-shadow: 0 4px 10px rgb(47 74 60 / 10%);
+}
+
+.image-attachment-error {
+  margin: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff1ef;
+  color: #ae4d42;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .chat-composer input {

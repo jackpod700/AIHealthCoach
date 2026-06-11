@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
@@ -19,6 +19,9 @@ const profileStore = useProfileStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
+const fileInputRef = ref(null);
+const attachedImages = ref([]);
+const imageAttachmentError = ref("");
 
 const mealTypeMeta = {
   BREAKFAST: { label: "아침", dot: "yellow" },
@@ -68,6 +71,8 @@ marked.setOptions({
 });
 
 onMounted(async () => {
+  window.addEventListener("paste", handlePaste);
+
   await Promise.all([
     chatStore.loadMessages(),
     mealStore.loadDailyMeal(todayDateKey.value),
@@ -82,23 +87,115 @@ onMounted(async () => {
   await scrollToBottom();
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener("paste", handlePaste);
+  revokeAttachedImageUrls();
+});
+
 async function sendMessage() {
   const content = message.value.trim();
+  const images = attachedImages.value.map((image) => image.file);
 
-  if (!content || chatStore.isSending) {
+  if ((!content && !images.length) || chatStore.isSending) {
     return;
   }
 
   message.value = "";
-  await chatStore.sendMessage(content);
+  if (images.length) {
+    await chatStore.sendImageMessage(content, images);
+  } else {
+    await chatStore.sendMessage(content);
+  }
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
   }
 
+  if (!chatStore.error) {
+    clearAttachedImages();
+  }
+
   await mealStore.loadDailyMeal(todayDateKey.value);
   await scrollToBottom();
+}
+
+function openImagePicker() {
+  fileInputRef.value?.click();
+}
+
+function handleImageInput(event) {
+  addImageFiles(Array.from(event.target.files || []));
+  event.target.value = "";
+}
+
+function handlePaste(event) {
+  const files = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith("image/"));
+
+  if (files.length) {
+    addImageFiles(files);
+  }
+}
+
+function addImageFiles(files = []) {
+  imageAttachmentError.value = "";
+
+  for (const file of files) {
+    const error = validateImageFile(file);
+    if (error) {
+      imageAttachmentError.value = error;
+      continue;
+    }
+
+    attachedImages.value.push({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      file,
+      previewUrl: URL.createObjectURL(file),
+    });
+  }
+
+  const totalSize = attachedImages.value.reduce((sum, image) => sum + image.file.size, 0);
+  if (totalSize > 50 * 1024 * 1024) {
+    const removedImage = attachedImages.value.pop();
+    if (removedImage) {
+      URL.revokeObjectURL(removedImage.previewUrl);
+    }
+    imageAttachmentError.value = "첨부 이미지는 한 번에 최대 50MB까지만 보낼 수 있어요.";
+  }
+}
+
+function validateImageFile(file) {
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+  if (!allowedTypes.has(file.type)) {
+    return "JPEG, PNG, WebP 이미지만 첨부할 수 있어요.";
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    return "이미지 1장은 최대 10MB까지만 첨부할 수 있어요.";
+  }
+
+  return "";
+}
+
+function removeAttachedImage(imageId) {
+  const targetImage = attachedImages.value.find((image) => image.id === imageId);
+  if (targetImage) {
+    URL.revokeObjectURL(targetImage.previewUrl);
+  }
+
+  attachedImages.value = attachedImages.value.filter((image) => image.id !== imageId);
+  imageAttachmentError.value = "";
+}
+
+function clearAttachedImages() {
+  revokeAttachedImageUrls();
+  attachedImages.value = [];
+  imageAttachmentError.value = "";
+}
+
+function revokeAttachedImageUrls() {
+  attachedImages.value.forEach((image) => URL.revokeObjectURL(image.previewUrl));
 }
 
 async function confirmMealProposal(payload) {
@@ -321,7 +418,28 @@ function sanitizeHtml(html = "") {
             </div>
           </div>
 
+          <div v-if="attachedImages.length || imageAttachmentError" class="image-attachment-tray">
+            <div v-if="attachedImages.length" class="image-attachment-list">
+              <figure v-for="image in attachedImages" :key="image.id">
+                <img :src="image.previewUrl" :alt="image.file.name" />
+                <figcaption>{{ image.file.name }}</figcaption>
+                <button type="button" aria-label="이미지 삭제" @click="removeAttachedImage(image.id)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </figure>
+            </div>
+            <p v-if="imageAttachmentError" class="image-attachment-error">{{ imageAttachmentError }}</p>
+          </div>
+
           <form class="chat-composer" @submit.prevent="sendMessage">
+            <input
+              ref="fileInputRef"
+              class="chat-image-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              @change="handleImageInput"
+            />
             <input v-model="message" placeholder="식단이나 운동을 편하게 기록해보세요..." />
             <button type="button" aria-label="추가">
               <i class="pi pi-plus"></i>
