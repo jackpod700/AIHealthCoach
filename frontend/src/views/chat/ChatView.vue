@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
@@ -19,6 +19,12 @@ const profileStore = useProfileStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
+const fileInputRef = ref(null);
+const attachedImages = ref([]);
+const imageAttachmentError = ref("");
+const isDraggingImage = ref(false);
+const GMS_IMAGE_TARGET_BYTES = 7 * 1024;
+const GMS_IMAGE_MAX_DIMENSION = 512;
 
 const mealTypeMeta = {
   BREAKFAST: { label: "아침", dot: "yellow" },
@@ -68,6 +74,8 @@ marked.setOptions({
 });
 
 onMounted(async () => {
+  window.addEventListener("paste", handlePaste);
+
   await Promise.all([
     chatStore.loadMessages(),
     mealStore.loadDailyMeal(todayDateKey.value),
@@ -82,15 +90,26 @@ onMounted(async () => {
   await scrollToBottom();
 });
 
+onBeforeUnmount(() => {
+  window.removeEventListener("paste", handlePaste);
+  revokeAttachedImageUrls();
+});
+
 async function sendMessage() {
   const content = message.value.trim();
+  const images = attachedImages.value.map((image) => image.file);
 
-  if (!content || chatStore.isSending) {
+  if ((!content && !images.length) || chatStore.isSending) {
     return;
   }
 
   message.value = "";
-  await chatStore.sendMessage(content);
+  clearAttachedImages();
+  if (images.length) {
+    await chatStore.sendImageMessage(content, images);
+  } else {
+    await chatStore.sendMessage(content);
+  }
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
@@ -99,6 +118,214 @@ async function sendMessage() {
 
   await mealStore.loadDailyMeal(todayDateKey.value);
   await scrollToBottom();
+}
+
+function openImagePicker() {
+  fileInputRef.value?.click();
+}
+
+async function handleImageInput(event) {
+  await addImageFiles(Array.from(event.target.files || []));
+  event.target.value = "";
+}
+
+function handlePaste(event) {
+  const files = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith("image/"));
+
+  if (files.length) {
+    void addImageFiles(files);
+  }
+}
+
+function handleDragEnter(event) {
+  if (hasImageFiles(event.dataTransfer)) {
+    isDraggingImage.value = true;
+  }
+}
+
+function handleDragOver(event) {
+  if (hasImageFiles(event.dataTransfer)) {
+    isDraggingImage.value = true;
+  }
+}
+
+function handleDragLeave(event) {
+  if (!event.currentTarget.contains(event.relatedTarget)) {
+    isDraggingImage.value = false;
+  }
+}
+
+function handleDrop(event) {
+  isDraggingImage.value = false;
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith("image/"));
+
+  if (files.length) {
+    void addImageFiles(files);
+  }
+}
+
+function hasImageFiles(dataTransfer) {
+  return Array.from(dataTransfer?.items || []).some((item) => item.kind === "file" && item.type.startsWith("image/"));
+}
+
+async function addImageFiles(files = []) {
+  imageAttachmentError.value = "";
+
+  for (const file of files) {
+    const error = validateImageFile(file);
+    if (error) {
+      imageAttachmentError.value = error;
+      continue;
+    }
+
+    try {
+      const compressedFile = await compressImageForGms(file);
+
+      attachedImages.value.push({
+        id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file: compressedFile,
+        originalFile: file,
+        previewUrl: URL.createObjectURL(file),
+      });
+    } catch (compressionError) {
+      imageAttachmentError.value = compressionError.message;
+    }
+  }
+
+  const totalSize = attachedImages.value.reduce((sum, image) => sum + image.file.size, 0);
+  if (totalSize > 50 * 1024) {
+    const removedImage = attachedImages.value.pop();
+    if (removedImage) {
+      URL.revokeObjectURL(removedImage.previewUrl);
+    }
+    imageAttachmentError.value = "분석용 이미지는 한 번에 최대 50KB까지만 보낼 수 있어요.";
+  }
+}
+
+function validateImageFile(file) {
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+  if (!allowedTypes.has(file.type)) {
+    return "JPEG, PNG, WebP 이미지만 첨부할 수 있어요.";
+  }
+
+  if (file.size > 10 * 1024 * 1024) {
+    return "이미지 1장은 최대 10MB까지만 첨부할 수 있어요.";
+  }
+
+  return "";
+}
+
+async function compressImageForGms(file) {
+  if (file.size <= GMS_IMAGE_TARGET_BYTES) {
+    return file;
+  }
+
+  const image = await loadImage(file);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+
+  if (!context) {
+    throw new Error("이미지 압축을 준비하지 못했어요. 다른 사진으로 다시 시도해주세요.");
+  }
+
+  const maxDimensions = [GMS_IMAGE_MAX_DIMENSION, 384, 256, 192, 160];
+  const qualities = [0.72, 0.6, 0.5, 0.42, 0.34, 0.28, 0.22];
+
+  for (const maxDimension of maxDimensions) {
+    const { width, height } = fitImageSize(image.width, image.height, maxDimension);
+    canvas.width = width;
+    canvas.height = height;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+
+    for (const quality of qualities) {
+      const blob = await canvasToBlob(canvas, quality);
+      if (blob.size <= GMS_IMAGE_TARGET_BYTES) {
+        return new File([blob], toCompressedFileName(file.name), {
+          type: "image/jpeg",
+          lastModified: Date.now(),
+        });
+      }
+    }
+  }
+
+  throw new Error("이미지가 너무 커서 실패했어요. 더 단순하거나 작은 사진으로 다시 시도해주세요.");
+}
+
+function loadImage(file) {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    image.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      resolve(image);
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(objectUrl);
+      reject(new Error("이미지를 읽지 못했어요. 다른 사진으로 다시 시도해주세요."));
+    };
+    image.src = objectUrl;
+  });
+}
+
+function fitImageSize(width, height, maxDimension) {
+  const ratio = Math.min(maxDimension / width, maxDimension / height, 1);
+
+  return {
+    width: Math.max(1, Math.round(width * ratio)),
+    height: Math.max(1, Math.round(height * ratio)),
+  };
+}
+
+function canvasToBlob(canvas, quality) {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => {
+        if (blob) {
+          resolve(blob);
+          return;
+        }
+
+        reject(new Error("이미지를 압축하지 못했어요. 다른 사진으로 다시 시도해주세요."));
+      },
+      "image/jpeg",
+      quality
+    );
+  });
+}
+
+function toCompressedFileName(name = "meal-image") {
+  return `${name.replace(/\.[^.]+$/, "")}-gms.jpg`;
+}
+
+function formatBytes(bytes) {
+  if (bytes < 1024) {
+    return `${bytes}B`;
+  }
+
+  return `${(bytes / 1024).toFixed(1)}KB`;
+}
+
+function removeAttachedImage(imageId) {
+  const targetImage = attachedImages.value.find((image) => image.id === imageId);
+  if (targetImage) {
+    URL.revokeObjectURL(targetImage.previewUrl);
+  }
+
+  attachedImages.value = attachedImages.value.filter((image) => image.id !== imageId);
+  imageAttachmentError.value = "";
+}
+
+function clearAttachedImages() {
+  revokeAttachedImageUrls();
+  attachedImages.value = [];
+  imageAttachmentError.value = "";
+}
+
+function revokeAttachedImageUrls() {
+  attachedImages.value.forEach((image) => URL.revokeObjectURL(image.previewUrl));
 }
 
 async function confirmMealProposal(payload) {
@@ -255,7 +482,14 @@ function sanitizeHtml(html = "") {
       </header>
 
       <div class="chat-body">
-        <section class="chat-thread">
+        <section
+          class="chat-thread"
+          :class="{ 'dragging-image': isDraggingImage }"
+          @dragenter.prevent="handleDragEnter"
+          @dragover.prevent="handleDragOver"
+          @dragleave.prevent="handleDragLeave"
+          @drop.prevent="handleDrop"
+        >
           <div class="chat-scroll" ref="threadRef">
             <div class="day-pill">오늘 · {{ todayLabel }}</div>
 
@@ -321,9 +555,30 @@ function sanitizeHtml(html = "") {
             </div>
           </div>
 
+          <div v-if="attachedImages.length || imageAttachmentError" class="image-attachment-tray">
+            <div v-if="attachedImages.length" class="image-attachment-list">
+              <figure v-for="image in attachedImages" :key="image.id">
+                <img :src="image.previewUrl" :alt="image.file.name" />
+                <figcaption>{{ image.originalFile.name }} · {{ formatBytes(image.file.size) }}</figcaption>
+                <button type="button" aria-label="이미지 삭제" @click="removeAttachedImage(image.id)">
+                  <i class="pi pi-times"></i>
+                </button>
+              </figure>
+            </div>
+            <p v-if="imageAttachmentError" class="image-attachment-error">{{ imageAttachmentError }}</p>
+          </div>
+
           <form class="chat-composer" @submit.prevent="sendMessage">
+            <input
+              ref="fileInputRef"
+              class="chat-image-input"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              @change="handleImageInput"
+            />
             <input v-model="message" placeholder="식단이나 운동을 편하게 기록해보세요..." />
-            <button type="button" aria-label="추가">
+            <button class="attach-image-button" type="button" aria-label="이미지 추가" @click="openImagePicker">
               <i class="pi pi-plus"></i>
             </button>
             <button type="button" aria-label="음성 입력">
@@ -334,7 +589,7 @@ function sanitizeHtml(html = "") {
             </button>
           </form>
 
-          <p class="composer-note">AI 코치는 참고용 가이드를 제공해요 · 의학적 진단은 전문가와 상담하세요</p>
+          <p class="composer-note">AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.</p>
         </section>
 
         <aside class="today-panel">
@@ -356,8 +611,8 @@ function sanitizeHtml(html = "") {
             <div class="progress-track">
               <i></i>
             </div>
-            <p v-if="hasTodayMeals">일일 식단 조회 API 기준으로 계산됐어요</p>
-            <p v-else>아직 오늘 식단 기록이 없어요</p>
+            <p v-if="hasTodayMeals">일일 식단 조회 API 기준으로 계산됐어요.</p>
+            <p v-else>아직 오늘 식단 기록이 없어요.</p>
           </section>
 
           <div class="macro-grid" :class="{ 'pending-api': !hasTodayMeals }">

@@ -1,6 +1,7 @@
 package com.aihealthcoach.meal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
@@ -43,20 +44,23 @@ class AiMealProposalServiceImplTest {
     }
 
     @Test
-    void createProposalAppliesDefaultsAndFoodCandidates() {
+    void createProposalAppliesDefaultsAndReturnsUnlimitedFoodCandidates() {
         when(clock.instant()).thenReturn(Instant.parse("2026-06-02T03:30:00Z"));
         when(clock.getZone()).thenReturn(SEOUL);
-        when(mealMapper.searchFoodCandidates("김치찌개", List.of(new Token("김치찌개", "김치찌개")), 5))
-                .thenReturn(List.of(food(1001L, "김치찌개", "80")));
-        when(mealMapper.searchFoodCandidates("밥", List.of(new Token("밥", "밥")), 5))
-                .thenReturn(List.of(food(1002L, "밥", "150")));
+        when(mealMapper.searchFoods("kimchi stew", List.of(new Token("kimchi", "kimchi"), new Token("stew", "stew"))))
+                .thenReturn(List.of(
+                        food(1001L, "kimchi stew", "80"),
+                        food(1002L, "kimchi stew large", "160")
+                ));
+        when(mealMapper.searchFoods("rice", List.of(new Token("rice", "rice"))))
+                .thenReturn(List.of(food(1003L, "rice", "150")));
         ExtractedMealResult extracted = new ExtractedMealResult(
                 true,
                 null,
                 null,
                 List.of(
-                        new ExtractedMealItem("김치찌개", null),
-                        new ExtractedMealItem("밥", new BigDecimal("2"))
+                        new ExtractedMealItem("kimchi stew", null),
+                        new ExtractedMealItem("rice", new BigDecimal("2"))
                 )
         );
 
@@ -67,8 +71,10 @@ class AiMealProposalServiceImplTest {
         assertThat(proposal.defaultsApplied()).containsExactlyInAnyOrder("mealDate", "mealType", "quantity");
         assertThat(proposal.items()).hasSize(2);
         assertThat(proposal.items().get(0).quantity()).isEqualByComparingTo("1");
-        assertThat(proposal.items().get(0).candidates()).extracting("foodId").containsExactly(1001L);
+        assertThat(proposal.items().get(0).candidates()).extracting("foodId").containsExactly(1001L, 1002L);
         assertThat(proposal.items().get(1).quantity()).isEqualByComparingTo("2");
+        verify(mealMapper).searchFoods("kimchi stew", List.of(new Token("kimchi", "kimchi"), new Token("stew", "stew")));
+        verify(mealMapper).searchFoods("rice", List.of(new Token("rice", "rice")));
     }
 
     private Food food(Long foodId, String name, String calories) {

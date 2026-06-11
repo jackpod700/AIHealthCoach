@@ -25,8 +25,6 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class AiMealProposalServiceImpl implements AiMealProposalService {
 
-    private static final int CANDIDATE_LIMIT = 5;
-
     private final MealMapper mealMapper;
     private final Clock clock;
 
@@ -75,10 +73,11 @@ public class AiMealProposalServiceImpl implements AiMealProposalService {
 
         String query = FoodSearchQuery.normalize(item.name());
         List<Token> tokens = FoodSearchQuery.tokens(query);
-        List<FoodCandidateResponse> candidates = mealMapper.searchFoodCandidates(query, tokens, CANDIDATE_LIMIT)
-                .stream()
-                .map(FoodCandidateResponse::fromRow)
-                .toList();
+        List<FoodCandidateResponse> candidates = tokens.isEmpty()
+                ? List.of()
+                : mealMapper.searchFoods(query, tokens).stream()
+                        .map(FoodCandidateResponse::fromRow)
+                        .toList();
 
         return new MealProposalItemResponse(item.name(), quantity, candidates);
     }

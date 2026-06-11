@@ -191,6 +191,13 @@
                 WHEN MIN(COALESCE(brand, '')) ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
+            CASE
+                WHEN #{query} = '' THEN 1
+                WHEN MIN(COALESCE(brand, '')) ILIKE CONCAT('%', #{query}, '%') THEN 1
+                WHEN MIN(COALESCE(brand, '')) = '' THEN 0
+                ELSE 1
+            END,
+            LENGTH(MIN(name)),
             MIN(name),
             MIN(COALESCE(brand, '')),
             source_key
@@ -228,44 +235,10 @@
             id
     </select>
 
-    <!-- AI 식단 후보 검색용: 후보 개수 제한이 있고, 선택 가능한 foodId row를 그대로 반환한다. -->
-    <select id="searchFoodCandidates" resultMap="food">
-        SELECT
-            id AS food_id,
-            source_key,
-            name AS food_name,
-            brand,
-            serving_description,
-            serving_size,
-            serving_unit,
-            calories,
-            carbohydrate,
-            protein,
-            fat
-        FROM foods
-        WHERE
-        <foreach collection="tokens" item="token" separator=" AND ">
-            (
-                name ILIKE CONCAT('%', #{token.value}, '%')
-                OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
-                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-            )
-        </foreach>
-        ORDER BY
-            CASE
-                WHEN name = #{query} THEN 0
-                WHEN name ILIKE CONCAT(#{query}, '%') THEN 1
-                WHEN COALESCE(brand, '') = #{query} THEN 2
-                WHEN COALESCE(brand, '') ILIKE CONCAT(#{query}, '%') THEN 3
-                ELSE 4
-            END,
-            name,
-            brand
-        LIMIT #{limit}
-    </select>
-
-    <!-- 수동 식단 작성/수정 검색용: 특정 foodId를 바로 선택해야 하므로 그룹화하지 않고 row 단위로 반환한다. -->
+    <!--
+        row 단위 음식 후보 검색.
+        수동 식단 작성/수정과 AI 식단 후보에서 실제 저장 가능한 foodId 후보를 그대로 반환한다.
+    -->
     <select id="searchFoods" resultMap="food">
         SELECT
             id AS food_id,
@@ -297,7 +270,14 @@
                 WHEN COALESCE(brand, '') ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
+            CASE
+                WHEN COALESCE(brand, '') ILIKE CONCAT('%', #{query}, '%') THEN 1
+                WHEN COALESCE(brand, '') = '' THEN 0
+                ELSE 1
+            END,
+            LENGTH(name),
             name,
             brand
     </select>
 </mapper>
+

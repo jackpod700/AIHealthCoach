@@ -395,6 +395,7 @@
   font-size: 14px;
   font-weight: 800;
   line-height: 1.6;
+  white-space: pre-line;
 }
 
 .user-bubble {
@@ -727,6 +728,10 @@
   gap: 12px;
 }
 
+.meal-proposal-name-field {
+  min-width: 0;
+}
+
 .meal-proposal-item-head strong {
   color: var(--ink);
   font-size: 13px;
@@ -759,8 +764,11 @@
 
 .meal-candidate-list {
   display: grid;
+  max-height: 260px;
+  overflow-y: auto;
   gap: 8px;
   margin-top: 12px;
+  padding-right: 4px;
 }
 
 .meal-candidate-list button {
@@ -786,10 +794,19 @@
 
 .meal-candidate-list span,
 .meal-selected-summary,
-.meal-candidate-empty {
+.meal-candidate-empty,
+.meal-candidate-status {
   color: #7f8b9b;
   font-size: 10px;
   font-weight: 800;
+}
+
+.meal-candidate-status {
+  margin: 12px 0 0;
+  border: 1px dashed #dfc8ad;
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
 }
 
 .meal-selected-summary {
@@ -960,6 +977,7 @@
 }
 
 .chat-composer {
+  position: relative;
   display: grid;
   min-height: 56px;
   grid-template-columns: 1fr 36px 36px 44px;
@@ -971,6 +989,119 @@
   padding: 0 9px 0 20px;
   background: #fff;
   box-shadow: 0 8px 18px rgb(47 74 60 / 5%);
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background-color 0.18s ease;
+}
+
+.chat-thread.dragging-image::before {
+  position: absolute;
+  z-index: 4;
+  inset: 26px 28px auto;
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  justify-content: center;
+  justify-self: center;
+  border: 1px solid #f0c194;
+  border-radius: 999px;
+  padding: 9px 14px;
+  background: #fffaf3;
+  color: #d97745;
+  content: '사진을 놓으면 첨부돼요';
+  font-size: 11px;
+  font-weight: 900;
+  box-shadow: 0 10px 24px rgb(47 74 60 / 10%);
+  pointer-events: none;
+}
+
+.chat-thread.dragging-image::after {
+  position: absolute;
+  z-index: 3;
+  inset: 16px 20px 82px;
+  border: 2px dashed #e2845d;
+  border-radius: 18px;
+  background: rgb(255 248 239 / 72%);
+  content: '';
+  pointer-events: none;
+}
+
+.chat-image-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.image-attachment-tray {
+  display: grid;
+  gap: 8px;
+  margin: 0 28px 10px;
+  border: 1px solid #eee5d8;
+  border-radius: 14px;
+  padding: 12px;
+  background: #fffaf3;
+  box-shadow: 0 8px 18px rgb(47 74 60 / 4%);
+}
+
+.image-attachment-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.image-attachment-list figure {
+  position: relative;
+  display: grid;
+  width: 92px;
+  gap: 6px;
+  margin: 0;
+}
+
+.image-attachment-list img {
+  width: 92px;
+  height: 72px;
+  border-radius: 10px;
+  object-fit: cover;
+  border: 1px solid #eadfce;
+}
+
+.image-attachment-list figcaption {
+  overflow: hidden;
+  color: #7a8491;
+  font-size: 10px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-attachment-list figure button {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #eadfce;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--navy);
+  font-size: 10px;
+  box-shadow: 0 4px 10px rgb(47 74 60 / 10%);
+}
+
+.image-attachment-error {
+  margin: 0;
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: #fff1ef;
+  color: #ae4d42;
+  font-size: 11px;
+  font-weight: 900;
 }
 
 .chat-composer input {
@@ -995,6 +1126,31 @@
   border-radius: 10px;
   background: transparent;
   color: #7d8998;
+}
+
+.chat-composer .attach-image-button {
+  position: relative;
+  border: 1px solid transparent;
+  transition:
+    transform 0.16s ease,
+    border-color 0.16s ease,
+    background-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.chat-composer .attach-image-button:hover,
+.chat-composer .attach-image-button:focus-visible {
+  transform: translateY(-1px) scale(1.06);
+  border-color: #e6c9a6;
+  background: #fff5e8;
+  color: #d97745;
+  box-shadow: 0 8px 16px rgb(217 119 69 / 18%);
+}
+
+.chat-composer .attach-image-button:active {
+  transform: translateY(0) scale(0.98);
+  box-shadow: none;
 }
 
 .chat-composer .send-button {
