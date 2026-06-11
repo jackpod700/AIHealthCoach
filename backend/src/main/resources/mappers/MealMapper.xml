@@ -191,6 +191,13 @@
                 WHEN MIN(COALESCE(brand, '')) ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
+            CASE
+                WHEN #{query} = '' THEN 1
+                WHEN MIN(COALESCE(brand, '')) ILIKE CONCAT('%', #{query}, '%') THEN 1
+                WHEN MIN(COALESCE(brand, '')) = '' THEN 0
+                ELSE 1
+            END,
+            LENGTH(MIN(name)),
             MIN(name),
             MIN(COALESCE(brand, '')),
             source_key
@@ -263,6 +270,12 @@
                 WHEN COALESCE(brand, '') ILIKE CONCAT(#{query}, '%') THEN 3
                 ELSE 4
             END,
+            CASE
+                WHEN COALESCE(brand, '') ILIKE CONCAT('%', #{query}, '%') THEN 1
+                WHEN COALESCE(brand, '') = '' THEN 0
+                ELSE 1
+            END,
+            LENGTH(name),
             name,
             brand
     </select>
