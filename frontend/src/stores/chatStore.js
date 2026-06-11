@@ -128,7 +128,7 @@ export const useChatStore = defineStore("chat", {
 
       const requestedAt = new Date();
       const requestId = `pending-${requestedAt.getTime()}`;
-      const userSummary = `사진 ${images.length}장을 업로드했습니다.${trimmedContent ? ` ${trimmedContent}` : ""}`;
+      const userSummary = `사진 ${images.length}장을 업로드했습니다.${trimmedContent ? `\n${trimmedContent}` : ""}`;
       const pendingUserMessage = {
         clientId: `${requestId}-user`,
         role: "USER",

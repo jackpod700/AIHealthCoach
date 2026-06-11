@@ -115,7 +115,7 @@ public class ChatController {
             return prefix;
         }
 
-        return prefix + " " + trimmedContent;
+        return prefix + "\n" + trimmedContent;
     }
     
 }

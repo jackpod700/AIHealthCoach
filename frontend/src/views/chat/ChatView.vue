@@ -104,6 +104,7 @@ async function sendMessage() {
   }
 
   message.value = "";
+  clearAttachedImages();
   if (images.length) {
     await chatStore.sendImageMessage(content, images);
   } else {
@@ -113,10 +114,6 @@ async function sendMessage() {
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
-  }
-
-  if (!chatStore.error) {
-    clearAttachedImages();
   }
 
   await mealStore.loadDailyMeal(todayDateKey.value);
