@@ -5,8 +5,6 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
