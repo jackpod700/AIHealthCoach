@@ -12,6 +12,13 @@ VALUES
     (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', 'FEMALE', 27, NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
+INSERT INTO daily_goals (id, user_id, goal_type, calorie_intake_goal, exercise_calorie_goal, created_at, updated_at)
+VALUES
+    (1, 1, 'MAINTENANCE', 2100, 250, NOW(), NOW()),
+    (2, 2, 'MUSCLE_GAIN', 2800, 300, NOW(), NOW()),
+    (3, 3, 'WEIGHT_LOSS', 1600, 300, NOW(), NOW())
+ON CONFLICT (user_id) DO NOTHING;
+
 INSERT INTO chat_messages (id, user_id, role, content, created_at)
 SELECT row_number() OVER () AS id, user_id, role, content, created_at
 FROM (VALUES
@@ -38,4 +45,5 @@ ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
 SELECT setval('user_profiles_id_seq', COALESCE((SELECT MAX(id) FROM user_profiles), 1));
+SELECT setval('daily_goals_id_seq', COALESCE((SELECT MAX(id) FROM daily_goals), 1));
 SELECT setval('chat_messages_id_seq', COALESCE((SELECT MAX(id) FROM chat_messages), 1));

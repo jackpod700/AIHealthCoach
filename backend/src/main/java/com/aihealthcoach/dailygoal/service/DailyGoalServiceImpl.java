@@ -1,0 +1,173 @@
+package com.aihealthcoach.dailygoal.service;
+
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMetricProgressResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressSummaryResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalRecommendationResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalUpsertRequest;
+import com.aihealthcoach.dailygoal.entity.DailyGoal;
+import com.aihealthcoach.dailygoal.exception.DailyGoalException;
+import com.aihealthcoach.dailygoal.mapper.DailyGoalMapper;
+import com.aihealthcoach.exercise.mapper.ExerciseMapper;
+import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.user.entity.UserProfile;
+import com.aihealthcoach.user.exception.UserException;
+import com.aihealthcoach.user.mapper.UserMapper;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.LocalDate;
+import java.util.Set;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+public class DailyGoalServiceImpl implements DailyGoalService {
+
+    private static final Set<String> GOAL_TYPES = Set.of("WEIGHT_LOSS", "MAINTENANCE", "MUSCLE_GAIN");
+    // TODO: Add profile activity level input and replace this fixed factor with the saved value.
+    private static final BigDecimal DEFAULT_ACTIVITY_FACTOR = new BigDecimal("1.2");
+    private static final int MIN_HEALTHY_CALORIE_INTAKE = 1200;
+
+    private final DailyGoalMapper dailyGoalMapper;
+    private final UserMapper userMapper;
+    private final MealMapper mealMapper;
+    private final ExerciseMapper exerciseMapper;
+
+    @Override
+    @Transactional(readOnly = true)
+    public DailyGoalRecommendationResponse recommendGoal(Long userId, String goalType) {
+        UserProfile profile = findRequiredProfile(userId);
+        validateGoalType(goalType);
+        int maintenanceCalories = estimateMaintenanceCalories(profile);
+        int calorieIntakeGoal = adjustCalorieIntakeGoal(maintenanceCalories, goalType);
+        int exerciseCalorieGoal = recommendExerciseCalorieGoal(goalType);
+
+        return new DailyGoalRecommendationResponse(
+                calorieIntakeGoal,
+                exerciseCalorieGoal
+        );
+    }
+
+    @Override
+    @Transactional
+    public DailyGoalResponse upsertCurrentGoal(Long userId, DailyGoalUpsertRequest request) {
+        validateGoalType(request.goalType());
+        DailyGoal savedGoal = dailyGoalMapper.upsert(DailyGoal.builder()
+                .userId(userId)
+                .goalType(request.goalType())
+                .calorieIntakeGoal(request.calorieIntakeGoal())
+                .exerciseCalorieGoal(request.exerciseCalorieGoal())
+                .build());
+
+        return toGoalResponse(savedGoal);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public DailyGoalProgressResponse findProgress(Long userId, LocalDate date) {
+        DailyGoal dailyGoal = dailyGoalMapper.findByUserId(userId);
+
+        if (dailyGoal == null) {
+            throw DailyGoalException.dailyGoalNotFound();
+        }
+
+        BigDecimal calorieIntake = defaultZero(mealMapper.sumDailyCalories(userId, date));
+        BigDecimal exerciseCalories = BigDecimal.valueOf(defaultZero(exerciseMapper.sumDailyCaloriesBurned(userId, date)));
+
+        return new DailyGoalProgressResponse(
+                date,
+                new DailyGoalProgressSummaryResponse(
+                        toMetricProgress(calorieIntake, dailyGoal.getCalorieIntakeGoal()),
+                        toMetricProgress(exerciseCalories, dailyGoal.getExerciseCalorieGoal())
+                )
+        );
+    }
+
+    private DailyGoalResponse toGoalResponse(DailyGoal dailyGoal) {
+        return new DailyGoalResponse(
+                dailyGoal.getGoalType(),
+                dailyGoal.getCalorieIntakeGoal(),
+                dailyGoal.getExerciseCalorieGoal(),
+                dailyGoal.getUpdatedAt()
+        );
+    }
+
+    private UserProfile findRequiredProfile(Long userId) {
+        UserProfile profile = userMapper.findUserProfileByUserId(userId);
+
+        if (profile == null) {
+            throw UserException.profileNotFound();
+        }
+
+        if (profile.getHeightCm() == null
+                || profile.getCurrentWeightKg() == null
+                || profile.getGender() == null
+                || profile.getAge() == null) {
+            throw DailyGoalException.profileRequired();
+        }
+
+        return profile;
+    }
+
+    private int estimateMaintenanceCalories(UserProfile profile) {
+        BigDecimal heightComponent = profile.getHeightCm().multiply(BigDecimal.valueOf(6.25));
+        BigDecimal weightComponent = profile.getCurrentWeightKg().multiply(BigDecimal.TEN);
+        BigDecimal ageComponent = BigDecimal.valueOf(profile.getAge()).multiply(BigDecimal.valueOf(5));
+        BigDecimal genderAdjustment = "MALE".equals(profile.getGender())
+                ? BigDecimal.valueOf(5)
+                : BigDecimal.valueOf(-161);
+        BigDecimal basalMetabolicRate = weightComponent
+                .add(heightComponent)
+                .subtract(ageComponent)
+                .add(genderAdjustment);
+
+        return basalMetabolicRate.multiply(DEFAULT_ACTIVITY_FACTOR).setScale(0, RoundingMode.HALF_UP).intValue();
+    }
+
+    private int adjustCalorieIntakeGoal(int maintenanceCalories, String goalType) {
+        return switch (goalType) {
+            case "WEIGHT_LOSS" -> Math.max(MIN_HEALTHY_CALORIE_INTAKE, maintenanceCalories - 500);
+            case "MAINTENANCE" -> maintenanceCalories;
+            case "MUSCLE_GAIN" -> maintenanceCalories + 300;
+            default -> throw DailyGoalException.invalidGoalType();
+        };
+    }
+
+    private int recommendExerciseCalorieGoal(String goalType) {
+        return switch (goalType) {
+            case "WEIGHT_LOSS" -> 300;
+            case "MAINTENANCE" -> 250;
+            case "MUSCLE_GAIN" -> 300;
+            default -> throw DailyGoalException.invalidGoalType();
+        };
+    }
+
+    private DailyGoalMetricProgressResponse toMetricProgress(BigDecimal current, Integer goal) {
+        BigDecimal goalValue = BigDecimal.valueOf(goal);
+        BigDecimal remaining = goalValue.subtract(current).max(BigDecimal.ZERO);
+        Integer percent = goal == 0
+                ? 100
+                : current.multiply(BigDecimal.valueOf(100))
+                        .divide(goalValue, 0, RoundingMode.HALF_UP)
+                        .intValue();
+
+        return new DailyGoalMetricProgressResponse(current, goalValue, remaining, percent);
+    }
+
+    private BigDecimal defaultZero(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
+    private Integer defaultZero(Integer value) {
+        return value == null ? 0 : value;
+    }
+
+    private void validateGoalType(String goalType) {
+        if (!GOAL_TYPES.contains(goalType)) {
+            throw DailyGoalException.invalidGoalType();
+        }
+    }
+}

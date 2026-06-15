@@ -258,3 +258,27 @@ CREATE INDEX IF NOT EXISTS idx_exercise_records_user_date
 
 CREATE INDEX IF NOT EXISTS idx_exercise_records_activity_option
     ON exercise_records(exercise_activity_option_id);
+
+CREATE TABLE IF NOT EXISTS daily_goals (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    goal_type VARCHAR(20) NOT NULL,
+    calorie_intake_goal INTEGER NOT NULL,
+    exercise_calorie_goal INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_daily_goals_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_daily_goals_goal_type
+        CHECK (goal_type IN ('WEIGHT_LOSS', 'MAINTENANCE', 'MUSCLE_GAIN')),
+
+    CONSTRAINT chk_daily_goals_calorie_intake_positive
+        CHECK (calorie_intake_goal > 0),
+
+    CONSTRAINT chk_daily_goals_exercise_calorie_non_negative
+        CHECK (exercise_calorie_goal >= 0)
+);
