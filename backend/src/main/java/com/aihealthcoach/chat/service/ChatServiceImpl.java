@@ -2,7 +2,6 @@ package com.aihealthcoach.chat.service;
 
 import java.util.List;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
@@ -10,11 +9,13 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
 
-@Service
-public class ChatServiceImpl implements ChatService{
+import lombok.RequiredArgsConstructor;
 
-    @Autowired
-    private ChatMapper chatDao;
+@Service
+@RequiredArgsConstructor
+public class ChatServiceImpl implements ChatService {
+
+    private final ChatMapper chatDao;
 
     @Override
     public List<ChatMessageResponse> findMessagesByUserId(Long userId) {
@@ -33,5 +34,5 @@ public class ChatServiceImpl implements ChatService{
         ChatMessage savedMessage = chatDao.insertMessage(message);
         return ChatMessageResponse.fromEntity(savedMessage);
     }
-    
+
 }
