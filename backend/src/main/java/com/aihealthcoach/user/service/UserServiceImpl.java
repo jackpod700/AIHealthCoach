@@ -152,6 +152,8 @@ public class UserServiceImpl implements UserService {
                 .currentWeightKg(userProfile.getCurrentWeightKg())
                 .targetWeightKg(userProfile.getTargetWeightKg())
                 .goalType(userProfile.getGoalType())
+                .gender(userProfile.getGender())
+                .age(userProfile.getAge())
                 .updatedAt(userProfile.getUpdatedAt())
                 .build();
     }
@@ -174,6 +176,8 @@ public class UserServiceImpl implements UserService {
                 .currentWeightKg(updatedProfile.getCurrentWeightKg())
                 .targetWeightKg(updatedProfile.getTargetWeightKg())
                 .goalType(updatedProfile.getGoalType())
+                .gender(updatedProfile.getGender())
+                .age(updatedProfile.getAge())
                 .updatedAt(updatedProfile.getUpdatedAt())
                 .build();
     }

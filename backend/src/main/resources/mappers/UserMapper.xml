@@ -20,6 +20,8 @@
         <result column="current_weight_kg" property="currentWeightKg"/>
         <result column="target_weight_kg" property="targetWeightKg"/>
         <result column="goal_type" property="goalType"/>
+        <result column="gender" property="gender"/>
+        <result column="age" property="age"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap> 
 
@@ -41,6 +43,8 @@
             current_weight_kg,
             target_weight_kg,
             goal_type,
+            gender,
+            age,
             updated_at
         )
         VALUES (
@@ -49,12 +53,14 @@
             #{currentWeightKg},
             #{targetWeightKg},
             #{goalType},
+            #{gender},
+            #{age},
             NOW()
         )
     </insert>
 
     <select id="findUserProfileByUserId" parameterType="Long" resultMap="userProfile">
-        SELECT  id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, updated_at
+        SELECT  id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, gender, age, updated_at
         FROM    user_profiles
         WHERE   user_id = #{userId}
     </select>
@@ -73,6 +79,12 @@
             </if>
             <if test="request.goalType != null">
                 goal_type = #{request.goalType},
+            </if>
+            <if test="request.gender != null">
+                gender = #{request.gender},
+            </if>
+            <if test="request.age != null">
+                age = #{request.age},
             </if>
             updated_at = NOW()
         </set>

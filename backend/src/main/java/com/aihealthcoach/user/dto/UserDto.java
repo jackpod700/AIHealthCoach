@@ -5,6 +5,8 @@ import java.time.LocalDateTime;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 
 public class UserDto {
@@ -69,6 +71,8 @@ public class UserDto {
         BigDecimal currentWeightKg,
         BigDecimal targetWeightKg,
         String goalType,
+        String gender,
+        Integer age,
         LocalDateTime updatedAt) {
     }
 
@@ -77,7 +81,11 @@ public class UserDto {
         BigDecimal heightCm,
         BigDecimal currentWeightKg,
         BigDecimal targetWeightKg,
-        String goalType
+        String goalType,
+        @Pattern(regexp = "MALE|FEMALE", message = "gender는 MALE 또는 FEMALE이어야 합니다.")
+        String gender,
+        @Positive(message = "age는 1 이상이어야 합니다.")
+        Integer age
     ) {
     }
 

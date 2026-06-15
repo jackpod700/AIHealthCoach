@@ -15,14 +15,49 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     current_weight_kg DECIMAL(5,2),
     target_weight_kg DECIMAL(5,2),
     goal_type VARCHAR(20),
+    gender VARCHAR(20),
+    age INTEGER,
 
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_user_profiles_gender
+        CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE')),
+
+    CONSTRAINT chk_user_profiles_age_positive
+        CHECK (age IS NULL OR age > 0),
 
     CONSTRAINT fk_user_profiles_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS gender VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS age INTEGER;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_user_profiles_gender'
+    ) THEN
+        ALTER TABLE user_profiles
+            ADD CONSTRAINT chk_user_profiles_gender
+            CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE'));
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_user_profiles_age_positive'
+    ) THEN
+        ALTER TABLE user_profiles
+            ADD CONSTRAINT chk_user_profiles_age_positive
+            CHECK (age IS NULL OR age > 0);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGSERIAL PRIMARY KEY,

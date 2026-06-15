@@ -106,7 +106,7 @@ public class UserController {
 
     @PatchMapping("/profile")
     public ResponseEntity<UserProfileResponse> updateProfile(
-        @RequestBody UserProfileUpdateRequest request,
+        @Valid @RequestBody UserProfileUpdateRequest request,
         Authentication authentication){
         
         Long userId = (Long) authentication.getPrincipal();
