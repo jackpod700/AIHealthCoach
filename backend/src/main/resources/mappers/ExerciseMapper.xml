@@ -226,6 +226,13 @@
         ORDER BY er.created_at, er.id
     </select>
 
+    <select id="sumDailyCaloriesBurned" resultType="java.lang.Integer">
+        SELECT COALESCE(SUM(calories_burned), 0)
+        FROM exercise_records
+        WHERE user_id = #{userId}
+            AND exercise_date = #{exerciseDate}
+    </select>
+
     <select id="findExerciseDatesInMonth" resultType="java.time.LocalDate">
         SELECT DISTINCT exercise_date
         FROM exercise_records

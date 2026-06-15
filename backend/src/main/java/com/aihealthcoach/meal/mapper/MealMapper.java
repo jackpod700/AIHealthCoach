@@ -1,5 +1,6 @@
 package com.aihealthcoach.meal.mapper;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -14,6 +15,8 @@ import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 @Mapper
 public interface MealMapper {
     List<MealFood> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
+
+    BigDecimal sumDailyCalories(@Param("userId") Long userId, @Param("date") LocalDate date);
 
     List<MealFood> findMealsBetween(
             @Param("userId") Long userId,

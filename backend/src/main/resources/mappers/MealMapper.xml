@@ -53,7 +53,7 @@
         LEFT JOIN foods f
             ON f.id = mi.food_id
         WHERE m.user_id = #{userId}
-          AND m.meal_date = #{date}
+            AND m.meal_date = #{date}
         ORDER BY
             CASE m.meal_type
                 WHEN 'BREAKFAST' THEN 1
@@ -63,6 +63,17 @@
                 ELSE 5
             END,
             f.name
+    </select>
+
+    <select id="sumDailyCalories" resultType="java.math.BigDecimal">
+        SELECT COALESCE(SUM(COALESCE(f.calories, 0) * mi.quantity), 0)
+        FROM meals m
+        JOIN meal_items mi
+            ON mi.meal_id = m.id
+        JOIN foods f
+            ON f.id = mi.food_id
+        WHERE m.user_id = #{userId}
+            AND m.meal_date = #{date}
     </select>
 
     <select id="findMealsBetween" resultMap="mealFood">
@@ -280,4 +291,3 @@
             brand
     </select>
 </mapper>
-

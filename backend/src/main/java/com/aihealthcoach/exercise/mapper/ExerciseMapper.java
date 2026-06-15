@@ -24,6 +24,10 @@ public interface ExerciseMapper {
         @Param("userId") Long userId,
         @Param("exerciseDate") LocalDate exerciseDate);
 
+    Integer sumDailyCaloriesBurned(
+        @Param("userId") Long userId,
+        @Param("exerciseDate") LocalDate exerciseDate);
+
     List<LocalDate> findExerciseDatesInMonth(
         @Param("userId") Long userId, 
         @Param("startDate") LocalDate startDate,
