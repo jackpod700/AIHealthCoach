@@ -510,6 +510,30 @@
   font-weight: 800;
 }
 
+.segmented-field {
+  display: grid;
+  height: 43px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 5px;
+  background: #fff;
+}
+
+.segmented-field button {
+  border-radius: 6px;
+  background: transparent;
+  color: #6f7784;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.segmented-field button.active {
+  background: var(--navy);
+  color: #fff;
+}
+
 .period-stepper {
   display: grid;
   height: 43px;

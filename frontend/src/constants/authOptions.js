@@ -12,7 +12,7 @@ export const goalOptions = [
     icon: "pi pi-arrow-down",
   },
   {
-    value: "MAINTAIN",
+    value: "MAINTENANCE",
     title: "유지",
     desc: "지금 컨디션을 꾸준히 지켜요",
     icon: "pi pi-minus",

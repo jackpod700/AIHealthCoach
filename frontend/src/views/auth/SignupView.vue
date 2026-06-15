@@ -21,6 +21,8 @@ const signupForm = reactive({
   password: "",
   heightCm: "",
   currentWeightKg: "",
+  gender: "FEMALE",
+  age: "",
   targetWeightKg: "62",
   goalPeriodMonths: 3,
   goalType: "WEIGHT_LOSS",
@@ -90,6 +92,8 @@ async function submitSignup() {
       heightCm: Number(signupForm.heightCm),
       currentWeightKg: Number(signupForm.currentWeightKg),
       targetWeightKg: Number(signupForm.targetWeightKg),
+      gender: signupForm.gender,
+      age: Number(signupForm.age),
       goalType: signupForm.goalType,
     });
     router.push("/chat");
@@ -122,9 +126,15 @@ function isValidEmail(value) {
 function validateBodyInfoStep() {
   const heightCm = Number(signupForm.heightCm);
   const currentWeightKg = Number(signupForm.currentWeightKg);
+  const age = Number(signupForm.age);
 
-  if (!Number.isFinite(heightCm) || heightCm <= 0 || !Number.isFinite(currentWeightKg) || currentWeightKg <= 0) {
-    signupValidationError.value = "키와 현재 체중은 0보다 큰 값으로 입력해주세요.";
+  if (!Number.isFinite(heightCm) || heightCm <= 0 || !Number.isFinite(currentWeightKg) || currentWeightKg <= 0 || !Number.isFinite(age) || age <= 0) {
+    signupValidationError.value = "키, 현재 체중, 나이는 0보다 큰 값으로 입력해주세요.";
+    return false;
+  }
+
+  if (!["MALE", "FEMALE"].includes(signupForm.gender)) {
+    signupValidationError.value = "성별을 선택해주세요.";
     return false;
   }
 
@@ -190,6 +200,20 @@ function validateBodyInfoStep() {
               <div class="unit-field">
                 <input v-model="signupForm.currentWeightKg" inputmode="decimal" min="0.1" placeholder="65.2" step="0.1" type="number" />
                 <em>kg</em>
+              </div>
+            </label>
+            <label>
+              <span>성별</span>
+              <div class="segmented-field">
+                <button type="button" :class="{ active: signupForm.gender === 'FEMALE' }" @click="signupForm.gender = 'FEMALE'">여성</button>
+                <button type="button" :class="{ active: signupForm.gender === 'MALE' }" @click="signupForm.gender = 'MALE'">남성</button>
+              </div>
+            </label>
+            <label>
+              <span>나이</span>
+              <div class="unit-field">
+                <input v-model="signupForm.age" inputmode="numeric" min="1" placeholder="29" step="1" type="number" />
+                <em>세</em>
               </div>
             </label>
           </div>

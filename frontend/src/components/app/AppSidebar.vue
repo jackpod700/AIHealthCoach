@@ -3,12 +3,14 @@ import { computed, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const dailyGoalStore = useDailyGoalStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
@@ -39,7 +41,7 @@ const goalLabel = computed(() => {
     return "감량 목표";
   }
 
-  if (goalType === "MAINTAIN") {
+  if (goalType === "MAINTENANCE") {
     return "유지 목표";
   }
 
@@ -66,6 +68,7 @@ function logout() {
   logoutPromptOpen.value = false;
   authStore.logout();
   chatStore.clearMessages();
+  dailyGoalStore.clearDailyGoal();
   exerciseStore.clearExercise();
   mealStore.clearMeals();
   profileStore.clearProfile();

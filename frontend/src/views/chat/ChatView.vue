@@ -3,16 +3,19 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
+import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const dailyGoalStore = useDailyGoalStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
@@ -57,6 +60,26 @@ const todayMeals = computed(() => {
 
 const hasTodayMeals = computed(() => todayMeals.value.length > 0);
 
+const dailyGoalProgress = computed(() => dailyGoalStore.progress?.progress || null);
+
+const calorieProgress = computed(() => dailyGoalProgress.value?.calorieIntake || null);
+
+const exerciseProgress = computed(() => dailyGoalProgress.value?.exerciseCalories || null);
+
+const hasDailyGoalProgress = computed(() => Boolean(calorieProgress.value && exerciseProgress.value));
+
+const macroRatio = computed(() => dailyGoalStore.progress?.macroRatio || null);
+
+const macroItems = computed(() => {
+  const macros = macroRatio.value;
+
+  return [
+    { key: "protein", label: "단백질", value: macros?.protein },
+    { key: "carbohydrate", label: "탄수", value: macros?.carbohydrate },
+    { key: "fat", label: "지방", value: macros?.fat },
+  ];
+});
+
 const todayTotals = computed(() => {
   const dailyMeal = mealStore.dailyMeal;
 
@@ -80,11 +103,16 @@ onMounted(async () => {
     chatStore.loadMessages(),
     mealStore.loadDailyMeal(todayDateKey.value),
     profileStore.loadProfile(),
+    dailyGoalStore.loadProgress(todayDateKey.value),
   ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
+  }
+
+  if (dailyGoalStore.needsGoalSetup) {
+    await dailyGoalStore.loadRecommendation(profileStore.profile?.goalType || "WEIGHT_LOSS");
   }
 
   await scrollToBottom();
@@ -117,6 +145,7 @@ async function sendMessage() {
   }
 
   await mealStore.loadDailyMeal(todayDateKey.value);
+  await dailyGoalStore.loadProgress(todayDateKey.value);
   await scrollToBottom();
 }
 
@@ -342,6 +371,7 @@ async function confirmMealProposal(payload) {
     await mealStore.loadDailyMeal(todayDateKey.value);
   }
 
+  await dailyGoalStore.loadProgress(todayDateKey.value);
   await scrollToBottom();
 }
 
@@ -360,11 +390,32 @@ async function confirmExerciseProposal(payload) {
 
   if (saved) {
     chatStore.completeExerciseProposal();
+    await dailyGoalStore.loadProgress(todayDateKey.value);
   } else {
     chatStore.failExerciseProposal(exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.");
   }
 
   chatStore.finishConfirmingExercise();
+  await scrollToBottom();
+}
+
+async function recommendDailyGoal(goalType) {
+  await dailyGoalStore.loadRecommendation(goalType);
+}
+
+async function saveDailyGoal(goal) {
+  const savedGoal = await dailyGoalStore.saveGoal(goal);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (savedGoal) {
+    await dailyGoalStore.loadProgress(todayDateKey.value);
+    await profileStore.loadProfile();
+  }
+
   await scrollToBottom();
 }
 
@@ -410,6 +461,14 @@ function toNumber(value) {
 
 function formatNumber(value) {
   return Math.round(toNumber(value)).toLocaleString("ko-KR");
+}
+
+function progressWidth(metric) {
+  return `${Math.min(Math.max(toNumber(metric?.percent), 0), 100)}%`;
+}
+
+function macroStatusClass(macro) {
+  return (macro?.status || "LOW").toLowerCase();
 }
 
 function toDateKey(date) {
@@ -501,8 +560,24 @@ function sanitizeHtml(html = "") {
               {{ chatStore.error }}
             </div>
 
-            <div v-else-if="!hasMessages" class="chat-state-card">
+            <div v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup" class="chat-state-card">
               아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
+            </div>
+
+            <div v-if="dailyGoalStore.needsGoalSetup" class="message-row coach">
+              <div class="coach-icon">
+                <i class="pi pi-compass"></i>
+              </div>
+              <DailyGoalSetupCard
+                :initial-goal-type="profileStore.profile?.goalType || 'WEIGHT_LOSS'"
+                :recommendation="dailyGoalStore.recommendation"
+                :is-loading-recommendation="dailyGoalStore.isLoadingRecommendation"
+                :is-saving="dailyGoalStore.isSavingGoal"
+                :recommendation-error="dailyGoalStore.recommendationError"
+                :save-error="dailyGoalStore.saveGoalError"
+                @recommend="recommendDailyGoal"
+                @save="saveDailyGoal"
+              />
             </div>
 
             <template v-for="chatMessage in displayMessages" :key="chatMessage.id || chatMessage.clientId">
@@ -598,38 +673,54 @@ function sanitizeHtml(html = "") {
             <span>{{ todayLabel }}</span>
           </div>
 
-          <div v-if="mealStore.dailyError" class="api-needed-panel">
+          <div v-if="dailyGoalStore.progressError" class="api-needed-panel">
+            <strong>오늘 목표 진행률을 불러오지 못했어요</strong>
+            <p>{{ dailyGoalStore.progressError }}</p>
+          </div>
+
+          <div v-else-if="dailyGoalStore.needsGoalSetup" class="api-needed-panel">
+            <strong>일일 목표를 먼저 설정해 주세요</strong>
+            <p>채팅창의 목표 설정 카드에서 추천값을 확인하고 오늘의 기준을 저장할 수 있어요.</p>
+          </div>
+
+          <section class="calorie-card" :class="{ 'pending-api': !hasDailyGoalProgress }">
+            <span>오늘 섭취 목표</span>
+            <strong>
+              {{ calorieProgress ? formatNumber(calorieProgress.current) : "-" }}<small>/ {{ calorieProgress ? formatNumber(calorieProgress.goal) : "-" }} kcal</small>
+            </strong>
+            <div class="progress-track">
+              <i :style="{ width: progressWidth(calorieProgress) }"></i>
+            </div>
+            <p v-if="calorieProgress">남은 섭취량 {{ formatNumber(calorieProgress.remaining) }} kcal · {{ calorieProgress.percent }}%</p>
+            <p v-else>목표를 설정하면 진행률을 볼 수 있어요.</p>
+          </section>
+
+          <section class="exercise-goal-card" :class="{ 'pending-api': !hasDailyGoalProgress }">
+            <span>오늘 운동 목표</span>
+            <strong>
+              {{ exerciseProgress ? formatNumber(exerciseProgress.current) : "-" }}<small>/ {{ exerciseProgress ? formatNumber(exerciseProgress.goal) : "-" }} kcal</small>
+            </strong>
+            <div class="progress-track">
+              <i :style="{ width: progressWidth(exerciseProgress) }"></i>
+            </div>
+            <p v-if="exerciseProgress">남은 운동량 {{ formatNumber(exerciseProgress.remaining) }} kcal · {{ exerciseProgress.percent }}%</p>
+            <p v-else>운동 목표도 함께 추적해요.</p>
+          </section>
+
+          <div v-if="mealStore.dailyError" class="api-needed-panel compact-panel">
             <strong>오늘 식단 정보를 불러오지 못했어요</strong>
             <p>{{ mealStore.dailyError }}</p>
           </div>
 
-          <section class="calorie-card" :class="{ 'pending-api': !hasTodayMeals }">
-            <span>오늘 섭취 칼로리</span>
-            <strong>
-              {{ hasTodayMeals ? formatNumber(todayTotals.calories) : "-" }}<small>/ 목표 kcal API 필요</small>
-            </strong>
-            <div class="progress-track">
-              <i></i>
-            </div>
-            <p v-if="hasTodayMeals">일일 식단 조회 API 기준으로 계산됐어요.</p>
-            <p v-else>아직 오늘 식단 기록이 없어요.</p>
-          </section>
-
-          <div class="macro-grid" :class="{ 'pending-api': !hasTodayMeals }">
-            <div>
-              <span>단백질</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.protein) : "-" }}g</strong>
-              <i></i>
-            </div>
-            <div>
-              <span>탄수</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.carbohydrate) : "-" }}g</strong>
-              <i></i>
-            </div>
-            <div>
-              <span>지방</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.fat) : "-" }}g</strong>
-              <i></i>
+          <div class="macro-grid" :class="{ 'pending-api': !macroRatio }">
+            <div v-for="macro in macroItems" :key="macro.key" :class="macroStatusClass(macro.value)">
+              <span>{{ macro.label }}</span>
+              <strong>
+                {{ macro.value ? formatNumber(macro.value.grams) : "-" }}g
+                <small>{{ macro.value ? `${macro.value.percent}%` : "" }}</small>
+              </strong>
+              <i :style="{ width: progressWidth(macro.value) }"></i>
+              <em v-if="macro.value">{{ macro.value.rangeMin }}~{{ macro.value.rangeMax }}%</em>
             </div>
           </div>
 

@@ -14,6 +14,8 @@ const profileForm = reactive({
   heightCm: "",
   currentWeightKg: "",
   targetWeightKg: "",
+  gender: "FEMALE",
+  age: "",
   goalType: "WEIGHT_LOSS",
 });
 
@@ -70,6 +72,8 @@ watch(
     profileForm.heightCm = profile.heightCm ?? "";
     profileForm.currentWeightKg = profile.currentWeightKg ?? "";
     profileForm.targetWeightKg = profile.targetWeightKg ?? "";
+    profileForm.gender = profile.gender || "FEMALE";
+    profileForm.age = profile.age ?? "";
     profileForm.goalType = profile.goalType || "WEIGHT_LOSS";
   },
   { immediate: true }
@@ -85,6 +89,8 @@ function resetForm() {
   profileForm.heightCm = profile.heightCm ?? "";
   profileForm.currentWeightKg = profile.currentWeightKg ?? "";
   profileForm.targetWeightKg = profile.targetWeightKg ?? "";
+  profileForm.gender = profile.gender || "FEMALE";
+  profileForm.age = profile.age ?? "";
   profileForm.goalType = profile.goalType || "WEIGHT_LOSS";
 }
 
@@ -93,6 +99,8 @@ async function saveProfile() {
     heightCm: Number(profileForm.heightCm),
     currentWeightKg: Number(profileForm.currentWeightKg),
     targetWeightKg: Number(profileForm.targetWeightKg),
+    gender: profileForm.gender,
+    age: Number(profileForm.age),
     goalType: profileForm.goalType,
   });
 
@@ -193,6 +201,17 @@ async function saveProfile() {
             <label>
               <span>목표 몸무게 (kg)</span>
               <input v-model="profileForm.targetWeightKg" inputmode="decimal" />
+            </label>
+            <label>
+              <span>성별</span>
+              <div class="segmented-field profile-segmented-field">
+                <button type="button" :class="{ active: profileForm.gender === 'FEMALE' }" @click="profileForm.gender = 'FEMALE'">여성</button>
+                <button type="button" :class="{ active: profileForm.gender === 'MALE' }" @click="profileForm.gender = 'MALE'">남성</button>
+              </div>
+            </label>
+            <label>
+              <span>나이</span>
+              <input v-model="profileForm.age" inputmode="numeric" min="1" type="number" />
             </label>
 
             <fieldset>
