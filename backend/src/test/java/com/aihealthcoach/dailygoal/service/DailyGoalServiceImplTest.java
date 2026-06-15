@@ -12,6 +12,7 @@ import com.aihealthcoach.dailygoal.entity.DailyGoal;
 import com.aihealthcoach.dailygoal.exception.DailyGoalException;
 import com.aihealthcoach.dailygoal.mapper.DailyGoalMapper;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
+import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
@@ -101,7 +102,12 @@ class DailyGoalServiceImplTest {
                 .calorieIntakeGoal(1600)
                 .exerciseCalorieGoal(350)
                 .build());
-        when(mealMapper.sumDailyCalories(USER_ID, DATE)).thenReturn(new BigDecimal("1234.5"));
+        MealFood dailyNutrition = new MealFood();
+        dailyNutrition.setCalories(new BigDecimal("1234.5"));
+        dailyNutrition.setCarbohydrate(new BigDecimal("180"));
+        dailyNutrition.setProtein(new BigDecimal("80"));
+        dailyNutrition.setFat(new BigDecimal("40"));
+        when(mealMapper.sumDailyNutrition(USER_ID, DATE)).thenReturn(dailyNutrition);
         when(exerciseMapper.sumDailyCaloriesBurned(USER_ID, DATE)).thenReturn(210);
 
         DailyGoalProgressResponse response = dailyGoalService.findProgress(USER_ID, DATE);
@@ -112,6 +118,10 @@ class DailyGoalServiceImplTest {
         assertThat(response.progress().exerciseCalories().current()).isEqualByComparingTo("210");
         assertThat(response.progress().exerciseCalories().remaining()).isEqualByComparingTo("140");
         assertThat(response.progress().exerciseCalories().percent()).isEqualTo(60);
+        assertThat(response.macroRatio().carbohydrate().percent()).isEqualTo(51);
+        assertThat(response.macroRatio().carbohydrate().status()).isEqualTo("BALANCED");
+        assertThat(response.macroRatio().protein().percent()).isEqualTo(23);
+        assertThat(response.macroRatio().fat().percent()).isEqualTo(26);
     }
 
     @Test

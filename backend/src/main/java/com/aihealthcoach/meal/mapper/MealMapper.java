@@ -18,6 +18,8 @@ public interface MealMapper {
 
     BigDecimal sumDailyCalories(@Param("userId") Long userId, @Param("date") LocalDate date);
 
+    MealFood sumDailyNutrition(@Param("userId") Long userId, @Param("date") LocalDate date);
+
     List<MealFood> findMealsBetween(
             @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,

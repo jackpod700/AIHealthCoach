@@ -76,6 +76,21 @@
             AND m.meal_date = #{date}
     </select>
 
+    <select id="sumDailyNutrition" resultType="com.aihealthcoach.meal.entity.MealFood">
+        SELECT
+            COALESCE(SUM(COALESCE(f.calories, 0) * mi.quantity), 0) AS calories,
+            COALESCE(SUM(COALESCE(f.carbohydrate, 0) * mi.quantity), 0) AS carbohydrate,
+            COALESCE(SUM(COALESCE(f.protein, 0) * mi.quantity), 0) AS protein,
+            COALESCE(SUM(COALESCE(f.fat, 0) * mi.quantity), 0) AS fat
+        FROM meals m
+        JOIN meal_items mi
+            ON mi.meal_id = m.id
+        JOIN foods f
+            ON f.id = mi.food_id
+        WHERE m.user_id = #{userId}
+            AND m.meal_date = #{date}
+    </select>
+
     <select id="findMealsBetween" resultMap="mealFood">
         SELECT
             m.id AS meal_id,

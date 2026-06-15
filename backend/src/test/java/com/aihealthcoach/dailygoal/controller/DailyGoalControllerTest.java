@@ -14,6 +14,8 @@ import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMacroRatioMetricResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMacroRatioResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMetricProgressResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressSummaryResponse;
@@ -81,7 +83,7 @@ class DailyGoalControllerTest {
                         LocalDateTime.of(2026, 6, 16, 0, 0)
                 ));
 
-        mockMvc.perform(put("/api/daily-goals")
+        mockMvc.perform(put("/api/daily-goals/confirm")
                         .header("Authorization", "Bearer " + TOKEN)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -118,6 +120,11 @@ class DailyGoalControllerTest {
                                 new BigDecimal("140"),
                                 60
                         )
+                ),
+                new DailyGoalMacroRatioResponse(
+                        new DailyGoalMacroRatioMetricResponse(new BigDecimal("180"), new BigDecimal("720"), 51, 45, 65, "BALANCED"),
+                        new DailyGoalMacroRatioMetricResponse(new BigDecimal("80"), new BigDecimal("320"), 23, 10, 35, "BALANCED"),
+                        new DailyGoalMacroRatioMetricResponse(new BigDecimal("40"), new BigDecimal("360"), 26, 20, 35, "BALANCED")
                 )
         ));
 
@@ -129,6 +136,8 @@ class DailyGoalControllerTest {
                 .andExpect(jsonPath("$.data.goal").doesNotExist())
                 .andExpect(jsonPath("$.data.progress.calorieIntake.percent", is(75)))
                 .andExpect(jsonPath("$.data.progress.exerciseCalories.percent", is(60)))
+                .andExpect(jsonPath("$.data.macroRatio.carbohydrate.percent", is(51)))
+                .andExpect(jsonPath("$.data.macroRatio.protein.status", is("BALANCED")))
                 .andExpect(jsonPath("$.data.warnings").doesNotExist());
     }
 }

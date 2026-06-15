@@ -40,7 +40,8 @@ public class DailyGoalDto {
 
     public record DailyGoalProgressResponse(
             LocalDate date,
-            DailyGoalProgressSummaryResponse progress
+            DailyGoalProgressSummaryResponse progress,
+            DailyGoalMacroRatioResponse macroRatio
     ) {
     }
 
@@ -55,6 +56,23 @@ public class DailyGoalDto {
             BigDecimal goal,
             BigDecimal remaining,
             Integer percent
+    ) {
+    }
+
+    public record DailyGoalMacroRatioResponse(
+            DailyGoalMacroRatioMetricResponse carbohydrate,
+            DailyGoalMacroRatioMetricResponse protein,
+            DailyGoalMacroRatioMetricResponse fat
+    ) {
+    }
+
+    public record DailyGoalMacroRatioMetricResponse(
+            BigDecimal grams,
+            BigDecimal calories,
+            Integer percent,
+            Integer rangeMin,
+            Integer rangeMax,
+            String status
     ) {
     }
 }

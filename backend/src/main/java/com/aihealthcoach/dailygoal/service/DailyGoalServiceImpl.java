@@ -1,5 +1,7 @@
 package com.aihealthcoach.dailygoal.service;
 
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMacroRatioMetricResponse;
+import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMacroRatioResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalMetricProgressResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressSummaryResponse;
@@ -10,6 +12,7 @@ import com.aihealthcoach.dailygoal.entity.DailyGoal;
 import com.aihealthcoach.dailygoal.exception.DailyGoalException;
 import com.aihealthcoach.dailygoal.mapper.DailyGoalMapper;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
+import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
@@ -30,6 +33,9 @@ public class DailyGoalServiceImpl implements DailyGoalService {
     // TODO: Add profile activity level input and replace this fixed factor with the saved value.
     private static final BigDecimal DEFAULT_ACTIVITY_FACTOR = new BigDecimal("1.2");
     private static final int MIN_HEALTHY_CALORIE_INTAKE = 1200;
+    private static final BigDecimal CARBOHYDRATE_CALORIES_PER_GRAM = BigDecimal.valueOf(4);
+    private static final BigDecimal PROTEIN_CALORIES_PER_GRAM = BigDecimal.valueOf(4);
+    private static final BigDecimal FAT_CALORIES_PER_GRAM = BigDecimal.valueOf(9);
 
     private final DailyGoalMapper dailyGoalMapper;
     private final UserMapper userMapper;
@@ -74,7 +80,8 @@ public class DailyGoalServiceImpl implements DailyGoalService {
             throw DailyGoalException.dailyGoalNotFound();
         }
 
-        BigDecimal calorieIntake = defaultZero(mealMapper.sumDailyCalories(userId, date));
+        MealFood dailyNutrition = defaultNutrition(mealMapper.sumDailyNutrition(userId, date));
+        BigDecimal calorieIntake = defaultZero(dailyNutrition.getCalories());
         BigDecimal exerciseCalories = BigDecimal.valueOf(defaultZero(exerciseMapper.sumDailyCaloriesBurned(userId, date)));
 
         return new DailyGoalProgressResponse(
@@ -82,7 +89,8 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                 new DailyGoalProgressSummaryResponse(
                         toMetricProgress(calorieIntake, dailyGoal.getCalorieIntakeGoal()),
                         toMetricProgress(exerciseCalories, dailyGoal.getExerciseCalorieGoal())
-                )
+                ),
+                toMacroRatio(dailyNutrition)
         );
     }
 
@@ -155,6 +163,70 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                         .intValue();
 
         return new DailyGoalMetricProgressResponse(current, goalValue, remaining, percent);
+    }
+
+    private DailyGoalMacroRatioResponse toMacroRatio(MealFood dailyNutrition) {
+        BigDecimal carbohydrateGrams = defaultZero(dailyNutrition.getCarbohydrate());
+        BigDecimal proteinGrams = defaultZero(dailyNutrition.getProtein());
+        BigDecimal fatGrams = defaultZero(dailyNutrition.getFat());
+        BigDecimal carbohydrateCalories = carbohydrateGrams.multiply(CARBOHYDRATE_CALORIES_PER_GRAM);
+        BigDecimal proteinCalories = proteinGrams.multiply(PROTEIN_CALORIES_PER_GRAM);
+        BigDecimal fatCalories = fatGrams.multiply(FAT_CALORIES_PER_GRAM);
+        BigDecimal totalMacroCalories = carbohydrateCalories.add(proteinCalories).add(fatCalories);
+
+        return new DailyGoalMacroRatioResponse(
+                toMacroRatioMetric(carbohydrateGrams, carbohydrateCalories, totalMacroCalories, 45, 65),
+                toMacroRatioMetric(proteinGrams, proteinCalories, totalMacroCalories, 10, 35),
+                toMacroRatioMetric(fatGrams, fatCalories, totalMacroCalories, 20, 35)
+        );
+    }
+
+    private DailyGoalMacroRatioMetricResponse toMacroRatioMetric(
+            BigDecimal grams,
+            BigDecimal calories,
+            BigDecimal totalMacroCalories,
+            int rangeMin,
+            int rangeMax
+    ) {
+        int percent = totalMacroCalories.compareTo(BigDecimal.ZERO) == 0
+                ? 0
+                : calories.multiply(BigDecimal.valueOf(100))
+                        .divide(totalMacroCalories, 0, RoundingMode.HALF_UP)
+                        .intValue();
+
+        return new DailyGoalMacroRatioMetricResponse(
+                grams,
+                calories,
+                percent,
+                rangeMin,
+                rangeMax,
+                macroStatus(percent, rangeMin, rangeMax)
+        );
+    }
+
+    private String macroStatus(int percent, int rangeMin, int rangeMax) {
+        if (percent < rangeMin) {
+            return "LOW";
+        }
+
+        if (percent > rangeMax) {
+            return "HIGH";
+        }
+
+        return "BALANCED";
+    }
+
+    private MealFood defaultNutrition(MealFood dailyNutrition) {
+        if (dailyNutrition != null) {
+            return dailyNutrition;
+        }
+
+        MealFood emptyNutrition = new MealFood();
+        emptyNutrition.setCalories(BigDecimal.ZERO);
+        emptyNutrition.setCarbohydrate(BigDecimal.ZERO);
+        emptyNutrition.setProtein(BigDecimal.ZERO);
+        emptyNutrition.setFat(BigDecimal.ZERO);
+        return emptyNutrition;
     }
 
     private BigDecimal defaultZero(BigDecimal value) {
