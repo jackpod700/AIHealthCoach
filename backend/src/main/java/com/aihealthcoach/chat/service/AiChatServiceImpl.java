@@ -5,7 +5,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
+import org.springframework.ai.chat.metadata.Usage;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -13,6 +14,8 @@ import org.springframework.util.MimeType;
 import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.aihealthcoach.admin.entity.AiUsageLog;
+import com.aihealthcoach.admin.mapper.AdminMapper;
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.exception.ChatException;
@@ -36,40 +39,50 @@ public class AiChatServiceImpl implements AiChatService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AiPromptFactory promptFactory;
+    private final AdminMapper adminMapper;
+
+    @Value("${spring.ai.openai.chat.options.model:unknown}")
+    private String configuredModel;
 
 
     @Override
-    public AiChatResult generate(ChatMessageRequest userMessage) {
+    public AiChatResult generate(Long userId, ChatMessageRequest userMessage) {
+        long startedAt = System.nanoTime();
         try {
-            AiChatResult result = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
+            org.springframework.ai.chat.client.ResponseEntity<ChatResponse, AiChatResult> response = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
                     .user(userMessage.content())
                     .call()
-                    .entity(AiChatResult.class);
+                    .responseEntity(AiChatResult.class);
 
-            return normalizeAiResult(result);
+            recordAiUsage(userId, "TEXT_CHAT", startedAt, true, null, response.response());
+            return normalizeAiResult(response.entity());
         } catch (Exception exception) {
             log.warn("Failed to map AI chat response to AiChatResult.", exception);
+            recordAiUsage(userId, "TEXT_CHAT", startedAt, false, exception, null);
             return fallback();
         }
     }
 
     @Override
-    public AiChatResult generateWithImages(String content, List<MultipartFile> images) {
+    public AiChatResult generateWithImages(Long userId, String content, List<MultipartFile> images) {
         validateImages(images);
 
         String userText = normalizeImageMessage(content);
+        long startedAt = System.nanoTime();
         try {
-            AiChatResult result = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
+            org.springframework.ai.chat.client.ResponseEntity<ChatResponse, AiChatResult> response = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
                     .user(user -> {
                         user.text(userText);
                         images.forEach(image -> user.media(toMimeType(image), image.getResource()));
                     })
                     .call()
-                    .entity(AiChatResult.class);
+                    .responseEntity(AiChatResult.class);
 
-            return normalizeAiResult(result);
+            recordAiUsage(userId, "IMAGE_MEAL", startedAt, true, null, response.response());
+            return normalizeAiResult(response.entity());
         } catch (Exception exception) {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
+            recordAiUsage(userId, "IMAGE_MEAL", startedAt, false, exception, null);
             return fallback();
         }
     }
@@ -147,5 +160,52 @@ public class AiChatServiceImpl implements AiChatService {
             return DEFAULT_IMAGE_MESSAGE;
         }
         return content.trim();
+    }
+
+    private void recordAiUsage(
+            Long userId,
+            String requestType,
+            long startedAt,
+            boolean success,
+            Exception exception,
+            ChatResponse response
+    ) {
+        try {
+            Usage usage = response == null || response.getMetadata() == null
+                    ? null
+                    : response.getMetadata().getUsage();
+
+            adminMapper.insertAiUsageLog(AiUsageLog.builder()
+                    .userId(userId)
+                    .requestType(requestType)
+                    .model(modelName(response))
+                    .latencyMs((System.nanoTime() - startedAt) / 1_000_000)
+                    .success(success)
+                    .errorMessage(exception == null ? null : truncate(exception.getMessage(), 1000))
+                    .inputTokens(toLong(usage == null ? null : usage.getPromptTokens()))
+                    .outputTokens(toLong(usage == null ? null : usage.getCompletionTokens()))
+                    .totalTokens(toLong(usage == null ? null : usage.getTotalTokens()))
+                    .build());
+        } catch (Exception loggingException) {
+            log.warn("Failed to record AI usage log.", loggingException);
+        }
+    }
+
+    private String modelName(ChatResponse response) {
+        if (response != null && response.getMetadata() != null && response.getMetadata().getModel() != null) {
+            return response.getMetadata().getModel();
+        }
+        return configuredModel;
+    }
+
+    private Long toLong(Integer value) {
+        return value == null ? null : value.longValue();
+    }
+
+    private String truncate(String value, int maxLength) {
+        if (value == null || value.length() <= maxLength) {
+            return value;
+        }
+        return value.substring(0, maxLength);
     }
 }

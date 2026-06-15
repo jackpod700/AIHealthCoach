@@ -5,6 +5,7 @@ import SignupView from "../views/auth/SignupView.vue";
 import CalendarView from "../views/calendar/CalendarView.vue";
 import ChatView from "../views/chat/ChatView.vue";
 import FoodSearchView from "../views/foods/FoodSearchView.vue";
+import AdminDashboardView from "../views/admin/AdminDashboardView.vue";
 import ProfileView from "../views/profile/ProfileView.vue";
 import DailyRecordView from "../views/records/DailyRecordView.vue";
 import NotFoundView from "../views/error/NotFoundView.vue";
@@ -70,6 +71,15 @@ const router = createRouter({
       },
     },
     {
+      path: "/admin",
+      name: "admin",
+      component: AdminDashboardView,
+      meta: {
+        requiresAuth: true,
+        requiresAdmin: true,
+      },
+    },
+    {
       path: "/:pathMatch(.*)*",
       name: "not-found",
       component: NotFoundView,
@@ -82,6 +92,10 @@ router.beforeEach((to) => {
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return "/login";
+  }
+
+  if (to.meta.requiresAdmin && !authStore.isAdmin) {
+    return "/chat";
   }
 
   if ((to.name === "login" || to.name === "signup") && authStore.isAuthenticated) {

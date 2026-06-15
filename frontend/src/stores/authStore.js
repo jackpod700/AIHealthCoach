@@ -13,6 +13,7 @@ export const useAuthStore = defineStore("auth", {
   }),
   getters: {
     isAuthenticated: (state) => Boolean(state.accessToken && state.userId),
+    isAdmin: (state) => state.user?.role === "ADMIN",
   },
   actions: {
     async signup(credentials) {
@@ -48,6 +49,7 @@ export const useAuthStore = defineStore("auth", {
         this.user = {
           email: loginResponse.email,
           nickname: loginResponse.nickname,
+          role: loginResponse.role || "USER",
         };
 
         saveAuthSession({

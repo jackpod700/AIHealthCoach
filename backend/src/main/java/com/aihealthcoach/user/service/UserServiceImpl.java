@@ -40,6 +40,7 @@ public class UserServiceImpl implements UserService {
                         .email(request.email())
                         .password(passwordEncoder.encode(request.password()))
                         .nickname(request.nickname())
+                        .role("USER")
                         .build();
         
         userDao.insertUser(newUser);
@@ -56,6 +57,7 @@ public class UserServiceImpl implements UserService {
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .nickname(savedUser.getNickname())
+                .role(savedUser.getRole())
                 .build();            
     }
 
@@ -85,6 +87,7 @@ public class UserServiceImpl implements UserService {
             .userId(existingUser.getId())
             .email(existingUser.getEmail())
             .nickname(existingUser.getNickname())
+            .role(existingUser.getRole())
             .accessToken(accessToken)
             .build();
 

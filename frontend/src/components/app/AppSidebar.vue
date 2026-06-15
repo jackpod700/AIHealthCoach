@@ -97,6 +97,14 @@ function logout() {
         <span>{{ item.label }}</span>
         <em v-if="item.needsApi">API 필요</em>
       </RouterLink>
+      <RouterLink
+        v-if="authStore.isAdmin"
+        :class="{ active: route.path === '/admin' }"
+        to="/admin"
+      >
+        <i class="pi pi-chart-line"></i>
+        <span>관리자</span>
+      </RouterLink>
     </nav>
 
     <div
