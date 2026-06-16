@@ -80,7 +80,9 @@ const warnings = computed(() => {
   }
 
   if (form.exerciseCalorieGoal > 1000) {
-    result.push("운동 목표가 높아요. 무리하지 않도록 컨디션에 맞게 조절해 주세요.");
+    result.push(
+      "운동 목표가 너무 높아요. 무리하지 않도록 컨디션에 맞게 조절해 주세요.",
+    );
   }
 
   return result;
@@ -113,7 +115,7 @@ watch(
       form.goalType = goalType;
     }
   },
-  { immediate: true }
+  { immediate: true },
 );
 
 watch(
@@ -125,9 +127,13 @@ watch(
 
     form.calorieIntakeGoal = Number(recommendation.calorieIntakeGoal);
     form.exerciseCalorieGoal = Number(recommendation.exerciseCalorieGoal);
-    recommendationBase.calorieIntakeGoal = Number(recommendation.calorieIntakeGoal);
-    recommendationBase.exerciseCalorieGoal = Number(recommendation.exerciseCalorieGoal);
-  }
+    recommendationBase.calorieIntakeGoal = Number(
+      recommendation.calorieIntakeGoal,
+    );
+    recommendationBase.exerciseCalorieGoal = Number(
+      recommendation.exerciseCalorieGoal,
+    );
+  },
 );
 
 function selectGoal(goalType) {
@@ -205,19 +211,26 @@ function rangeBandStyle(range) {
             v-model.number="form.calorieIntakeGoal"
             :min="calorieRange.min"
             :max="calorieRange.max"
+            :style="calorieBandStyle"
             step="50"
             type="range"
           />
-          <div class="goal-range-band" :style="calorieBandStyle">
-            <i></i>
-          </div>
           <div class="goal-range-labels">
             <small>{{ formatNumber(calorieRange.min) }}</small>
-            <small>추천 {{ formatNumber(calorieRange.recommendedMin) }}~{{ formatNumber(calorieRange.recommendedMax) }}</small>
+            <small
+              >추천 {{ formatNumber(calorieRange.recommendedMin) }}~{{
+                formatNumber(calorieRange.recommendedMax)
+              }}</small
+            >
             <small>{{ formatNumber(calorieRange.max) }}</small>
           </div>
         </div>
-        <input v-model.number="form.calorieIntakeGoal" min="1" step="10" type="number" />
+        <input
+          v-model.number="form.calorieIntakeGoal"
+          min="1"
+          step="10"
+          type="number"
+        />
       </label>
 
       <label :class="['goal-slider-field', exerciseTone]">
@@ -230,19 +243,26 @@ function rangeBandStyle(range) {
             v-model.number="form.exerciseCalorieGoal"
             :min="exerciseRange.min"
             :max="exerciseRange.max"
+            :style="exerciseBandStyle"
             step="25"
             type="range"
           />
-          <div class="goal-range-band" :style="exerciseBandStyle">
-            <i></i>
-          </div>
           <div class="goal-range-labels">
             <small>{{ formatNumber(exerciseRange.min) }}</small>
-            <small>추천 {{ formatNumber(exerciseRange.recommendedMin) }}~{{ formatNumber(exerciseRange.recommendedMax) }}</small>
+            <small
+              >추천 {{ formatNumber(exerciseRange.recommendedMin) }}~{{
+                formatNumber(exerciseRange.recommendedMax)
+              }}</small
+            >
             <small>{{ formatNumber(exerciseRange.max) }}</small>
           </div>
         </div>
-        <input v-model.number="form.exerciseCalorieGoal" min="0" step="10" type="number" />
+        <input
+          v-model.number="form.exerciseCalorieGoal"
+          min="0"
+          step="10"
+          type="number"
+        />
       </label>
     </div>
 

@@ -6,6 +6,7 @@ import AppSidebar from "../../components/app/AppSidebar.vue";
 import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
+import { goalOptions } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
 import { useDailyGoalStore } from "../../stores/dailyGoalStore";
@@ -54,19 +55,34 @@ const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
 
+const goalLabel = computed(() => {
+  return (
+    goalOptions.find((goal) => goal.value === profileStore.profile?.goalType)
+      ?.title || "목표 미설정"
+  );
+});
+
 const todayMeals = computed(() => {
   return mealStore.dailyMeal?.meals || [];
 });
 
 const hasTodayMeals = computed(() => todayMeals.value.length > 0);
 
-const dailyGoalProgress = computed(() => dailyGoalStore.progress?.progress || null);
+const dailyGoalProgress = computed(
+  () => dailyGoalStore.progress?.progress || null,
+);
 
-const calorieProgress = computed(() => dailyGoalProgress.value?.calorieIntake || null);
+const calorieProgress = computed(
+  () => dailyGoalProgress.value?.calorieIntake || null,
+);
 
-const exerciseProgress = computed(() => dailyGoalProgress.value?.exerciseCalories || null);
+const exerciseProgress = computed(
+  () => dailyGoalProgress.value?.exerciseCalories || null,
+);
 
-const hasDailyGoalProgress = computed(() => Boolean(calorieProgress.value && exerciseProgress.value));
+const hasDailyGoalProgress = computed(() =>
+  Boolean(calorieProgress.value && exerciseProgress.value),
+);
 
 const macroRatio = computed(() => dailyGoalStore.progress?.macroRatio || null);
 
@@ -112,7 +128,9 @@ onMounted(async () => {
   }
 
   if (dailyGoalStore.needsGoalSetup) {
-    await dailyGoalStore.loadRecommendation(profileStore.profile?.goalType || "WEIGHT_LOSS");
+    await dailyGoalStore.loadRecommendation(
+      profileStore.profile?.goalType || "WEIGHT_LOSS",
+    );
   }
 
   await scrollToBottom();
@@ -159,7 +177,9 @@ async function handleImageInput(event) {
 }
 
 function handlePaste(event) {
-  const files = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(event.clipboardData?.files || []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
 
   if (files.length) {
     void addImageFiles(files);
@@ -186,7 +206,9 @@ function handleDragLeave(event) {
 
 function handleDrop(event) {
   isDraggingImage.value = false;
-  const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
 
   if (files.length) {
     void addImageFiles(files);
@@ -194,7 +216,9 @@ function handleDrop(event) {
 }
 
 function hasImageFiles(dataTransfer) {
-  return Array.from(dataTransfer?.items || []).some((item) => item.kind === "file" && item.type.startsWith("image/"));
+  return Array.from(dataTransfer?.items || []).some(
+    (item) => item.kind === "file" && item.type.startsWith("image/"),
+  );
 }
 
 async function addImageFiles(files = []) {
@@ -221,13 +245,17 @@ async function addImageFiles(files = []) {
     }
   }
 
-  const totalSize = attachedImages.value.reduce((sum, image) => sum + image.file.size, 0);
+  const totalSize = attachedImages.value.reduce(
+    (sum, image) => sum + image.file.size,
+    0,
+  );
   if (totalSize > 50 * 1024) {
     const removedImage = attachedImages.value.pop();
     if (removedImage) {
       URL.revokeObjectURL(removedImage.previewUrl);
     }
-    imageAttachmentError.value = "분석용 이미지는 한 번에 최대 50KB까지만 보낼 수 있어요.";
+    imageAttachmentError.value =
+      "분석용 이미지는 한 번에 최대 50KB까지만 보낼 수 있어요.";
   }
 }
 
@@ -255,14 +283,20 @@ async function compressImageForGms(file) {
   const context = canvas.getContext("2d");
 
   if (!context) {
-    throw new Error("이미지 압축을 준비하지 못했어요. 다른 사진으로 다시 시도해주세요.");
+    throw new Error(
+      "이미지 압축을 준비하지 못했어요. 다른 사진으로 다시 시도해주세요.",
+    );
   }
 
   const maxDimensions = [GMS_IMAGE_MAX_DIMENSION, 384, 256, 192, 160];
   const qualities = [0.72, 0.6, 0.5, 0.42, 0.34, 0.28, 0.22];
 
   for (const maxDimension of maxDimensions) {
-    const { width, height } = fitImageSize(image.width, image.height, maxDimension);
+    const { width, height } = fitImageSize(
+      image.width,
+      image.height,
+      maxDimension,
+    );
     canvas.width = width;
     canvas.height = height;
     context.clearRect(0, 0, width, height);
@@ -279,7 +313,9 @@ async function compressImageForGms(file) {
     }
   }
 
-  throw new Error("이미지가 너무 커서 실패했어요. 더 단순하거나 작은 사진으로 다시 시도해주세요.");
+  throw new Error(
+    "이미지가 너무 커서 실패했어요. 더 단순하거나 작은 사진으로 다시 시도해주세요.",
+  );
 }
 
 function loadImage(file) {
@@ -293,7 +329,9 @@ function loadImage(file) {
     };
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("이미지를 읽지 못했어요. 다른 사진으로 다시 시도해주세요."));
+      reject(
+        new Error("이미지를 읽지 못했어요. 다른 사진으로 다시 시도해주세요."),
+      );
     };
     image.src = objectUrl;
   });
@@ -317,10 +355,14 @@ function canvasToBlob(canvas, quality) {
           return;
         }
 
-        reject(new Error("이미지를 압축하지 못했어요. 다른 사진으로 다시 시도해주세요."));
+        reject(
+          new Error(
+            "이미지를 압축하지 못했어요. 다른 사진으로 다시 시도해주세요.",
+          ),
+        );
       },
       "image/jpeg",
-      quality
+      quality,
     );
   });
 }
@@ -338,12 +380,16 @@ function formatBytes(bytes) {
 }
 
 function removeAttachedImage(imageId) {
-  const targetImage = attachedImages.value.find((image) => image.id === imageId);
+  const targetImage = attachedImages.value.find(
+    (image) => image.id === imageId,
+  );
   if (targetImage) {
     URL.revokeObjectURL(targetImage.previewUrl);
   }
 
-  attachedImages.value = attachedImages.value.filter((image) => image.id !== imageId);
+  attachedImages.value = attachedImages.value.filter(
+    (image) => image.id !== imageId,
+  );
   imageAttachmentError.value = "";
 }
 
@@ -354,7 +400,9 @@ function clearAttachedImages() {
 }
 
 function revokeAttachedImageUrls() {
-  attachedImages.value.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+  attachedImages.value.forEach((image) =>
+    URL.revokeObjectURL(image.previewUrl),
+  );
 }
 
 async function confirmMealProposal(payload) {
@@ -392,7 +440,9 @@ async function confirmExerciseProposal(payload) {
     chatStore.completeExerciseProposal();
     await dailyGoalStore.loadProgress(todayDateKey.value);
   } else {
-    chatStore.failExerciseProposal(exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.");
+    chatStore.failExerciseProposal(
+      exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.",
+    );
   }
 
   chatStore.finishConfirmingExercise();
@@ -451,7 +501,10 @@ function mealDot(mealType) {
 }
 
 function mealFoodNames(meal) {
-  return meal.items?.map((item) => item.foodName).join(" + ") || mealLabel(meal.mealType);
+  return (
+    meal.items?.map((item) => item.foodName).join(" + ") ||
+    mealLabel(meal.mealType)
+  );
 }
 
 function toNumber(value) {
@@ -534,9 +587,9 @@ function sanitizeHtml(html = "") {
           <p class="deco">Today's Coaching</p>
           <h1>오늘의 코칭</h1>
         </div>
-        <div class="streak-chip api-required-chip">
+        <div class="streak-chip">
           <i></i>
-          연속 기록 API 연결 필요
+          {{ goalLabel }} 목표 진행 중
         </div>
       </header>
 
@@ -560,7 +613,10 @@ function sanitizeHtml(html = "") {
               {{ chatStore.error }}
             </div>
 
-            <div v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup" class="chat-state-card">
+            <div
+              v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup"
+              class="chat-state-card"
+            >
               아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
             </div>
 
@@ -569,9 +625,13 @@ function sanitizeHtml(html = "") {
                 <i class="pi pi-compass"></i>
               </div>
               <DailyGoalSetupCard
-                :initial-goal-type="profileStore.profile?.goalType || 'WEIGHT_LOSS'"
+                :initial-goal-type="
+                  profileStore.profile?.goalType || 'WEIGHT_LOSS'
+                "
                 :recommendation="dailyGoalStore.recommendation"
-                :is-loading-recommendation="dailyGoalStore.isLoadingRecommendation"
+                :is-loading-recommendation="
+                  dailyGoalStore.isLoadingRecommendation
+                "
                 :is-saving="dailyGoalStore.isSavingGoal"
                 :recommendation-error="dailyGoalStore.recommendationError"
                 :save-error="dailyGoalStore.saveGoalError"
@@ -580,7 +640,10 @@ function sanitizeHtml(html = "") {
               />
             </div>
 
-            <template v-for="chatMessage in displayMessages" :key="chatMessage.id || chatMessage.clientId">
+            <template
+              v-for="chatMessage in displayMessages"
+              :key="chatMessage.id || chatMessage.clientId"
+            >
               <div v-if="isUserMessage(chatMessage)" class="message-row user">
                 <div class="message-bubble user-bubble">
                   {{ chatMessage.content }}
@@ -592,12 +655,21 @@ function sanitizeHtml(html = "") {
                 <div class="coach-icon">
                   <i class="pi pi-briefcase"></i>
                 </div>
-                <article class="assistant-card" :class="{ pending: chatMessage.pending, failed: chatMessage.failed }">
+                <article
+                  class="assistant-card"
+                  :class="{
+                    pending: chatMessage.pending,
+                    failed: chatMessage.failed,
+                  }"
+                >
                   <div class="analysis-title">
                     <i></i>
                     <strong>AI 코치 답변</strong>
                   </div>
-                  <div class="markdown-content" v-html="renderMarkdown(chatMessage.content)"></div>
+                  <div
+                    class="markdown-content"
+                    v-html="renderMarkdown(chatMessage.content)"
+                  ></div>
                   <time>{{ formatMessageTime(chatMessage.createdAt) }}</time>
                 </article>
               </div>
@@ -630,17 +702,29 @@ function sanitizeHtml(html = "") {
             </div>
           </div>
 
-          <div v-if="attachedImages.length || imageAttachmentError" class="image-attachment-tray">
+          <div
+            v-if="attachedImages.length || imageAttachmentError"
+            class="image-attachment-tray"
+          >
             <div v-if="attachedImages.length" class="image-attachment-list">
               <figure v-for="image in attachedImages" :key="image.id">
                 <img :src="image.previewUrl" :alt="image.file.name" />
-                <figcaption>{{ image.originalFile.name }} · {{ formatBytes(image.file.size) }}</figcaption>
-                <button type="button" aria-label="이미지 삭제" @click="removeAttachedImage(image.id)">
+                <figcaption>
+                  {{ image.originalFile.name }} ·
+                  {{ formatBytes(image.file.size) }}
+                </figcaption>
+                <button
+                  type="button"
+                  aria-label="이미지 삭제"
+                  @click="removeAttachedImage(image.id)"
+                >
                   <i class="pi pi-times"></i>
                 </button>
               </figure>
             </div>
-            <p v-if="imageAttachmentError" class="image-attachment-error">{{ imageAttachmentError }}</p>
+            <p v-if="imageAttachmentError" class="image-attachment-error">
+              {{ imageAttachmentError }}
+            </p>
           </div>
 
           <form class="chat-composer" @submit.prevent="sendMessage">
@@ -652,19 +736,35 @@ function sanitizeHtml(html = "") {
               multiple
               @change="handleImageInput"
             />
-            <input v-model="message" placeholder="식단이나 운동을 편하게 기록해보세요..." />
-            <button class="attach-image-button" type="button" aria-label="이미지 추가" @click="openImagePicker">
+            <input
+              v-model="message"
+              placeholder="식단이나 운동을 편하게 기록해보세요..."
+            />
+            <button
+              class="attach-image-button"
+              type="button"
+              aria-label="이미지 추가"
+              @click="openImagePicker"
+            >
               <i class="pi pi-plus"></i>
             </button>
             <button type="button" aria-label="음성 입력">
               <i class="pi pi-microphone"></i>
             </button>
-            <button class="send-button" type="submit" aria-label="전송" :disabled="chatStore.isSending">
+            <button
+              class="send-button"
+              type="submit"
+              aria-label="전송"
+              :disabled="chatStore.isSending"
+            >
               <i class="pi pi-send"></i>
             </button>
           </form>
 
-          <p class="composer-note">AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.</p>
+          <p class="composer-note">
+            AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와
+            상담하세요.
+          </p>
         </section>
 
         <aside class="today-panel">
@@ -678,49 +778,93 @@ function sanitizeHtml(html = "") {
             <p>{{ dailyGoalStore.progressError }}</p>
           </div>
 
-          <div v-else-if="dailyGoalStore.needsGoalSetup" class="api-needed-panel">
+          <div
+            v-else-if="dailyGoalStore.needsGoalSetup"
+            class="api-needed-panel"
+          >
             <strong>일일 목표를 먼저 설정해 주세요</strong>
-            <p>채팅창의 목표 설정 카드에서 추천값을 확인하고 오늘의 기준을 저장할 수 있어요.</p>
+            <p>
+              채팅창의 목표 설정 카드에서 추천값을 확인하고 오늘의 기준을 저장할
+              수 있어요.
+            </p>
           </div>
 
-          <section class="calorie-card" :class="{ 'pending-api': !hasDailyGoalProgress }">
+          <section
+            class="calorie-card"
+            :class="{ 'pending-api': !hasDailyGoalProgress }"
+          >
             <span>오늘 섭취 목표</span>
             <strong>
-              {{ calorieProgress ? formatNumber(calorieProgress.current) : "-" }}<small>/ {{ calorieProgress ? formatNumber(calorieProgress.goal) : "-" }} kcal</small>
+              {{ calorieProgress ? formatNumber(calorieProgress.current) : "-"
+              }}<small
+                >/
+                {{
+                  calorieProgress ? formatNumber(calorieProgress.goal) : "-"
+                }}
+                kcal</small
+              >
             </strong>
             <div class="progress-track">
               <i :style="{ width: progressWidth(calorieProgress) }"></i>
             </div>
-            <p v-if="calorieProgress">남은 섭취량 {{ formatNumber(calorieProgress.remaining) }} kcal · {{ calorieProgress.percent }}%</p>
+            <p v-if="calorieProgress">
+              남은 섭취량 {{ formatNumber(calorieProgress.remaining) }} kcal ·
+              {{ calorieProgress.percent }}%
+            </p>
             <p v-else>목표를 설정하면 진행률을 볼 수 있어요.</p>
           </section>
 
-          <section class="exercise-goal-card" :class="{ 'pending-api': !hasDailyGoalProgress }">
+          <section
+            class="exercise-goal-card"
+            :class="{ 'pending-api': !hasDailyGoalProgress }"
+          >
             <span>오늘 운동 목표</span>
             <strong>
-              {{ exerciseProgress ? formatNumber(exerciseProgress.current) : "-" }}<small>/ {{ exerciseProgress ? formatNumber(exerciseProgress.goal) : "-" }} kcal</small>
+              {{
+                exerciseProgress ? formatNumber(exerciseProgress.current) : "-"
+              }}<small
+                >/
+                {{
+                  exerciseProgress ? formatNumber(exerciseProgress.goal) : "-"
+                }}
+                kcal</small
+              >
             </strong>
             <div class="progress-track">
               <i :style="{ width: progressWidth(exerciseProgress) }"></i>
             </div>
-            <p v-if="exerciseProgress">남은 운동량 {{ formatNumber(exerciseProgress.remaining) }} kcal · {{ exerciseProgress.percent }}%</p>
+            <p v-if="exerciseProgress">
+              남은 운동량 {{ formatNumber(exerciseProgress.remaining) }} kcal ·
+              {{ exerciseProgress.percent }}%
+            </p>
             <p v-else>운동 목표도 함께 추적해요.</p>
           </section>
 
-          <div v-if="mealStore.dailyError" class="api-needed-panel compact-panel">
+          <div
+            v-if="mealStore.dailyError"
+            class="api-needed-panel compact-panel"
+          >
             <strong>오늘 식단 정보를 불러오지 못했어요</strong>
             <p>{{ mealStore.dailyError }}</p>
           </div>
 
           <div class="macro-grid" :class="{ 'pending-api': !macroRatio }">
-            <div v-for="macro in macroItems" :key="macro.key" :class="macroStatusClass(macro.value)">
+            <div
+              v-for="macro in macroItems"
+              :key="macro.key"
+              :class="macroStatusClass(macro.value)"
+            >
               <span>{{ macro.label }}</span>
               <strong>
                 {{ macro.value ? formatNumber(macro.value.grams) : "-" }}g
-                <small>{{ macro.value ? `${macro.value.percent}%` : "" }}</small>
+                <small>{{
+                  macro.value ? `${macro.value.percent}%` : ""
+                }}</small>
               </strong>
               <i :style="{ width: progressWidth(macro.value) }"></i>
-              <em v-if="macro.value">{{ macro.value.rangeMin }}~{{ macro.value.rangeMax }}%</em>
+              <em v-if="macro.value"
+                >{{ macro.value.rangeMin }}~{{ macro.value.rangeMax }}%</em
+              >
             </div>
           </div>
 
@@ -732,16 +876,18 @@ function sanitizeHtml(html = "") {
               <i :class="['dot', mealDot(meal.mealType)]"></i>
               <div>
                 <strong>{{ mealFoodNames(meal) }}</strong>
-                <span>{{ mealLabel(meal.mealType) }} · {{ formatNumber(meal.totalCalories) }} kcal</span>
+                <span
+                  >{{ mealLabel(meal.mealType) }} ·
+                  {{ formatNumber(meal.totalCalories) }} kcal</span
+                >
               </div>
             </article>
 
-            <div v-if="!mealStore.isLoadingDaily && !hasTodayMeals" class="api-list-empty">
+            <div
+              v-if="!mealStore.isLoadingDaily && !hasTodayMeals"
+              class="api-list-empty"
+            >
               오늘 저장된 식단 기록이 없어요.
-            </div>
-
-            <div class="api-list-empty compact">
-              운동 기록 API 연결 필요
             </div>
           </section>
         </aside>

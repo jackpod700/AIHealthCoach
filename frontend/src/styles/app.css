@@ -1192,19 +1192,9 @@
 }
 
 .goal-slider-field input[type="range"] {
+  height: 26px;
   width: 100%;
-  accent-color: var(--navy);
-}
-
-.goal-range-wrap {
-  display: grid;
-  gap: 6px;
-}
-
-.goal-range-band {
-  position: relative;
-  height: 8px;
-  overflow: hidden;
+  appearance: none;
   border-radius: 999px;
   background:
     linear-gradient(
@@ -1216,16 +1206,50 @@
       #f1dfb9 calc(100% - var(--band-right)),
       #f1dfb9 100%
     );
+  cursor: pointer;
+  outline: none;
 }
 
-.goal-range-band i {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: var(--band-left);
-  right: var(--band-right);
-  border-radius: inherit;
-  box-shadow: inset 0 0 0 1px rgb(47 74 60 / 18%);
+.goal-slider-field input[type="range"]::-webkit-slider-runnable-track {
+  height: 10px;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.goal-slider-field input[type="range"]::-webkit-slider-thumb {
+  width: 22px;
+  height: 22px;
+  margin-top: -6px;
+  appearance: none;
+  border: 3px solid var(--navy);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(47 74 60 / 18%);
+}
+
+.goal-slider-field input[type="range"]::-moz-range-track {
+  height: 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+}
+
+.goal-slider-field input[type="range"]::-moz-range-progress {
+  background: transparent;
+}
+
+.goal-slider-field input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border: 3px solid var(--navy);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(47 74 60 / 18%);
+}
+
+.goal-range-wrap {
+  display: grid;
+  gap: 4px;
 }
 
 .goal-range-labels {
