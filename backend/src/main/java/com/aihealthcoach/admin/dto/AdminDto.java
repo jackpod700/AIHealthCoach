@@ -67,7 +67,8 @@ public class AdminDto {
             Double averageResponseMs5m,
             Double aiAverageLatencyMs5m,
             Double failureRate5m,
-            Long totalTokens5m
+            Long totalTokens5m,
+            Long totalTokensDelta
     ) {
     }
 }

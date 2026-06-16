@@ -42,6 +42,7 @@ public class AdminMetricsHistoryService {
         if (ai == null) {
             ai = AiUsageSummary.empty();
         }
+        long totalTokens5m = safe(ai.getTotalTokensToday());
 
         points.addLast(new AdminMetricsHistoryPoint(
                 now,
@@ -55,7 +56,8 @@ public class AdminMetricsHistoryService {
                 traffic.averageResponseMs5m(),
                 ai.getAverageLatencyMsToday() == null ? 0.0 : ai.getAverageLatencyMsToday(),
                 failureRate(traffic, ai),
-                ai.getTotalTokensToday() == null ? 0L : ai.getTotalTokensToday()
+                totalTokens5m,
+                totalTokenDelta(totalTokens5m)
         ));
 
         evictOldPoints(now);
@@ -117,5 +119,13 @@ public class AdminMetricsHistoryService {
 
     private long safe(Long value) {
         return value == null ? 0L : value;
+    }
+
+    private long totalTokenDelta(long currentTotalTokens5m) {
+        AdminMetricsHistoryPoint previous = points.peekLast();
+        if (previous == null || previous.totalTokens5m() == null) {
+            return currentTotalTokens5m;
+        }
+        return Math.max(0L, currentTotalTokens5m - previous.totalTokens5m());
     }
 }

@@ -52,6 +52,7 @@ class AdminMetricsHistoryServiceTest {
         assertThat(history.points().getFirst().jvmHeapUsagePercent()).isEqualTo(25.0);
         assertThat(history.points().getFirst().failureRate5m()).isEqualTo(28.57142857142857);
         assertThat(history.points().getFirst().totalTokens5m()).isEqualTo(150L);
+        assertThat(history.points().getFirst().totalTokensDelta()).isEqualTo(150L);
     }
 
     @Test

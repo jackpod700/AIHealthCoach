@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
-import AdminBarChart from "../../components/admin/AdminBarChart.vue";
 import AdminLineChart from "../../components/admin/AdminLineChart.vue";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAdminStore } from "../../stores/adminStore";
@@ -187,11 +186,12 @@ function lastUpdatedLabel() {
                 { key: 'failureRate5m', label: '최근 5분', color: '#ae4d42' },
               ]"
             />
-            <AdminBarChart
-              title="토큰 사용량"
+            <AdminLineChart
+              title="시점별 토큰 사용량"
               :points="historyPoints"
-              value-key="totalTokens5m"
-              color="#d9805a"
+              :series="[
+                { key: 'totalTokensDelta', label: '토큰', color: '#d9805a' },
+              ]"
             />
           </section>
 
