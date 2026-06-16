@@ -1,14 +1,18 @@
 <script setup>
-import { computed, onMounted, reactive, watch } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
+import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import { goalOptions } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
+import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const dailyGoalStore = useDailyGoalStore();
 const profileStore = useProfileStore();
 const router = useRouter();
+const isGoalEditorOpen = ref(false);
 
 const profileForm = reactive({
   heightCm: "",
@@ -107,6 +111,33 @@ async function saveProfile() {
   if (!authStore.isAuthenticated) {
     router.replace("/login");
   }
+}
+
+async function openGoalEditor() {
+  isGoalEditorOpen.value = true;
+  await dailyGoalStore.loadRecommendation(profileForm.goalType);
+}
+
+function closeGoalEditor() {
+  isGoalEditorOpen.value = false;
+}
+
+async function saveGoal(goal) {
+  const savedGoal = await dailyGoalStore.saveGoal(goal);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (!savedGoal) {
+    return;
+  }
+
+  await profileStore.loadProfile();
+  profileForm.goalType = savedGoal.goalType;
+
+  closeGoalEditor();
 }
 </script>
 
@@ -214,20 +245,16 @@ async function saveProfile() {
               <input v-model="profileForm.age" inputmode="numeric" min="1" type="number" />
             </label>
 
-            <fieldset>
-              <legend>목표 유형</legend>
-              <div class="profile-goal-buttons">
-                <button
-                  v-for="goal in goalOptions"
-                  :key="goal.value"
-                  type="button"
-                  :class="{ active: profileForm.goalType === goal.value }"
-                  @click="profileForm.goalType = goal.value"
-                >
-                  {{ goal.title }}
-                </button>
+            <section class="profile-goal-summary">
+              <div>
+                <span>현재 목표</span>
+                <strong>{{ goalLabel }} 목표 진행 중</strong>
               </div>
-            </fieldset>
+              <button type="button" @click="openGoalEditor">
+                <i class="pi pi-pencil"></i>
+                수정
+              </button>
+            </section>
 
             <div class="profile-actions">
               <button class="profile-cancel" type="button" @click="resetForm">취소</button>
@@ -239,5 +266,39 @@ async function saveProfile() {
         </section>
       </div>
     </section>
+
+    <Teleport to="body">
+      <div
+        v-if="isGoalEditorOpen"
+        class="goal-editor-backdrop"
+        @click.self="closeGoalEditor"
+      >
+        <section class="goal-editor-modal">
+          <header>
+            <div>
+              <span>Daily Goal</span>
+              <h2>목표 수정</h2>
+            </div>
+            <button type="button" aria-label="닫기" @click="closeGoalEditor">
+              <i class="pi pi-times"></i>
+            </button>
+          </header>
+
+          <DailyGoalSetupCard
+            :initial-goal-type="profileForm.goalType"
+            :recommendation="dailyGoalStore.recommendation"
+            :is-loading-recommendation="dailyGoalStore.isLoadingRecommendation"
+            :is-saving="dailyGoalStore.isSavingGoal"
+            :recommendation-error="dailyGoalStore.recommendationError"
+            :save-error="dailyGoalStore.saveGoalError"
+            title="목표를 수정할까요?"
+            description="선택한 목표에 맞춰 하루 섭취량과 운동량을 다시 조정해요."
+            submit-label="목표 저장"
+            @recommend="dailyGoalStore.loadRecommendation"
+            @save="saveGoal"
+          />
+        </section>
+      </div>
+    </Teleport>
   </main>
 </template>

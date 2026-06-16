@@ -91,7 +91,7 @@ const macroItems = computed(() => {
 
   return [
     { key: "protein", label: "단백질", value: macros?.protein },
-    { key: "carbohydrate", label: "탄수", value: macros?.carbohydrate },
+    { key: "carbohydrate", label: "탄수화물", value: macros?.carbohydrate },
     { key: "fat", label: "지방", value: macros?.fat },
   ];
 });
@@ -798,9 +798,7 @@ function sanitizeHtml(html = "") {
               {{ calorieProgress ? formatNumber(calorieProgress.current) : "-"
               }}<small
                 >/
-                {{
-                  calorieProgress ? formatNumber(calorieProgress.goal) : "-"
-                }}
+                {{ calorieProgress ? formatNumber(calorieProgress.goal) : "-" }}
                 kcal</small
               >
             </strong>
@@ -862,9 +860,6 @@ function sanitizeHtml(html = "") {
                 }}</small>
               </strong>
               <i :style="{ width: progressWidth(macro.value) }"></i>
-              <em v-if="macro.value"
-                >{{ macro.value.rangeMin }}~{{ macro.value.rangeMax }}%</em
-              >
             </div>
           </div>
 
