@@ -2,6 +2,7 @@ package com.aihealthcoach.dailygoal.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalProgressResponse;
@@ -92,6 +93,8 @@ class DailyGoalServiceImplTest {
         assertThat(response.updatedAt()).isEqualTo(updatedAt);
         assertThat(response.calorieIntakeGoal()).isEqualTo(1000);
         assertThat(response.exerciseCalorieGoal()).isEqualTo(1200);
+        assertThat(response.goalType()).isEqualTo("WEIGHT_LOSS");
+        verify(userMapper).updateUserProfileGoalType(USER_ID, "WEIGHT_LOSS");
     }
 
     @Test

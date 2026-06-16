@@ -13,4 +13,5 @@ public interface UserMapper {
     void insertUserProfile(UserProfile userProfile);
     UserProfile findUserProfileByUserId(Long id);
     void updateUserProfile(@Param("userId") Long userId, @Param("request") UserProfileUpdateRequest request);
+    void updateUserProfileGoalType(@Param("userId") Long userId, @Param("goalType") String goalType);
 }

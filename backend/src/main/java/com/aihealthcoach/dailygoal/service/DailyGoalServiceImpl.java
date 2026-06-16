@@ -67,6 +67,7 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                 .calorieIntakeGoal(request.calorieIntakeGoal())
                 .exerciseCalorieGoal(request.exerciseCalorieGoal())
                 .build());
+        userMapper.updateUserProfileGoalType(userId, savedGoal.getGoalType());
 
         return toGoalResponse(savedGoal);
     }

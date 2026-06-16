@@ -90,4 +90,11 @@
         </set>
         WHERE user_id = #{userId}
     </update>
+
+    <update id="updateUserProfileGoalType">
+        UPDATE user_profiles
+        SET goal_type = #{goalType},
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
 </mapper>
