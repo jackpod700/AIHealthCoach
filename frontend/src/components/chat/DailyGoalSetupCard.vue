@@ -1,5 +1,5 @@
 <script setup>
-import { computed, reactive, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import { goalOptions } from "../../constants/authOptions";
 
 const props = defineProps({
@@ -49,6 +49,7 @@ const form = reactive({
   calorieIntakeGoal: 1800,
   exerciseCalorieGoal: 300,
 });
+const pendingGoalType = ref("");
 
 const recommendationBase = reactive({
   calorieIntakeGoal: 1800,
@@ -126,6 +127,10 @@ const GOAL_RANGE_CONFIG = {
 
 const activeRangeConfig = computed(() => {
   return GOAL_RANGE_CONFIG[form.goalType] || GOAL_RANGE_CONFIG.WEIGHT_LOSS;
+});
+
+const selectedGoalType = computed(() => {
+  return pendingGoalType.value || form.goalType;
 });
 
 const calorieRange = computed(() => {
@@ -249,6 +254,11 @@ watch(
       return;
     }
 
+    if (pendingGoalType.value) {
+      form.goalType = pendingGoalType.value;
+      pendingGoalType.value = "";
+    }
+
     form.calorieIntakeGoal = Number(recommendation.calorieIntakeGoal);
     form.exerciseCalorieGoal = Number(recommendation.exerciseCalorieGoal);
     recommendationBase.calorieIntakeGoal = Number(
@@ -260,8 +270,21 @@ watch(
   },
 );
 
+watch(
+  () => props.recommendationError,
+  (recommendationError) => {
+    if (recommendationError) {
+      pendingGoalType.value = "";
+    }
+  },
+);
+
 function selectGoal(goalType) {
-  form.goalType = goalType;
+  if (goalType === selectedGoalType.value || props.isLoadingRecommendation) {
+    return;
+  }
+
+  pendingGoalType.value = goalType;
   emit("recommend", goalType);
 }
 
@@ -321,7 +344,7 @@ function rangeTickStyle(value, range) {
         v-for="goal in goalOptions"
         :key="goal.value"
         type="button"
-        :class="{ active: form.goalType === goal.value }"
+        :class="{ active: selectedGoalType === goal.value }"
         @click="selectGoal(goal.value)"
       >
         <i :class="goal.icon"></i>
