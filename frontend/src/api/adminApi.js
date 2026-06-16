@@ -7,3 +7,11 @@ export function fetchAdminDashboard(accessToken) {
     },
   });
 }
+
+export function fetchAdminDashboardHistory(accessToken, rangeMinutes = 60) {
+  return apiRequest(`/api/admin/dashboard/history?rangeMinutes=${rangeMinutes}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}

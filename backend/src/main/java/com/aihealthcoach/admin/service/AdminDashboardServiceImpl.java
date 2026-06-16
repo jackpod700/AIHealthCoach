@@ -3,6 +3,9 @@ package com.aihealthcoach.admin.service;
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.RuntimeMXBean;
+import java.nio.file.FileStore;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 import org.springframework.stereotype.Service;
 
@@ -40,7 +43,7 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
         );
     }
 
-    private ServerMetricsResponse serverMetrics() {
+    ServerMetricsResponse serverMetrics() {
         MemoryMXBean memoryMxBean = ManagementFactory.getMemoryMXBean();
         RuntimeMXBean runtimeMxBean = ManagementFactory.getRuntimeMXBean();
 
@@ -60,11 +63,12 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
                     totalMemoryMb,
                     jvmUsedMb,
                     jvmMaxMb,
+                    diskUsagePercent(),
                     uptimeSeconds
             );
         }
 
-        return new ServerMetricsResponse(null, null, null, jvmUsedMb, jvmMaxMb, uptimeSeconds);
+        return new ServerMetricsResponse(null, null, null, jvmUsedMb, jvmMaxMb, diskUsagePercent(), uptimeSeconds);
     }
 
     private AiMetricsResponse aiMetrics(AiUsageSummary summary) {
@@ -89,5 +93,22 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
 
     private long valueOrZero(Long value) {
         return value == null ? 0L : value;
+    }
+
+    private Double diskUsagePercent() {
+        try {
+            Path path = Path.of("").toAbsolutePath();
+            FileStore fileStore = Files.getFileStore(path);
+            long totalSpace = fileStore.getTotalSpace();
+            long usableSpace = fileStore.getUsableSpace();
+
+            if (totalSpace <= 0) {
+                return null;
+            }
+
+            return ((double) (totalSpace - usableSpace) / totalSpace) * 100;
+        } catch (Exception exception) {
+            return null;
+        }
     }
 }

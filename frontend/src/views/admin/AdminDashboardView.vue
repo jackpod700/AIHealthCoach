@@ -1,5 +1,7 @@
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from "vue";
+import AdminBarChart from "../../components/admin/AdminBarChart.vue";
+import AdminLineChart from "../../components/admin/AdminLineChart.vue";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAdminStore } from "../../stores/adminStore";
 
@@ -20,6 +22,7 @@ onUnmounted(() => {
 });
 
 const dashboard = computed(() => adminStore.dashboard);
+const historyPoints = computed(() => adminStore.history?.points || []);
 
 const summaryCards = computed(() => {
   const data = dashboard.value;
@@ -33,15 +36,15 @@ const summaryCards = computed(() => {
     },
     {
       label: "RAM",
-      value: memoryRatio(data?.server?.systemMemoryUsedMb, data?.server?.systemMemoryTotalMb),
+      value: usageRatio(data?.server?.systemMemoryUsedMb, data?.server?.systemMemoryTotalMb),
       detail: "시스템 메모리",
       icon: "pi pi-server",
     },
     {
-      label: "활성 사용자",
-      value: number(data?.users?.activeUsers5m),
-      detail: "최근 5분",
-      icon: "pi pi-users",
+      label: "Disk",
+      value: percent(data?.server?.diskUsagePercent),
+      detail: "실행 파일시스템",
+      icon: "pi pi-database",
     },
     {
       label: "AI 평균 응답",
@@ -53,8 +56,12 @@ const summaryCards = computed(() => {
 });
 
 async function loadDashboard() {
-  await adminStore.loadDashboard();
-  if (!adminStore.error) {
+  await Promise.all([
+    adminStore.loadDashboard(),
+    adminStore.loadDashboardHistory(60),
+  ]);
+
+  if (!adminStore.error && !adminStore.historyError) {
     lastUpdatedAt.value = new Date();
   }
 }
@@ -73,7 +80,7 @@ function percent(value) {
   return `${Number(value).toLocaleString("ko-KR", { maximumFractionDigits: 1 })}%`;
 }
 
-function memoryRatio(used, total) {
+function usageRatio(used, total) {
   if (used === null || used === undefined || total === null || total === undefined) {
     return "-";
   }
@@ -124,6 +131,9 @@ function lastUpdatedLabel() {
         <div v-if="adminStore.error" class="admin-error">
           {{ adminStore.error }}
         </div>
+        <div v-if="adminStore.historyError" class="admin-error">
+          {{ adminStore.historyError }}
+        </div>
 
         <div v-if="!dashboard && adminStore.isLoading" class="admin-loading">
           관리자 지표를 불러오고 있어요.
@@ -139,6 +149,52 @@ function lastUpdatedLabel() {
             </article>
           </section>
 
+          <section class="admin-chart-grid">
+            <AdminLineChart
+              title="시스템 리소스"
+              :points="historyPoints"
+              value-suffix="%"
+              :series="[
+                { key: 'cpuUsagePercent', label: 'CPU', color: '#244a73' },
+                { key: 'ramUsagePercent', label: 'RAM', color: '#d9805a' },
+                { key: 'diskUsagePercent', label: 'Disk', color: '#52a883' },
+                { key: 'jvmHeapUsagePercent', label: 'JVM', color: '#7d6bd9' },
+              ]"
+            />
+            <AdminLineChart
+              title="요청 수"
+              :points="historyPoints"
+              :series="[
+                { key: 'requestCount1m', label: '1분', color: '#244a73' },
+                { key: 'requestCount5m', label: '5분', color: '#d9805a' },
+                { key: 'requestCount1h', label: '1시간', color: '#52a883' },
+              ]"
+            />
+            <AdminLineChart
+              title="평균 응답 시간"
+              :points="historyPoints"
+              value-suffix="ms"
+              :series="[
+                { key: 'averageResponseMs5m', label: 'API', color: '#244a73' },
+                { key: 'aiAverageLatencyMs5m', label: 'AI', color: '#d9805a' },
+              ]"
+            />
+            <AdminLineChart
+              title="실패율"
+              :points="historyPoints"
+              value-suffix="%"
+              :series="[
+                { key: 'failureRate5m', label: '최근 5분', color: '#ae4d42' },
+              ]"
+            />
+            <AdminBarChart
+              title="토큰 사용량"
+              :points="historyPoints"
+              value-key="totalTokens5m"
+              color="#d9805a"
+            />
+          </section>
+
           <section class="admin-panel-grid">
             <article class="admin-panel">
               <p class="section-eyebrow">SERVER</p>
@@ -150,11 +206,15 @@ function lastUpdatedLabel() {
                 </div>
                 <div>
                   <dt>시스템 메모리</dt>
-                  <dd>{{ memoryRatio(dashboard.server.systemMemoryUsedMb, dashboard.server.systemMemoryTotalMb) }}</dd>
+                  <dd>{{ usageRatio(dashboard.server.systemMemoryUsedMb, dashboard.server.systemMemoryTotalMb) }}</dd>
                 </div>
                 <div>
-                  <dt>JVM 메모리</dt>
-                  <dd>{{ memoryRatio(dashboard.server.jvmMemoryUsedMb, dashboard.server.jvmMemoryMaxMb) }}</dd>
+                  <dt>Disk 사용률</dt>
+                  <dd>{{ percent(dashboard.server.diskUsagePercent) }}</dd>
+                </div>
+                <div>
+                  <dt>JVM heap</dt>
+                  <dd>{{ usageRatio(dashboard.server.jvmMemoryUsedMb, dashboard.server.jvmMemoryMaxMb) }}</dd>
                 </div>
                 <div>
                   <dt>Uptime</dt>

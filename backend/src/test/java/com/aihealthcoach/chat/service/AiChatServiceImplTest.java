@@ -13,7 +13,6 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockMultipartFile;
 
-import com.aihealthcoach.admin.mapper.AdminMapper;
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -131,6 +130,6 @@ class AiChatServiceImplTest {
     }
 
     private AiChatServiceImpl newService() {
-        return new AiChatServiceImpl(null, new ObjectMapper(), CLOCK, new AiPromptFactory(), mock(AdminMapper.class));
+        return new AiChatServiceImpl(mock(AiChatClientGateway.class), new ObjectMapper(), CLOCK, new AiPromptFactory());
     }
 }
