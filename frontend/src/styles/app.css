@@ -3166,6 +3166,19 @@
   color: var(--ink);
   font-size: 25px;
   font-weight: 900;
+  font-family: inherit;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.admin-home .section-eyebrow {
+  margin: 0;
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
 }
 
 .admin-live-status {
@@ -3293,10 +3306,13 @@
 }
 
 .admin-chart-card h2 {
-  margin: 4px 0 0;
+  margin: 8px 0 0;
   color: var(--ink);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 900;
+  font-family: inherit;
+  line-height: 1.25;
+  letter-spacing: 0;
 }
 
 .admin-chart-legend {
@@ -3367,10 +3383,13 @@
 }
 
 .admin-panel h2 {
-  margin: 4px 0 18px;
+  margin: 8px 0 18px;
   color: var(--ink);
   font-size: 18px;
   font-weight: 900;
+  font-family: inherit;
+  line-height: 1.25;
+  letter-spacing: 0;
 }
 
 .admin-panel dl {
