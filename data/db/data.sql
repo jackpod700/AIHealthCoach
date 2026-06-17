@@ -19,6 +19,19 @@ VALUES
     (3, 3, 'WEIGHT_LOSS', 1600, 300, NOW(), NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
+INSERT INTO weight_records (user_id, record_date, weight_kg, created_at, updated_at)
+VALUES
+    (1, (CURRENT_DATE - INTERVAL '28 days')::date, 69.20, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '24 days')::date, 69.00, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '21 days')::date, 68.90, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '17 days')::date, 68.70, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '14 days')::date, 68.80, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '10 days')::date, 68.60, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '7 days')::date, 68.50, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '3 days')::date, 68.45, NOW(), NOW()),
+    (1, CURRENT_DATE, 68.40, NOW(), NOW())
+ON CONFLICT (user_id, record_date) DO NOTHING;
+
 INSERT INTO chat_messages (id, user_id, role, content, created_at)
 SELECT row_number() OVER () AS id, user_id, role, content, created_at
 FROM (VALUES
@@ -46,4 +59,5 @@ ON CONFLICT (id) DO NOTHING;
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
 SELECT setval('user_profiles_id_seq', COALESCE((SELECT MAX(id) FROM user_profiles), 1));
 SELECT setval('daily_goals_id_seq', COALESCE((SELECT MAX(id) FROM daily_goals), 1));
+SELECT setval('weight_records_id_seq', COALESCE((SELECT MAX(id) FROM weight_records), 1));
 SELECT setval('chat_messages_id_seq', COALESCE((SELECT MAX(id) FROM chat_messages), 1));

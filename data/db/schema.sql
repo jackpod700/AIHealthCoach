@@ -282,3 +282,29 @@ CREATE TABLE IF NOT EXISTS daily_goals (
     CONSTRAINT chk_daily_goals_exercise_calorie_non_negative
         CHECK (exercise_calorie_goal >= 0)
 );
+
+CREATE TABLE IF NOT EXISTS weight_records (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    record_date DATE NOT NULL,
+    weight_kg NUMERIC(5, 2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_weight_records_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_weight_records_user_date
+        UNIQUE (user_id, record_date),
+
+    CONSTRAINT chk_weight_records_weight_positive
+        CHECK (weight_kg > 0),
+
+    CONSTRAINT chk_weight_records_weight_max
+        CHECK (weight_kg <= 500)
+);
+
+CREATE INDEX IF NOT EXISTS idx_weight_records_user_date
+    ON weight_records(user_id, record_date);
