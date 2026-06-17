@@ -97,4 +97,11 @@
             updated_at = NOW()
         WHERE user_id = #{userId}
     </update>
+
+    <update id="updateUserProfileCurrentWeight">
+        UPDATE user_profiles
+        SET current_weight_kg = #{currentWeightKg},
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+    </update>
 </mapper>
