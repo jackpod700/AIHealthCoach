@@ -36,4 +36,8 @@ public class UserException extends BusinessException {
     public static UserException profileAccessDenied(){
         return new UserException(UserErrorCode.PROFILE_ACCESS_DENIED);
     }
+
+    public static UserException unsupportedOAuthProvider() {
+        return new UserException(UserErrorCode.UNSUPPORTED_OAUTH_PROVIDER);
+    }
 }

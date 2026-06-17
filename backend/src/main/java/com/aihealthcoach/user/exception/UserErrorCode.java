@@ -16,7 +16,8 @@ public enum UserErrorCode implements ErrorCode {
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 올바르지 않습니다."),
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 프로필이 존재하지 않습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "올바르지 않은 JWT 토큰입니다."),
-    PROFILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "프로필에 접근할 권한이 없습니다.");
+    PROFILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "프로필에 접근할 권한이 없습니다."),
+    UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지ㅏ 않는 OAuth provider 입니다.");
 
     private final HttpStatus status;
     private final String message;
