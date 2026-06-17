@@ -7,13 +7,16 @@ export const useChatStore = defineStore("chat", {
     messages: [],
     mealProposal: null,
     exerciseProposal: null,
+    weightProposal: null,
     isLoading: false,
     isSending: false,
     isConfirmingMeal: false,
     isConfirmingExercise: false,
+    isConfirmingWeight: false,
     error: "",
     mealProposalError: "",
     exerciseProposalError: "",
+    weightProposalError: "",
     summary: {
       mealCount: 0,
       exerciseCount: 0,
@@ -35,9 +38,11 @@ export const useChatStore = defineStore("chat", {
       this.messages = [];
       this.mealProposal = null;
       this.exerciseProposal = null;
+      this.weightProposal = null;
       this.error = "";
       this.mealProposalError = "";
       this.exerciseProposalError = "";
+      this.weightProposalError = "";
       this.refreshSummary();
     },
     async loadMessages() {
@@ -101,6 +106,7 @@ export const useChatStore = defineStore("chat", {
         this.replacePendingMessages(requestId, newMessages);
         this.mealProposal = response?.mealProposal?.items?.length ? response.mealProposal : null;
         this.exerciseProposal = response?.exerciseProposal?.activityKeyword ? response.exerciseProposal : null;
+        this.weightProposal = response?.weightProposal?.weightKg ? response.weightProposal : null;
         this.refreshSummary();
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
@@ -153,6 +159,7 @@ export const useChatStore = defineStore("chat", {
         this.replacePendingMessages(requestId, newMessages);
         this.mealProposal = response?.mealProposal?.items?.length ? response.mealProposal : null;
         this.exerciseProposal = response?.exerciseProposal?.activityKeyword ? response.exerciseProposal : null;
+        this.weightProposal = response?.weightProposal?.weightKg ? response.weightProposal : null;
         this.refreshSummary();
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
@@ -216,6 +223,26 @@ export const useChatStore = defineStore("chat", {
     failExerciseProposal(message) {
       this.exerciseProposalError = message;
     },
+    startConfirmingWeight() {
+      if (this.isConfirmingWeight) {
+        return false;
+      }
+
+      this.isConfirmingWeight = true;
+      this.weightProposalError = "";
+      return true;
+    },
+    finishConfirmingWeight() {
+      this.isConfirmingWeight = false;
+    },
+    completeWeightProposal() {
+      this.weightProposal = null;
+      this.weightProposalError = "";
+      this.refreshSummary();
+    },
+    failWeightProposal(message) {
+      this.weightProposalError = message;
+    },
     dismissMealProposal() {
       this.mealProposal = null;
       this.mealProposalError = "";
@@ -223,6 +250,10 @@ export const useChatStore = defineStore("chat", {
     dismissExerciseProposal() {
       this.exerciseProposal = null;
       this.exerciseProposalError = "";
+    },
+    dismissWeightProposal() {
+      this.weightProposal = null;
+      this.weightProposalError = "";
     },
     replacePendingMessages(requestId, newMessages) {
       this.messages = this.messages.filter((message) => !message.clientId?.startsWith(requestId));

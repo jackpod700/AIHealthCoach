@@ -6,6 +6,7 @@ import AppSidebar from "../../components/app/AppSidebar.vue";
 import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
+import WeightProposalCard from "../../components/chat/WeightProposalCard.vue";
 import { goalOptions } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
@@ -13,6 +14,7 @@ import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
@@ -20,6 +22,7 @@ const dailyGoalStore = useDailyGoalStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
@@ -27,8 +30,10 @@ const fileInputRef = ref(null);
 const attachedImages = ref([]);
 const imageAttachmentError = ref("");
 const isDraggingImage = ref(false);
+const showExerciseGoalCelebration = ref(false);
 const GMS_IMAGE_TARGET_BYTES = 7 * 1024;
 const GMS_IMAGE_MAX_DIMENSION = 512;
+let exerciseGoalCelebrationTimer = null;
 
 const mealTypeMeta = {
   BREAKFAST: { label: "아침", dot: "yellow" },
@@ -139,6 +144,7 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener("paste", handlePaste);
   revokeAttachedImageUrls();
+  clearExerciseGoalCelebrationTimer();
 });
 
 async function sendMessage() {
@@ -428,6 +434,10 @@ async function confirmExerciseProposal(payload) {
     return;
   }
 
+  const shouldCheckCelebration = payload.exerciseDate === todayDateKey.value;
+  const beforeProgress = shouldCheckCelebration
+    ? dailyGoalStore.progress || (await dailyGoalStore.loadProgress(todayDateKey.value))
+    : null;
   const saved = await exerciseStore.saveRecord(payload);
 
   if (!authStore.isAuthenticated) {
@@ -438,7 +448,11 @@ async function confirmExerciseProposal(payload) {
 
   if (saved) {
     chatStore.completeExerciseProposal();
-    await dailyGoalStore.loadProgress(todayDateKey.value);
+    const afterProgress = await dailyGoalStore.loadProgress(todayDateKey.value);
+
+    if (shouldCelebrateExerciseGoal(beforeProgress, afterProgress)) {
+      triggerExerciseGoalCelebration();
+    }
   } else {
     chatStore.failExerciseProposal(
       exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.",
@@ -446,6 +460,56 @@ async function confirmExerciseProposal(payload) {
   }
 
   chatStore.finishConfirmingExercise();
+  await scrollToBottom();
+}
+
+function shouldCelebrateExerciseGoal(beforeProgress, afterProgress) {
+  const before = beforeProgress?.progress?.exerciseCalories;
+  const after = afterProgress?.progress?.exerciseCalories;
+  const goal = Number(after?.goal);
+
+  return goal > 0 && Number(before?.current || 0) < goal && Number(after?.current || 0) >= goal;
+}
+
+function triggerExerciseGoalCelebration() {
+  showExerciseGoalCelebration.value = true;
+  clearExerciseGoalCelebrationTimer();
+  exerciseGoalCelebrationTimer = window.setTimeout(() => {
+    showExerciseGoalCelebration.value = false;
+    exerciseGoalCelebrationTimer = null;
+  }, 2600);
+}
+
+function clearExerciseGoalCelebrationTimer() {
+  if (exerciseGoalCelebrationTimer) {
+    window.clearTimeout(exerciseGoalCelebrationTimer);
+    exerciseGoalCelebrationTimer = null;
+  }
+}
+
+async function confirmWeightProposal(payload) {
+  if (!chatStore.startConfirmingWeight()) {
+    return;
+  }
+
+  const saved = await weightRecordStore.saveRecord(payload);
+
+  if (!authStore.isAuthenticated) {
+    chatStore.finishConfirmingWeight();
+    router.replace("/login");
+    return;
+  }
+
+  if (saved) {
+    chatStore.completeWeightProposal();
+    await profileStore.loadProfile();
+  } else {
+    chatStore.failWeightProposal(
+      weightRecordStore.saveError || "몸무게 기록 저장에 실패했습니다.",
+    );
+  }
+
+  chatStore.finishConfirmingWeight();
   await scrollToBottom();
 }
 
@@ -700,6 +764,19 @@ function sanitizeHtml(html = "") {
                 @dismiss="chatStore.dismissExerciseProposal"
               />
             </div>
+
+            <div v-if="chatStore.weightProposal" class="message-row coach">
+              <div class="coach-icon">
+                <i class="pi pi-chart-line"></i>
+              </div>
+              <WeightProposalCard
+                :proposal="chatStore.weightProposal"
+                :is-confirming="chatStore.isConfirmingWeight"
+                :error="chatStore.weightProposalError"
+                @confirm="confirmWeightProposal"
+                @dismiss="chatStore.dismissWeightProposal"
+              />
+            </div>
           </div>
 
           <div
@@ -814,8 +891,14 @@ function sanitizeHtml(html = "") {
 
           <section
             class="exercise-goal-card"
-            :class="{ 'pending-api': !hasDailyGoalProgress }"
+            :class="{
+              'pending-api': !hasDailyGoalProgress,
+              celebrating: showExerciseGoalCelebration,
+            }"
           >
+            <div v-if="showExerciseGoalCelebration" class="exercise-goal-bursts" aria-hidden="true">
+              <i v-for="index in 16" :key="index"></i>
+            </div>
             <span>오늘 운동 목표</span>
             <strong>
               {{
