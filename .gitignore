@@ -1,5 +1,6 @@
 .env
 .env.*
+.idea/
 __pycache__/
 data/foods/build/
 data/foods/cache/
