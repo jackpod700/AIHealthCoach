@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import {
+  deleteExerciseRecord,
   fetchDailyExerciseRecords,
   fetchMonthlyExerciseDates,
   saveExerciseRecord,
@@ -23,10 +24,12 @@ export const useExerciseStore = defineStore("exercise", {
     isLoadingMonthly: false,
     isSearchingActivities: false,
     isSavingRecord: false,
+    isDeletingRecord: false,
     dailyError: "",
     monthlyError: "",
     activitySearchError: "",
     saveRecordError: "",
+    deleteRecordError: "",
   }),
   getters: {
     monthlyDatesByDate: (state) => {
@@ -150,6 +153,33 @@ export const useExerciseStore = defineStore("exercise", {
         this.isSavingRecord = false;
       }
     },
+    async deleteRecord(recordId, date = this.selectedDate) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated || this.isDeletingRecord) {
+        return false;
+      }
+
+      this.isDeletingRecord = true;
+      this.deleteRecordError = "";
+
+      try {
+        await deleteExerciseRecord(authStore.accessToken, recordId);
+        await this.loadDailyExerciseRecords(date);
+        const [year, month] = date.split("-").map(Number);
+        await this.loadMonthlyExerciseDates(year, month);
+        return true;
+      } catch (error) {
+        if (authStore.handleAuthFailure(error)) {
+          return false;
+        }
+
+        this.deleteRecordError = error.message;
+        return false;
+      } finally {
+        this.isDeletingRecord = false;
+      }
+    },
     async loadMonthlyExerciseDates(year = this.selectedYear, month = this.selectedMonth) {
       const authStore = useAuthStore();
 
@@ -178,6 +208,7 @@ export const useExerciseStore = defineStore("exercise", {
     clearActivitySearch() {
       this.activitySearchResults = [];
       this.activitySearchError = "";
+      this.deleteRecordError = "";
     },
     clearExercise() {
       this.dailyRecords = [];
@@ -187,6 +218,7 @@ export const useExerciseStore = defineStore("exercise", {
       this.monthlyError = "";
       this.activitySearchError = "";
       this.saveRecordError = "";
+      this.deleteRecordError = "";
     },
   },
 });

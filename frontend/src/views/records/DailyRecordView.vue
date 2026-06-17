@@ -394,6 +394,27 @@ async function saveEditedExercise() {
   }
 }
 
+async function deleteEditedExercise() {
+  if (!exerciseEditForm.recordId) {
+    return;
+  }
+
+  if (!window.confirm(`${exerciseEditForm.activityNameKo || "운동"} 기록을 삭제할까요?`)) {
+    return;
+  }
+
+  const deleted = await exerciseStore.deleteRecord(exerciseEditForm.recordId, selectedDate.value);
+
+  if (deleted) {
+    closeEditExercise();
+    await refreshSelectedDateRecords();
+  }
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
+}
+
 async function saveEditedWeight() {
   if (!canSaveWeight.value) {
     return;
@@ -916,18 +937,26 @@ function servingCalorieLabel(item) {
           </label>
         </div>
 
-        <p v-if="exerciseStore.saveRecordError" class="meal-edit-error">
-          {{ exerciseStore.saveRecordError }}
+        <p v-if="exerciseStore.saveRecordError || exerciseStore.deleteRecordError" class="meal-edit-error">
+          {{ exerciseStore.saveRecordError || exerciseStore.deleteRecordError }}
         </p>
 
         <footer>
-          <span></span>
+          <button
+            v-if="exerciseEditForm.recordId"
+            class="meal-edit-delete"
+            type="button"
+            :disabled="exerciseStore.isDeletingRecord || exerciseStore.isSavingRecord"
+            @click="deleteEditedExercise"
+          >
+            {{ exerciseStore.isDeletingRecord ? "삭제 중..." : "삭제" }}
+          </button>
           <div>
             <button class="meal-edit-cancel" type="button" @click="closeEditExercise">취소</button>
             <button
               class="meal-edit-save"
               type="button"
-              :disabled="!canSaveExercise || exerciseStore.isSavingRecord"
+              :disabled="!canSaveExercise || exerciseStore.isSavingRecord || exerciseStore.isDeletingRecord"
               @click="saveEditedExercise"
             >
               {{ exerciseStore.isSavingRecord ? "저장 중..." : exerciseEditForm.recordId ? "수정 저장" : "기록 추가" }}
