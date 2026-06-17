@@ -3,16 +3,20 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
+import WeightTrendChart from "../../components/profile/WeightTrendChart.vue";
 import { goalOptions } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
 import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const dailyGoalStore = useDailyGoalStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 const isGoalEditorOpen = ref(false);
+const todayDateKey = toDateKey(new Date());
 
 const profileForm = reactive({
   heightCm: "",
@@ -22,6 +26,18 @@ const profileForm = reactive({
   age: "",
   goalType: "WEIGHT_LOSS",
 });
+
+const weightForm = reactive({
+  recordDate: todayDateKey,
+  weightKg: "",
+});
+
+const rangeOptions = [
+  { label: "7일", value: "7" },
+  { label: "30일", value: "30" },
+  { label: "90일", value: "90" },
+  { label: "전체", value: "all" },
+];
 
 const displayName = computed(() => {
   return authStore.user?.nickname || authStore.user?.email?.split("@")[0] || "사용자";
@@ -58,8 +74,25 @@ const profileUpdatedLabel = computed(() => {
   }).format(new Date(profileStore.profile.updatedAt));
 });
 
+const recentWeightRecords = computed(() => {
+  return [...weightRecordStore.records]
+    .sort((a, b) => b.recordDate.localeCompare(a.recordDate))
+    .slice(0, 5);
+});
+
+const selectedWeightRecord = computed(() => weightRecordStore.recordsByDate[weightForm.recordDate] || null);
+
+const canSaveWeightRecord = computed(() => {
+  const weightKg = Number(weightForm.weightKg);
+
+  return Boolean(weightForm.recordDate) && Number.isFinite(weightKg) && weightKg > 0 && weightKg <= 500;
+});
+
 onMounted(async () => {
-  await profileStore.loadProfile();
+  await Promise.all([
+    profileStore.loadProfile(),
+    weightRecordStore.loadRecords(),
+  ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
@@ -79,6 +112,23 @@ watch(
     profileForm.gender = profile.gender || "FEMALE";
     profileForm.age = profile.age ?? "";
     profileForm.goalType = profile.goalType || "WEIGHT_LOSS";
+  },
+  { immediate: true }
+);
+
+watch(
+  () => selectedWeightRecord.value,
+  (record) => {
+    if (record) {
+      weightForm.weightKg = record.weightKg;
+      return;
+    }
+
+    if (weightForm.recordDate === todayDateKey) {
+      weightForm.weightKg = profileStore.profile?.currentWeightKg ?? "";
+    } else {
+      weightForm.weightKg = "";
+    }
   },
   { immediate: true }
 );
@@ -139,6 +189,56 @@ async function saveGoal(goal) {
 
   closeGoalEditor();
 }
+
+async function changeWeightRange(range) {
+  await weightRecordStore.loadRecords(range);
+}
+
+function editWeightRecord(record) {
+  weightForm.recordDate = record.recordDate;
+  weightForm.weightKg = record.weightKg;
+}
+
+async function saveWeightRecord() {
+  if (!canSaveWeightRecord.value) {
+    return;
+  }
+
+  const savedRecord = await weightRecordStore.saveRecord({
+    recordDate: weightForm.recordDate,
+    weightKg: Number(weightForm.weightKg),
+  });
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (savedRecord) {
+    await profileStore.loadProfile();
+  }
+}
+
+async function deleteWeightRecord(recordDate) {
+  const deleted = await weightRecordStore.deleteRecord(recordDate);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (deleted) {
+    await profileStore.loadProfile();
+  }
+}
+
+function toDateKey(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
 </script>
 
 <template>
@@ -165,24 +265,6 @@ async function saveGoal(goal) {
 
           <div class="profile-divider"></div>
 
-          <div class="profile-stat-row">
-            <div>
-              <strong>{{ profileStore.profile?.heightCm ?? "-" }}</strong>
-              <small>cm</small>
-              <span>키</span>
-            </div>
-            <div>
-              <strong>{{ profileStore.profile?.currentWeightKg ?? "-" }}</strong>
-              <small>kg</small>
-              <span>현재</span>
-            </div>
-            <div>
-              <strong>{{ profileStore.profile?.targetWeightKg ?? "-" }}</strong>
-              <small>kg</small>
-              <span>목표</span>
-            </div>
-          </div>
-
           <div class="profile-progress-box">
             <div>
               <strong>
@@ -196,6 +278,86 @@ async function saveGoal(goal) {
             <p>{{ profileUpdatedLabel }}</p>
           </div>
         </aside>
+
+        <section class="profile-weight-card">
+          <header class="profile-weight-header">
+            <div>
+              <span>Weight Tracking</span>
+              <h2>몸무게 기록</h2>
+            </div>
+
+            <div class="weight-range-tabs" aria-label="몸무게 기록 기간">
+              <button
+                v-for="option in rangeOptions"
+                :key="option.value"
+                type="button"
+                :class="{ active: weightRecordStore.selectedRange === option.value }"
+                @click="changeWeightRange(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+          </header>
+
+          <div v-if="weightRecordStore.loadError" class="profile-error">
+            {{ weightRecordStore.loadError }}
+          </div>
+
+          <div class="weight-record-layout">
+            <form class="weight-record-form" @submit.prevent="saveWeightRecord">
+              <label>
+                <span>기록 날짜</span>
+                <input v-model="weightForm.recordDate" type="date" />
+              </label>
+
+              <label>
+                <span>몸무게 (kg)</span>
+                <input v-model="weightForm.weightKg" inputmode="decimal" max="500" min="0.01" step="0.1" type="number" />
+              </label>
+
+              <button type="submit" :disabled="!canSaveWeightRecord || weightRecordStore.isSavingRecord">
+                <i class="pi pi-check"></i>
+                {{ selectedWeightRecord ? "기록 수정" : "기록 추가" }}
+              </button>
+
+              <p v-if="weightRecordStore.saveError">{{ weightRecordStore.saveError }}</p>
+            </form>
+
+            <div class="weight-chart-panel">
+              <div v-if="weightRecordStore.isLoadingRecords" class="profile-loading">
+                몸무게 기록을 불러오는 중입니다...
+              </div>
+
+              <WeightTrendChart
+                v-else
+                :records="weightRecordStore.records"
+                :target-weight-kg="profileStore.profile?.targetWeightKg"
+              />
+            </div>
+          </div>
+
+          <div class="weight-record-list">
+            <article v-for="record in recentWeightRecords" :key="record.recordDate">
+              <button type="button" class="weight-record-main" @click="editWeightRecord(record)">
+                <strong>{{ record.weightKg }}kg</strong>
+                <span>{{ record.recordDate }}</span>
+              </button>
+              <button
+                type="button"
+                class="weight-record-delete"
+                :disabled="weightRecordStore.isDeletingRecord"
+                :aria-label="`${record.recordDate} 몸무게 기록 삭제`"
+                @click="deleteWeightRecord(record.recordDate)"
+              >
+                <i class="pi pi-trash"></i>
+              </button>
+            </article>
+
+            <div v-if="!recentWeightRecords.length && !weightRecordStore.isLoadingRecords" class="weight-record-empty">
+              최근 기록이 없습니다.
+            </div>
+          </div>
+        </section>
 
         <section class="profile-edit-card">
           <div class="profile-edit-title">

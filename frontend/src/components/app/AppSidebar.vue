@@ -7,6 +7,7 @@ import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
@@ -14,6 +15,7 @@ const dailyGoalStore = useDailyGoalStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const route = useRoute();
 const router = useRouter();
 const logoutPromptOpen = ref(false);
@@ -72,6 +74,7 @@ function logout() {
   exerciseStore.clearExercise();
   mealStore.clearMeals();
   profileStore.clearProfile();
+  weightRecordStore.clearWeightRecords();
   router.push("/login");
 }
 </script>

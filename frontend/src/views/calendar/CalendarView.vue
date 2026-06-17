@@ -6,11 +6,13 @@ import { useAuthStore } from "../../stores/authStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
@@ -39,6 +41,7 @@ const calendarCells = computed(() => {
     const dateKey = toDateKey(cellDate);
     const summary = mealStore.monthlyDaysByDate[dateKey];
     const hasExerciseRecord = Boolean(exerciseStore.monthlyDatesByDate[dateKey]);
+    const weightRecord = weightRecordStore.calendarRecordsByDate[dateKey];
 
     cells.push({
       dateKey,
@@ -46,6 +49,7 @@ const calendarCells = computed(() => {
       isCurrentMonth: cellDate.getMonth() === monthIndex,
       isToday: dateKey === todayDateKey.value,
       hasExerciseRecord,
+      weightRecord,
       summary,
     });
   }
@@ -58,6 +62,7 @@ onMounted(async () => {
     exerciseStore.loadMonthlyExerciseDates(mealStore.selectedYear, mealStore.selectedMonth),
     mealStore.loadMonthlyMeals(),
     profileStore.loadProfile(),
+    weightRecordStore.loadCalendarRecords(mealStore.selectedYear, mealStore.selectedMonth),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -73,6 +78,7 @@ async function moveMonth(offset) {
   await Promise.all([
     exerciseStore.loadMonthlyExerciseDates(year, month),
     mealStore.loadMonthlyMeals(year, month),
+    weightRecordStore.loadCalendarRecords(year, month),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -106,6 +112,10 @@ function calendarDotLabel(cell) {
 
   if (cell.hasExerciseRecord) {
     labels.push("운동");
+  }
+
+  if (cell.weightRecord) {
+    labels.push("몸무게");
   }
 
   return labels.length ? `${labels.join(", ")} 기록` : "기록 없음";
@@ -150,6 +160,10 @@ function formatCalories(value) {
             <i class="exercise"></i>
             운동
           </span>
+          <span>
+            <i class="weight"></i>
+            몸무게
+          </span>
         </div>
       </header>
 
@@ -162,7 +176,14 @@ function formatCalories(value) {
           {{ exerciseStore.monthlyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingMonthly || exerciseStore.isLoadingMonthly" class="calendar-loading">
+        <div v-if="weightRecordStore.calendarError" class="calendar-error">
+          {{ weightRecordStore.calendarError }}
+        </div>
+
+        <div
+          v-if="mealStore.isLoadingMonthly || exerciseStore.isLoadingMonthly || weightRecordStore.isLoadingCalendarRecords"
+          class="calendar-loading"
+        >
           월별 기록을 불러오는 중입니다...
         </div>
 
@@ -173,17 +194,20 @@ function formatCalories(value) {
         </div>
 
         <div class="calendar-grid">
-          <button
+          <div
             v-for="cell in calendarCells"
             :key="cell.dateKey"
-            type="button"
+            role="button"
+            tabindex="0"
             class="calendar-cell"
             :class="{
               muted: !cell.isCurrentMonth,
-              recorded: cell.summary || cell.hasExerciseRecord,
+              recorded: cell.summary || cell.hasExerciseRecord || cell.weightRecord,
               today: cell.isToday,
             }"
             @click="openDailyRecord(cell.dateKey)"
+            @keydown.enter="openDailyRecord(cell.dateKey)"
+            @keydown.space.prevent="openDailyRecord(cell.dateKey)"
           >
             <div class="calendar-cell-head">
               <strong>{{ cell.day }}</strong>
@@ -194,6 +218,10 @@ function formatCalories(value) {
               {{ formatCalories(cell.summary.totalCalories) }}
             </p>
 
+            <p v-if="cell.weightRecord" class="calendar-weight-value">
+              {{ cell.weightRecord.weightKg }}kg
+            </p>
+
             <div class="calendar-dots" :aria-label="calendarDotLabel(cell)">
               <i
                 v-for="mealType in visibleMealTypes(cell.summary)"
@@ -202,8 +230,9 @@ function formatCalories(value) {
                 :title="mealTypeMeta[mealType].label"
               ></i>
               <i v-if="cell.hasExerciseRecord" class="exercise" title="운동"></i>
+              <i v-if="cell.weightRecord" class="weight" title="몸무게"></i>
             </div>
-          </button>
+          </div>
         </div>
       </section>
     </section>

@@ -6,16 +6,19 @@ import { useAuthStore } from "../../stores/authStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const route = useRoute();
 const router = useRouter();
 
 const foodQuery = ref("");
 const exerciseQuery = ref("");
+const addMenuOpen = ref(false);
 const searchRequestId = ref(0);
 const exerciseSearchRequestId = ref(0);
 let foodSearchTimer = null;
@@ -23,7 +26,7 @@ let exerciseSearchTimer = null;
 const editForm = reactive({
   open: false,
   mealId: null,
-  mealType: "",
+  mealType: "BREAKFAST",
   items: [],
 });
 const exerciseEditForm = reactive({
@@ -35,6 +38,11 @@ const exerciseEditForm = reactive({
   exerciseDate: "",
   durationMinutes: 30,
   memo: "",
+});
+const weightEditForm = reactive({
+  open: false,
+  recordDate: "",
+  weightKg: "",
 });
 
 const mealTypeMeta = {
@@ -70,8 +78,9 @@ const meals = computed(() => {
 const recordCount = computed(() => meals.value.length);
 const exerciseRecords = computed(() => exerciseStore.dailyRecords || []);
 const exerciseCount = computed(() => exerciseRecords.value.length);
-const totalRecordCount = computed(() => recordCount.value + exerciseCount.value);
-const hasRecords = computed(() => totalRecordCount.value > 0);
+const weightRecord = computed(() => weightRecordStore.calendarRecordsByDate[selectedDate.value] || null);
+const weightRecordCount = computed(() => (weightRecord.value ? 1 : 0));
+const totalRecordCount = computed(() => recordCount.value + exerciseCount.value + weightRecordCount.value);
 
 const dailyTotals = computed(() => {
   const dailyMeal = mealStore.dailyMeal;
@@ -90,7 +99,6 @@ const canSaveMeal = computed(() => {
 
 const canSaveExercise = computed(() => {
   return Boolean(
-    exerciseEditForm.recordId &&
       exerciseEditForm.exerciseActivityOptionId &&
       /^\d{4}-\d{2}-\d{2}$/.test(exerciseEditForm.exerciseDate) &&
       ["LOW", "MEDIUM", "HIGH"].includes(exerciseEditForm.intensityLevel) &&
@@ -98,11 +106,18 @@ const canSaveExercise = computed(() => {
   );
 });
 
+const canSaveWeight = computed(() => {
+  const weightKg = Number(weightEditForm.weightKg);
+
+  return /^\d{4}-\d{2}-\d{2}$/.test(weightEditForm.recordDate) && Number.isFinite(weightKg) && weightKg > 0 && weightKg <= 500;
+});
+
 onMounted(async () => {
   await Promise.all([
     exerciseStore.loadDailyExerciseRecords(selectedDate.value),
     mealStore.loadDailyMeal(selectedDate.value),
     profileStore.loadProfile(),
+    loadWeightRecordsForSelectedMonth(selectedDate.value),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -113,9 +128,12 @@ onMounted(async () => {
 watch(selectedDate, async (date) => {
   closeEditMeal();
   closeEditExercise();
+  closeEditWeight();
+  addMenuOpen.value = false;
   await Promise.all([
     exerciseStore.loadDailyExerciseRecords(date),
     mealStore.loadDailyMeal(date),
+    loadWeightRecordsForSelectedMonth(date),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -173,10 +191,24 @@ function openEditMeal(meal) {
   });
 }
 
+function openAddMeal() {
+  editForm.open = true;
+  editForm.mealId = null;
+  editForm.mealType = "BREAKFAST";
+  editForm.items = [];
+  foodQuery.value = "";
+  mealStore.clearFoodSearch();
+  addMenuOpen.value = false;
+
+  nextTick(() => {
+    document.querySelector(".meal-edit-modal input")?.focus();
+  });
+}
+
 function closeEditMeal() {
   editForm.open = false;
   editForm.mealId = null;
-  editForm.mealType = "";
+  editForm.mealType = "BREAKFAST";
   editForm.items = [];
   foodQuery.value = "";
   mealStore.clearFoodSearch();
@@ -193,6 +225,24 @@ function openEditExercise(record) {
   exerciseEditForm.memo = record.memo || "";
   exerciseQuery.value = record.activityNameKo || "";
   exerciseStore.clearActivitySearch();
+
+  nextTick(() => {
+    document.querySelector(".exercise-edit-modal input")?.focus();
+  });
+}
+
+function openAddExercise() {
+  exerciseEditForm.open = true;
+  exerciseEditForm.recordId = null;
+  exerciseEditForm.exerciseActivityOptionId = null;
+  exerciseEditForm.activityNameKo = "";
+  exerciseEditForm.intensityLevel = "MEDIUM";
+  exerciseEditForm.exerciseDate = selectedDate.value;
+  exerciseEditForm.durationMinutes = 30;
+  exerciseEditForm.memo = "";
+  exerciseQuery.value = "";
+  exerciseStore.clearActivitySearch();
+  addMenuOpen.value = false;
 
   nextTick(() => {
     document.querySelector(".exercise-edit-modal input")?.focus();
@@ -217,6 +267,21 @@ function selectExerciseActivity(activity) {
   exerciseEditForm.activityNameKo = activity.activityNameKo;
   exerciseQuery.value = activity.activityNameKo;
   exerciseStore.clearActivitySearch();
+}
+
+function openAddWeight() {
+  weightEditForm.open = true;
+  weightEditForm.recordDate = selectedDate.value;
+  weightEditForm.weightKg = weightRecord.value?.weightKg ?? profileStore.profile?.currentWeightKg ?? "";
+  weightRecordStore.saveError = "";
+  addMenuOpen.value = false;
+}
+
+function closeEditWeight() {
+  weightEditForm.open = false;
+  weightEditForm.recordDate = "";
+  weightEditForm.weightKg = "";
+  weightRecordStore.saveError = "";
 }
 
 function addFood(food) {
@@ -265,6 +330,7 @@ async function saveEditedMeal() {
 
   if (saved) {
     closeEditMeal();
+    await refreshSelectedDateRecords();
   }
 
   if (!authStore.isAuthenticated) {
@@ -298,16 +364,20 @@ async function saveEditedExercise() {
   }
 
   const targetDate = exerciseEditForm.exerciseDate;
-  const saved = await exerciseStore.updateRecord(exerciseEditForm.recordId, {
+  const payload = {
     exerciseActivityOptionId: exerciseEditForm.exerciseActivityOptionId,
     intensityLevel: exerciseEditForm.intensityLevel,
     exerciseDate: targetDate,
     durationMinutes: Number(exerciseEditForm.durationMinutes),
     memo: exerciseEditForm.memo,
-  });
+  };
+  const saved = exerciseEditForm.recordId
+    ? await exerciseStore.updateRecord(exerciseEditForm.recordId, payload)
+    : await exerciseStore.saveRecord(payload);
 
   if (saved) {
     closeEditExercise();
+    await refreshSelectedDateRecords();
 
     if (targetDate !== selectedDate.value) {
       router.replace({
@@ -322,6 +392,59 @@ async function saveEditedExercise() {
   if (!authStore.isAuthenticated) {
     router.replace("/login");
   }
+}
+
+async function saveEditedWeight() {
+  if (!canSaveWeight.value) {
+    return;
+  }
+
+  const targetDate = weightEditForm.recordDate;
+  const saved = await weightRecordStore.saveRecord({
+    recordDate: targetDate,
+    weightKg: Number(weightEditForm.weightKg),
+  });
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (!saved) {
+    return;
+  }
+
+  closeEditWeight();
+  await Promise.all([
+    loadWeightRecordsForSelectedMonth(targetDate),
+    profileStore.loadProfile(),
+  ]);
+
+  if (targetDate !== selectedDate.value) {
+    router.replace({
+      path: "/records",
+      query: {
+        date: targetDate,
+      },
+    });
+  }
+}
+
+async function refreshSelectedDateRecords() {
+  await Promise.all([
+    exerciseStore.loadDailyExerciseRecords(selectedDate.value),
+    mealStore.loadDailyMeal(selectedDate.value),
+    loadWeightRecordsForSelectedMonth(selectedDate.value),
+  ]);
+}
+
+function toggleAddMenu() {
+  addMenuOpen.value = !addMenuOpen.value;
+}
+
+function loadWeightRecordsForSelectedMonth(dateKey) {
+  const [year, month] = dateKey.split("-").map(Number);
+  return weightRecordStore.loadCalendarRecords(year, month);
 }
 
 function normalizeDateQuery(value) {
@@ -431,9 +554,6 @@ function servingCalorieLabel(item) {
   return `${servingLabel(item)} · ${formatNumber(item.baseCalories ?? baseCalories(item))} kcal`;
 }
 
-function goToChat() {
-  router.push("/chat");
-}
 </script>
 
 <template>
@@ -465,7 +585,7 @@ function goToChat() {
           일일 기록을 불러오는 중입니다...
         </div>
 
-        <template v-else-if="hasRecords">
+        <template v-else>
           <section class="record-summary-card">
             <div>
               <span>섭취</span>
@@ -488,6 +608,19 @@ function goToChat() {
           </section>
 
           <section class="record-timeline">
+            <article v-if="totalRecordCount === 0" class="record-timeline-row record-empty-row">
+              <div class="record-time"></div>
+              <div class="record-line">
+                <span class="record-icon disabled">
+                  <i class="pi pi-calendar-plus"></i>
+                </span>
+              </div>
+              <div class="record-card muted-card record-empty-card">
+                <strong>아직 오늘의 기록이 없습니다.</strong>
+                <span>오늘의 기록을 추가해보아요.</span>
+              </div>
+            </article>
+
             <article v-for="meal in meals" :key="meal.mealId" class="record-timeline-row">
               <div class="record-time">{{ mealMeta(meal.mealType).label }}</div>
               <div class="record-line">
@@ -499,9 +632,10 @@ function goToChat() {
                 <div class="record-card-head">
                   <div>
                     <strong>{{ mealMeta(meal.mealType).label }}</strong>
-                    <span>클릭해서 수정</span>
+                    <span>{{ meal.items.length }}개 항목</span>
                   </div>
                   <em>{{ formatNumber(meal.totalCalories) }} kcal</em>
+                  <i class="pi pi-pencil record-edit-cue"></i>
                 </div>
 
                 <div class="record-food-list">
@@ -512,14 +646,14 @@ function goToChat() {
               </button>
             </article>
 
-            <article class="record-timeline-row empty-slot">
+            <article v-if="exerciseCount" class="record-timeline-row">
               <div class="record-time">운동</div>
               <div class="record-line">
-                <span :class="['record-icon', exerciseCount ? 'exercise' : 'disabled']">
+                <span class="record-icon exercise">
                   <i class="pi pi-bolt"></i>
                 </span>
               </div>
-              <div v-if="exerciseCount" class="record-card">
+              <div class="record-card">
                 <div class="record-card-head">
                   <div>
                     <strong>운동</strong>
@@ -538,28 +672,68 @@ function goToChat() {
                   >
                     <div>
                       <strong>{{ record.activityNameKo }}</strong>
-                      <span>{{ exerciseMeta(record) }} · 클릭해서 수정</span>
+                      <span>{{ exerciseMeta(record) }}</span>
                     </div>
                     <em>{{ formatNumber(record.caloriesBurned) }} kcal</em>
+                    <i class="pi pi-pencil record-edit-cue"></i>
                   </button>
                 </div>
               </div>
-              <div v-else class="record-card muted-card">
-                아직 운동 기록이 없습니다.
+            </article>
+
+            <article v-if="weightRecord" class="record-timeline-row">
+              <div class="record-time">몸무게</div>
+              <div class="record-line">
+                <span class="record-icon weight">
+                  <i class="pi pi-heart"></i>
+                </span>
+              </div>
+              <button
+                class="record-card editable weight-record-card"
+                type="button"
+                @click="openAddWeight"
+              >
+                <div class="record-card-head">
+                  <div>
+                    <strong>몸무게</strong>
+                    <span>1개 기록</span>
+                  </div>
+                  <em>{{ weightRecord.weightKg }} kg</em>
+                </div>
+                <i class="pi pi-pencil record-edit-cue"></i>
+              </button>
+            </article>
+
+            <article class="record-timeline-row record-add-row" :class="{ open: addMenuOpen }">
+              <div class="record-time"></div>
+              <div class="record-line">
+                <button
+                  type="button"
+                  class="record-add-toggle"
+                  :class="{ open: addMenuOpen }"
+                  aria-label="기록 추가"
+                  @click="toggleAddMenu"
+                >
+                  <i class="pi pi-plus"></i>
+                </button>
+              </div>
+              <div class="record-add-panel" :class="{ open: addMenuOpen }">
+                <button type="button" @click="openAddMeal">
+                  <i class="pi pi-apple"></i>
+                  식사
+                </button>
+                <button type="button" @click="openAddExercise">
+                  <i class="pi pi-bolt"></i>
+                  운동
+                </button>
+                <button type="button" @click="openAddWeight">
+                  <i class="pi pi-heart"></i>
+                  몸무게 기록
+                </button>
               </div>
             </article>
           </section>
         </template>
-
-        <section v-else class="record-empty">
-          <div class="record-empty-illustration">
-            <i class="pi pi-comment"></i>
-          </div>
-          <h2>아직 기록이 없어요</h2>
-          <p>오늘 먹은 식사나 운동을 코치에게 말해보세요. 캘린더가 차곡차곡 채워질 거예요.</p>
-          <button type="button" @click="goToChat">코치와 대화 시작하기</button>
-          <small>예: “아침에 그릭요거트를 먹었어”</small>
-        </section>
       </section>
     </section>
 
@@ -568,7 +742,7 @@ function goToChat() {
         <header>
           <div>
             <p class="deco">Edit Meal</p>
-            <h2>{{ mealMeta(editForm.mealType).label }} 수정</h2>
+            <h2>{{ editForm.mealId ? `${mealMeta(editForm.mealType).label} 수정` : "식사 추가" }}</h2>
           </div>
           <button type="button" aria-label="닫기" @click="closeEditMeal">
             <i class="pi pi-times"></i>
@@ -576,6 +750,19 @@ function goToChat() {
         </header>
 
         <div class="meal-edit-search">
+          <div v-if="!editForm.mealId" class="meal-type-picker">
+            <button
+              v-for="(meta, mealType) in mealTypeMeta"
+              :key="mealType"
+              type="button"
+              :class="{ selected: editForm.mealType === mealType }"
+              @click="editForm.mealType = mealType"
+            >
+              <i :class="meta.icon"></i>
+              {{ meta.label }}
+            </button>
+          </div>
+
           <label>
             <span>음식 검색</span>
             <input v-model="foodQuery" placeholder="음식명이나 제조사명을 입력하세요" />
@@ -630,6 +817,7 @@ function goToChat() {
 
         <footer>
           <button
+            v-if="editForm.mealId"
             class="meal-edit-delete"
             type="button"
             :disabled="mealStore.isDeletingMeal || mealStore.isSavingMeal"
@@ -645,7 +833,7 @@ function goToChat() {
               :disabled="!canSaveMeal || mealStore.isSavingMeal || mealStore.isDeletingMeal"
               @click="saveEditedMeal"
             >
-              {{ mealStore.isSavingMeal ? "저장 중..." : "수정 저장" }}
+              {{ mealStore.isSavingMeal ? "저장 중..." : editForm.mealId ? "수정 저장" : "기록 추가" }}
             </button>
           </div>
         </footer>
@@ -657,7 +845,7 @@ function goToChat() {
         <header>
           <div>
             <p class="deco">Edit Exercise</p>
-            <h2>운동 수정</h2>
+            <h2>{{ exerciseEditForm.recordId ? "운동 수정" : "운동 추가" }}</h2>
           </div>
           <button type="button" aria-label="닫기" @click="closeEditExercise">
             <i class="pi pi-times"></i>
@@ -742,7 +930,52 @@ function goToChat() {
               :disabled="!canSaveExercise || exerciseStore.isSavingRecord"
               @click="saveEditedExercise"
             >
-              {{ exerciseStore.isSavingRecord ? "저장 중..." : "수정 저장" }}
+              {{ exerciseStore.isSavingRecord ? "저장 중..." : exerciseEditForm.recordId ? "수정 저장" : "기록 추가" }}
+            </button>
+          </div>
+        </footer>
+      </section>
+    </div>
+
+    <div v-if="weightEditForm.open" class="meal-edit-backdrop" @click.self="closeEditWeight">
+      <section class="meal-edit-modal weight-edit-modal" role="dialog" aria-modal="true" aria-label="몸무게 기록">
+        <header>
+          <div>
+            <p class="deco">Edit Weight</p>
+            <h2>{{ weightRecord ? "몸무게 수정" : "몸무게 추가" }}</h2>
+          </div>
+          <button type="button" aria-label="닫기" @click="closeEditWeight">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+
+        <div class="weight-edit-fields">
+          <label>
+            <span>기록 날짜</span>
+            <input v-model="weightEditForm.recordDate" type="date" />
+          </label>
+
+          <label>
+            <span>몸무게 (kg)</span>
+            <input v-model="weightEditForm.weightKg" inputmode="decimal" max="500" min="0.01" step="0.1" type="number" />
+          </label>
+        </div>
+
+        <p v-if="weightRecordStore.saveError" class="meal-edit-error">
+          {{ weightRecordStore.saveError }}
+        </p>
+
+        <footer>
+          <span></span>
+          <div>
+            <button class="meal-edit-cancel" type="button" @click="closeEditWeight">취소</button>
+            <button
+              class="meal-edit-save"
+              type="button"
+              :disabled="!canSaveWeight || weightRecordStore.isSavingRecord"
+              @click="saveEditedWeight"
+            >
+              {{ weightRecordStore.isSavingRecord ? "저장 중..." : "저장" }}
             </button>
           </div>
         </footer>
