@@ -51,6 +51,15 @@ public class ExerciseServiceImpl implements ExerciseService {
     }
 
     @Override
+    public void deleteExerciseRecord(Long userId, Long recordId) {
+        int deletedRows = exerciseDao.deleteExerciseRecord(userId, recordId);
+
+        if (deletedRows == 0) {
+            throw ExerciseException.exerciseRecordNotFound();
+        }
+    }
+
+    @Override
     public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate) {
         return exerciseDao.findExerciseRecordsByDate(userId, exerciseDate).stream()
                 .map(ExerciseRecordResponse::fromEntity).toList();

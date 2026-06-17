@@ -207,6 +207,12 @@
         JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
     </select>
 
+    <delete id="deleteExerciseRecord">
+        DELETE FROM exercise_records
+        WHERE id = #{recordId}
+            AND user_id = #{userId}
+    </delete>
+
     <select id="findExerciseRecordsByDate" resultMap="exerciseRecord">
         SELECT
             er.id,

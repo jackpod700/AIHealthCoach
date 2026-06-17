@@ -3,6 +3,7 @@ package com.aihealthcoach.exercise.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
@@ -128,6 +129,24 @@ class ExerciseServiceImplTest {
                 ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
                         .exerciseDate(LocalDate.of(2026, 6, 2))
                         .durationMinutes(30).build()))
+                .isInstanceOf(ExerciseException.class)
+                .hasMessage("운동 기록이 존재하지 않습니다.");
+    }
+
+    @Test
+    void deleteExerciseRecordDeletesByUserAndRecordId() {
+        when(exerciseDao.deleteExerciseRecord(1L, 10L)).thenReturn(1);
+
+        exerciseService.deleteExerciseRecord(1L, 10L);
+
+        verify(exerciseDao).deleteExerciseRecord(1L, 10L);
+    }
+
+    @Test
+    void deleteExerciseRecordRejectsMissingRecord() {
+        when(exerciseDao.deleteExerciseRecord(1L, 10L)).thenReturn(0);
+
+        assertThatThrownBy(() -> exerciseService.deleteExerciseRecord(1L, 10L))
                 .isInstanceOf(ExerciseException.class)
                 .hasMessage("운동 기록이 존재하지 않습니다.");
     }

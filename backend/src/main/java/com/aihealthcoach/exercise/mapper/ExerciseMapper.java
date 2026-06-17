@@ -20,6 +20,10 @@ public interface ExerciseMapper {
 
     ExerciseRecord updateExerciseRecord(ExerciseRecord exerciseRecord);
 
+    int deleteExerciseRecord(
+            @Param("userId") Long userId,
+            @Param("recordId") Long recordId);
+
     List<ExerciseRecord> findExerciseRecordsByDate(
         @Param("userId") Long userId,
         @Param("exerciseDate") LocalDate exerciseDate);

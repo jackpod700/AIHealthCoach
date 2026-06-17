@@ -6,6 +6,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -95,6 +96,17 @@ class ExerciseControllerTest {
                 .andExpect(jsonPath("$.data.activityNameKo", is("걷기")));
 
         verify(exerciseService).updateExerciseRecord(eq(USER_ID), eq(RECORD_ID), any(ExerciseRecordRequest.class));
+    }
+
+    @Test
+    void deleteExerciseRecordUsesAuthenticatedUserAndRecordId() throws Exception {
+        when(jwtTokenProvider.getUserId(TOKEN)).thenReturn(USER_ID);
+
+        mockMvc.perform(delete("/api/exercise/records/{recordId}", RECORD_ID)
+                        .header("Authorization", "Bearer " + TOKEN))
+                .andExpect(status().isNoContent());
+
+        verify(exerciseService).deleteExerciseRecord(USER_ID, RECORD_ID);
     }
 
     @Test

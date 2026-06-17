@@ -13,6 +13,8 @@ public interface ExerciseService {
 
     public ExerciseRecordResponse updateExerciseRecord(Long userId, Long recordId, ExerciseRecordRequest request);
 
+    public void deleteExerciseRecord(Long userId, Long recordId);
+
     public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate);
 
     public List<LocalDate> findExerciseDatesInMonth(Long userId, int year, int month);
