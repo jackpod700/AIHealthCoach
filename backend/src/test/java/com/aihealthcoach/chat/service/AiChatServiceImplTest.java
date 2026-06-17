@@ -48,6 +48,11 @@ class AiChatServiceImplTest {
                     "memo": "after work",
                     "confidence": 0.9,
                     "missingFields": []
+                  },
+                  "weightExtraction": {
+                    "weightIntent": true,
+                    "recordDate": "2026-06-02",
+                    "weightKg": 68.4
                   }
                 }
                 """;
@@ -64,6 +69,9 @@ class AiChatServiceImplTest {
         assertThat(result.exerciseExtraction().activityKeyword()).isEqualTo("kettlebell");
         assertThat(result.exerciseExtraction().intensityLevel()).isEqualTo("HIGH");
         assertThat(result.exerciseExtraction().durationMinutes()).isEqualTo(30);
+        assertThat(result.weightExtraction().weightIntent()).isTrue();
+        assertThat(result.weightExtraction().recordDate()).isEqualTo(LocalDate.of(2026, 6, 2));
+        assertThat(result.weightExtraction().weightKg()).isEqualByComparingTo(new BigDecimal("68.4"));
     }
 
     @Test
@@ -76,6 +84,7 @@ class AiChatServiceImplTest {
         assertThat(result.mealExtraction().mealIntent()).isFalse();
         assertThat(result.mealExtraction().items()).isEmpty();
         assertThat(result.exerciseExtraction().exerciseIntent()).isFalse();
+        assertThat(result.weightExtraction().weightIntent()).isFalse();
     }
 
     @Test

@@ -15,6 +15,7 @@ import com.aihealthcoach.chat.service.ChatService;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalRequest;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalResponse;
 import com.aihealthcoach.meal.service.AiMealProposalService;
+import com.aihealthcoach.weight.dto.AiWeightDto.WeightProposalResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -63,7 +64,8 @@ public class ChatController {
         return ResponseEntity.ok(new ChatMessageSendResponse(
                 messages,
                 aiMealProposalService.createProposal(aiResult.mealExtraction()),
-                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction())
+                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction()),
+                WeightProposalResponse.fromExtraction(aiResult.weightExtraction())
         ));
     }
 
@@ -93,7 +95,8 @@ public class ChatController {
         return ResponseEntity.ok(new ChatMessageSendResponse(
                 messages,
                 aiMealProposalService.createProposal(aiResult.mealExtraction()),
-                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction())
+                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction()),
+                WeightProposalResponse.fromExtraction(aiResult.weightExtraction())
         ));
     }
 

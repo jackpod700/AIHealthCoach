@@ -12,7 +12,8 @@ public class AiPromptFactory {
 
                 mealIntent must be true only when the user describes food they ate or explicitly asks to record food.
                 exerciseIntent must be true only when the user describes exercise they did or explicitly asks to record exercise.
-                If the user asks for recommendations, nutrition info, greetings, or general chat, use both intents false.
+                weightIntent must be true only when the user states their body weight or explicitly asks to record body weight.
+                If the user asks for recommendations, nutrition info, greetings, or general chat, use all intents false.
                 Quantity is a simple multiplier. If unclear, use null.
                 """;
     }
@@ -54,12 +55,19 @@ public class AiPromptFactory {
                     "memo": "short memo or null",
                     "confidence": 0.0,
                     "missingFields": ["exerciseDate", "durationMinutes"]
+                  },
+                  "weightExtraction": {
+                    "weightIntent": true,
+                    "recordDate": "yyyy-MM-dd or null",
+                    "weightKg": 68.4
                   }
                 }
 
                 For relative dates, convert them to yyyy-MM-dd using today's date.
-                If meal date or exercise date is truly absent, use null.
+                If meal date, exercise date, or weight record date is truly absent, use null.
                 If exercise duration is unclear, use null and include "durationMinutes" in missingFields.
+                Extract body weight only when the user mentions a plausible kg value for their own body weight.
+                Do not treat food grams, exercise weight, dumbbell weight, or target weight as body weight records unless the user clearly says it is their current body weight.
                 Normalize exercise intensity:
                 - LOW for light or easy exercise
                 - MEDIUM for normal or moderate exercise

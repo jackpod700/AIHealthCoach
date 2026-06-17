@@ -16,6 +16,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
+import com.aihealthcoach.weight.dto.AiWeightDto.ExtractedWeightResult;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -94,7 +95,8 @@ public class AiChatServiceImpl implements AiChatService {
         return new AiChatResult(
                 result.assistantMessage(),
                 result.mealExtraction() == null ? ExtractedMealResult.noMeal() : result.mealExtraction(),
-                result.exerciseExtraction() == null ? ExtractedExerciseResult.noExercise() : result.exerciseExtraction()
+                result.exerciseExtraction() == null ? ExtractedExerciseResult.noExercise() : result.exerciseExtraction(),
+                result.weightExtraction() == null ? ExtractedWeightResult.noWeight() : result.weightExtraction()
         );
     }
 
@@ -102,7 +104,8 @@ public class AiChatServiceImpl implements AiChatService {
         return new AiChatResult(
                 "응답을 정리하지 못했어요. 다시 한 번 자연스럽게 말해 주세요.",
                 ExtractedMealResult.noMeal(),
-                ExtractedExerciseResult.noExercise()
+                ExtractedExerciseResult.noExercise(),
+                ExtractedWeightResult.noWeight()
         );
     }
 
