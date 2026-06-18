@@ -41,7 +41,7 @@ public class UserServiceImpl implements UserService {
                         .password(passwordEncoder.encode(request.password()))
                         .nickname(request.nickname())
                         .build();
-        
+
         userDao.insertUser(newUser);
 
         User savedUser = userDao.findUserByEmail(request.email());
@@ -56,7 +56,7 @@ public class UserServiceImpl implements UserService {
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .nickname(savedUser.getNickname())
-                .build();            
+                .build();
     }
 
     @Override
@@ -80,11 +80,11 @@ public class UserServiceImpl implements UserService {
         String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
 
         tokenRedisRepository.saveRefreshToken(
-            existingUser.getId(), 
-            refreshTokenId, 
-            refreshToken, 
+            existingUser.getId(),
+            refreshTokenId,
+            refreshToken,
             jwtTokenProvider.getRemaining(refreshToken));
-        
+
         LoginResponse response = LoginResponse.builder()
             .userId(existingUser.getId())
             .email(existingUser.getEmail())
@@ -95,14 +95,14 @@ public class UserServiceImpl implements UserService {
         return LoginResult.builder()
             .response(response)
             .refreshToken(refreshToken)
-            .build(); 
+            .build();
     }
 
     @Override
     public void logout(String accessToken, String refreshToken) {
         jwtTokenProvider.validateAccessToken(accessToken);
         jwtTokenProvider.validateRefreshToken(refreshToken);
-        
+
         Long accessTokenUserId = jwtTokenProvider.getUserId(accessToken);
         Long refreshTokenUserId = jwtTokenProvider.getUserId(refreshToken);
 
@@ -116,10 +116,10 @@ public class UserServiceImpl implements UserService {
         tokenRedisRepository.blacklistAccessToken(
             accessTokenId,
             jwtTokenProvider.getRemaining(accessToken));
-            
+
         tokenRedisRepository.deleteRefreshToken(refreshTokenUserId, refreshTokenId);
     }
-    
+
     @Override
     public TokenRefreshResponse refreshAccessToken(String refreshToken) {
         jwtTokenProvider.validateRefreshToken(refreshToken);
@@ -181,5 +181,5 @@ public class UserServiceImpl implements UserService {
                 .updatedAt(updatedProfile.getUpdatedAt())
                 .build();
     }
-    
+
 }
