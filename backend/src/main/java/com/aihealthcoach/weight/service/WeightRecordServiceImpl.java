@@ -58,6 +58,8 @@ public class WeightRecordServiceImpl implements WeightRecordService {
     @Override
     @Transactional
     public void deleteWeightRecord(Long userId, LocalDate recordDate) {
+        validateDeletableWeightRecord(userId, recordDate);
+
         int deletedCount = weightRecordMapper.deleteWeightRecordByDate(userId, recordDate);
 
         if (deletedCount == 0) {
@@ -65,6 +67,18 @@ public class WeightRecordServiceImpl implements WeightRecordService {
         }
 
         syncCurrentWeight(userId);
+    }
+
+    private void validateDeletableWeightRecord(Long userId, LocalDate recordDate) {
+        WeightRecord targetRecord = weightRecordMapper.findWeightRecordByDate(userId, recordDate);
+
+        if (targetRecord == null) {
+            throw WeightRecordException.weightRecordNotFound();
+        }
+
+        if (weightRecordMapper.countWeightRecordsUpToTwo(userId) <= 1) {
+            throw WeightRecordException.minimumWeightRecordRequired();
+        }
     }
 
     private void syncCurrentWeight(Long userId) {

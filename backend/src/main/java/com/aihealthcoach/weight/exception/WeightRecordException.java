@@ -24,4 +24,8 @@ public class WeightRecordException extends BusinessException {
     public static WeightRecordException invalidDateRange() {
         return new WeightRecordException(WeightRecordErrorCode.INVALID_DATE_RANGE);
     }
+
+    public static WeightRecordException minimumWeightRecordRequired() {
+        return new WeightRecordException(WeightRecordErrorCode.MINIMUM_WEIGHT_RECORD_REQUIRED);
+    }
 }

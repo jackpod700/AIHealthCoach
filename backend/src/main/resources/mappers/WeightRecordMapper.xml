@@ -50,12 +50,38 @@
         ORDER BY record_date ASC
     </select>
 
+    <select id="findWeightRecordByDate" resultMap="weightRecord">
+        SELECT id, user_id, record_date, weight_kg, created_at, updated_at
+        FROM weight_records
+        WHERE user_id = #{userId}
+            AND record_date = #{recordDate}
+    </select>
+
     <select id="findLatestWeightRecord" resultMap="weightRecord">
         SELECT id, user_id, record_date, weight_kg, created_at, updated_at
         FROM weight_records
         WHERE user_id = #{userId}
         ORDER BY record_date DESC, updated_at DESC
         LIMIT 1
+    </select>
+
+    <select id="findLatestWeightOnOrBefore" resultType="java.math.BigDecimal">
+        SELECT weight_kg
+        FROM weight_records
+        WHERE user_id = #{userId}
+            AND record_date &lt;= #{recordDate}
+        ORDER BY record_date DESC
+        LIMIT 1
+    </select>
+
+    <select id="countWeightRecordsUpToTwo" resultType="int">
+        SELECT COUNT(*)
+        FROM (
+            SELECT 1
+            FROM weight_records
+            WHERE user_id = #{userId}
+            LIMIT 2
+        ) records
     </select>
 
     <delete id="deleteWeightRecordByDate">

@@ -10,6 +10,7 @@ import com.aihealthcoach.exercise.mapper.ExerciseMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
+import com.aihealthcoach.weight.mapper.WeightRecordMapper;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -23,6 +24,7 @@ public class ExerciseServiceImpl implements ExerciseService {
 
     private final ExerciseMapper exerciseDao;
     private final UserMapper userDao;
+    private final WeightRecordMapper weightRecordDao;
 
     @Override
     public List<ExerciseActivityOptionResponse> findExerciseActivityOptions(String keyword) {
@@ -87,13 +89,9 @@ public class ExerciseServiceImpl implements ExerciseService {
             throw UserException.profileNotFound();
         }
 
-        if (userProfile.getCurrentWeightKg() == null) {
-            throw ExerciseException.userWeightNotFound();
-        }
-
         BigDecimal metValue = resolveMetValue(activityOption, request.intensityLevel());
-        Integer caloriesBurned = calculateCaloriesBurned(metValue, userProfile.getCurrentWeightKg(),
-                request.durationMinutes());
+        BigDecimal weightKg = resolveWeightForExerciseDate(userId, request.exerciseDate(), userProfile);
+        Integer caloriesBurned = calculateCaloriesBurned(metValue, weightKg, request.durationMinutes());
 
         return ExerciseRecord.builder()
                 .id(recordId)
@@ -105,6 +103,20 @@ public class ExerciseServiceImpl implements ExerciseService {
                 .caloriesBurned(caloriesBurned)
                 .memo(request.memo())
                 .build();
+    }
+
+    private BigDecimal resolveWeightForExerciseDate(Long userId, LocalDate exerciseDate, UserProfile userProfile) {
+        BigDecimal weightKg = weightRecordDao.findLatestWeightOnOrBefore(userId, exerciseDate);
+
+        if (weightKg != null) {
+            return weightKg;
+        }
+
+        if (userProfile.getCurrentWeightKg() != null) {
+            return userProfile.getCurrentWeightKg();
+        }
+
+        throw ExerciseException.userWeightNotFound();
     }
 
     private BigDecimal resolveMetValue(ExerciseActivityOption activityOption, String intensityLevel) {
