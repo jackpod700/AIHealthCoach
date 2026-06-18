@@ -14,10 +14,11 @@ public enum UserErrorCode implements ErrorCode {
     DUPLICATE_EMAIL(HttpStatus.CONFLICT, "이미 가입된 이메일입니다."),
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "가입되지 않은 이메일입니다."),
     INVALID_PASSWORD(HttpStatus.UNAUTHORIZED, "비밀번호가 올바르지 않습니다."),
+    SOCIAL_LOGIN_ACCOUNT(HttpStatus.BAD_REQUEST, "소셜 로그인으로 가입된 계정입니다. Google 또는 Naver로 로그인해주세요."),
     PROFILE_NOT_FOUND(HttpStatus.NOT_FOUND, "유저 프로필이 존재하지 않습니다."),
     INVALID_TOKEN(HttpStatus.UNAUTHORIZED, "올바르지 않은 JWT 토큰입니다."),
     PROFILE_ACCESS_DENIED(HttpStatus.FORBIDDEN, "프로필에 접근할 권한이 없습니다."),
-    UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지ㅏ 않는 OAuth provider 입니다.");
+    UNSUPPORTED_OAUTH_PROVIDER(HttpStatus.BAD_REQUEST, "지원하지 않는 OAuth provider 입니다.");
 
     private final HttpStatus status;
     private final String message;

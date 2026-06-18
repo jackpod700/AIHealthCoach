@@ -71,7 +71,7 @@ public class UserServiceImpl implements UserService {
         }
 
         if (existingUser.getPassword() == null) {
-            throw new IllegalArgumentException("소셜 로그인으로 가입된 계정입니다.");
+            throw UserException.socialLoginAccount();
         }
 
         if (!passwordEncoder.matches(request.password(), existingUser.getPassword())) {
