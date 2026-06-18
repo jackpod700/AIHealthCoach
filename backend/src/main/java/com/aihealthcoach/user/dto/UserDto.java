@@ -3,8 +3,7 @@ package com.aihealthcoach.user.dto;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 import lombok.Builder;
 
 public class UserDto {
@@ -73,11 +72,22 @@ public class UserDto {
     }
 
     @Builder
-    public record UserProfileUpdateRequest (
-        BigDecimal heightCm,
-        BigDecimal currentWeightKg,
-        BigDecimal targetWeightKg,
-        String goalType
+
+    public record UserProfileUpdateRequest(
+            @DecimalMin(value = "50.00", message = "키는 50cm 이상이어야 합니다.")
+            @DecimalMax(value = "300.00", message = "키는 300cm 이하여야 합니다.")
+            @Digits(integer = 3, fraction = 2, message = "키는 최대 999.99 형식이어야 합니다.")
+            BigDecimal heightCm,
+            @DecimalMin(value = "1.00", message = "현재 몸무게는 1kg 이상이어야 합니다.")
+            @DecimalMax(value = "999.99", message = "현재 몸무게는 999.99kg 이하여야 합니다.")
+            @Digits(integer = 3, fraction = 2, message = "현재 몸무게는 최대 999.99 형식이어야 합니다.")
+            BigDecimal currentWeightKg,
+            @DecimalMin(value = "1.00", message = "목표 몸무게는 1kg 이상이어야 합니다.")
+            @DecimalMax(value = "999.99", message = "목표 몸무게는 999.99kg 이하여야 합니다.")
+            @Digits(integer = 3, fraction = 2, message = "목표 몸무게는 최대 999.99 형식이어야 합니다.")
+            BigDecimal targetWeightKg,
+            String goalType
+
     ) {
     }
 
