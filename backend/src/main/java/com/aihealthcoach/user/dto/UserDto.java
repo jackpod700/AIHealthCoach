@@ -49,7 +49,7 @@ public class UserDto {
             }
         }
     }
-        
+
     @Builder
     public record SignupRequest (
         @NotBlank(message = "이메일은 필수입니다.")
@@ -88,6 +88,11 @@ public class UserDto {
             BigDecimal targetWeightKg,
             String goalType
 
+    ) {
+    }
+
+    public record UserNicknameUpdateRequest(
+            String nickname
     ) {
     }
 

@@ -1,5 +1,7 @@
 package com.aihealthcoach.user.controller;
 
+import com.aihealthcoach.user.dto.UserDto;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -120,4 +122,14 @@ public class UserController {
 
         return authorization.substring("Bearer ".length());
     }
+
+    @PatchMapping("/nickname")
+    public ResponseEntity<Void> updateNickname(
+            @AuthenticationPrincipal Long userId,
+            @RequestBody UserDto.UserNicknameUpdateRequest request
+    ) {
+        userService.updateNickname(userId, request.nickname());
+        return ResponseEntity.noContent().build();
+    }
+
 }

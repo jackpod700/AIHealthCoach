@@ -14,10 +14,12 @@ public interface UserService {
     LoginResult login(LoginRequest request);
 
     void logout(String accessToken, String refreshToken);
-    
+
     TokenRefreshResponse refreshAccessToken(String refreshToken);
 
     UserProfileResponse findProfile(Long userId);
 
     UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request);
+
+    void updateNickname(Long userId, String nickname);
 }

@@ -18,6 +18,7 @@ import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -180,6 +181,16 @@ public class UserServiceImpl implements UserService {
                 .goalType(updatedProfile.getGoalType())
                 .updatedAt(updatedProfile.getUpdatedAt())
                 .build();
+    }
+
+    @Override
+    @Transactional
+    public void updateNickname(Long userId, String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 필수입니다.");
+        }
+
+        userDao.updateUserNickname(userId, nickname);
     }
 
 }

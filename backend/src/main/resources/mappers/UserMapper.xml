@@ -187,4 +187,12 @@
         )
     </insert>
 
+    <update id="updateUserNickname">
+        UPDATE users
+        SET
+        nickname = #{nickname},
+        updated_at = NOW()
+        WHERE id = #{userId}
+    </update>
+
 </mapper>

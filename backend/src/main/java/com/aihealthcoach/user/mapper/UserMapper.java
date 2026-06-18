@@ -33,4 +33,9 @@ public interface UserMapper {
     );
 
     void insertOAuthAccount(OAuthAccount oauthAccount);
+
+    void updateUserNickname(
+            @Param("userId") Long userId,
+            @Param("nickname") String nickname
+    );
 }
