@@ -114,4 +114,24 @@
         )
     </insert>
 
+    <select id="insertOAuthUser"
+            parameterType="com.aihealthcoach.user.entity.User"
+            resultType="long">
+        INSERT INTO users (
+        email,
+        password,
+        nickname,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{email},
+        #{password},
+        #{nickname},
+        NOW(),
+        NOW()
+        )
+        RETURNING id
+    </select>
+
 </mapper>

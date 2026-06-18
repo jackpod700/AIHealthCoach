@@ -29,7 +29,7 @@ public class OAuthServiceImpl implements OAuthService {
             return userMapper.findUserById(oauthAccount.getUserId());
         }
 
-        User user = findOrCreateOAuthUser(userDto);
+        User user = findOrCreateUser(userDto);
 
         OAuthAccount newOAuthAccount = OAuthAccount.builder()
                 .userId(user.getId())
@@ -56,7 +56,8 @@ public class OAuthServiceImpl implements OAuthService {
                 .nickname(resolveNickname(userDto))
                 .build();
 
-        userMapper.insertUser(user);
+        Long userId = userMapper.insertOAuthUser(user);
+        user.setId(userId);
 
 
         UserProfile userProfile = UserProfile.builder()

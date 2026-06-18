@@ -18,8 +18,10 @@ public interface UserMapper {
             @Param("request") UserProfileUpdateRequest request);
     User findUserById(Long id);
     OAuthAccount findOAuthAccount(
-            @Param("userId") String provider,
+            @Param("provider") String provider,
             @Param("providerUserId") String providerUserId
     );
     void insertOAuthAccount(OAuthAccount oAuthAccount);
+
+    Long insertOAuthUser(User user);
 }
