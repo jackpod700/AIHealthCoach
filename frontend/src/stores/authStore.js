@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { loginUser, refreshAccessToken, signupUser } from "../api/authApi";
 import { isAuthenticationError } from "../api/apiClient";
+import { fetchCurrentUser } from "../api/userApi";
 import { clearAuthSession, loadAuthSession, saveAuthSession } from "../utils/authStorage";
 
 function decodeJwtPayload(token) {
@@ -58,6 +59,7 @@ export const useAuthStore = defineStore("auth", {
 
       try {
         await signupUser(credentials);
+
         await this.login({
           email: credentials.email,
           password: credentials.password,
@@ -119,7 +121,13 @@ export const useAuthStore = defineStore("auth", {
 
         this.userId = userId;
         this.accessToken = refreshResponse.accessToken;
-        this.user = this.user || null;
+
+        const currentUser = await fetchCurrentUser(this.accessToken);
+
+        this.user = {
+          email: currentUser.email,
+          nickname: currentUser.nickname,
+        };
 
         saveAuthSession({
           userId: this.userId,
@@ -132,6 +140,19 @@ export const useAuthStore = defineStore("auth", {
       } finally {
         this.isOAuthLoggingIn = false;
       }
+    },
+
+    updateUser(user) {
+      this.user = {
+        ...(this.user || {}),
+        ...user,
+      };
+
+      saveAuthSession({
+        userId: this.userId,
+        accessToken: this.accessToken,
+        user: this.user,
+      });
     },
 
     logout(message = "") {

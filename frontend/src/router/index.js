@@ -86,12 +86,17 @@ const router = createRouter({
 
 router.beforeEach((to) => {
   const authStore = useAuthStore();
+  const isOAuthSignup = to.name === "signup" && to.query.oauth === "true";
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return "/login";
   }
 
-  if ((to.name === "login" || to.name === "signup") && authStore.isAuthenticated) {
+  if (isOAuthSignup && !authStore.isAuthenticated) {
+    return "/login";
+  }
+
+  if ((to.name === "login" || to.name === "signup") && authStore.isAuthenticated && !isOAuthSignup) {
     return "/chat";
   }
 
