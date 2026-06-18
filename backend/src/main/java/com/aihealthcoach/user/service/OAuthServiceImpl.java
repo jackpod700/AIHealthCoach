@@ -58,7 +58,8 @@ public class OAuthServiceImpl implements OAuthService {
 
         userMapper.insertUser(user);
 
-        userProfile userProfile = UserProfile.builder()
+
+        UserProfile userProfile = UserProfile.builder()
                 .userId(user.getId())
                 .build();
 
