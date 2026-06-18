@@ -3,6 +3,7 @@ package com.aihealthcoach.weight.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -85,10 +86,16 @@ class WeightRecordServiceImplTest {
 
     @Test
     void deleteWeightRecordSyncsCurrentWeightToLatestRecord() {
+        WeightRecord targetRecord = WeightRecord.builder()
+                .recordDate(RECORD_DATE)
+                .weightKg(new BigDecimal("68.40"))
+                .build();
         WeightRecord latestRecord = WeightRecord.builder()
                 .recordDate(RECORD_DATE.minusDays(1))
                 .weightKg(new BigDecimal("68.10"))
                 .build();
+        when(weightRecordMapper.findWeightRecordByDate(USER_ID, RECORD_DATE)).thenReturn(targetRecord);
+        when(weightRecordMapper.countWeightRecordsUpToTwo(USER_ID)).thenReturn(2);
         when(weightRecordMapper.deleteWeightRecordByDate(USER_ID, RECORD_DATE)).thenReturn(1);
         when(weightRecordMapper.findLatestWeightRecord(USER_ID)).thenReturn(latestRecord);
 
@@ -99,11 +106,28 @@ class WeightRecordServiceImplTest {
 
     @Test
     void deleteWeightRecordRejectsMissingRecord() {
-        when(weightRecordMapper.deleteWeightRecordByDate(USER_ID, RECORD_DATE)).thenReturn(0);
+        when(weightRecordMapper.findWeightRecordByDate(USER_ID, RECORD_DATE)).thenReturn(null);
 
         assertThatThrownBy(() -> weightRecordService.deleteWeightRecord(USER_ID, RECORD_DATE))
                 .isInstanceOf(WeightRecordException.class)
                 .extracting("errorCode")
                 .isEqualTo(WeightRecordErrorCode.WEIGHT_RECORD_NOT_FOUND);
+        verify(weightRecordMapper, never()).deleteWeightRecordByDate(USER_ID, RECORD_DATE);
+    }
+
+    @Test
+    void deleteWeightRecordRejectsLastRemainingRecord() {
+        WeightRecord targetRecord = WeightRecord.builder()
+                .recordDate(RECORD_DATE)
+                .weightKg(new BigDecimal("68.40"))
+                .build();
+        when(weightRecordMapper.findWeightRecordByDate(USER_ID, RECORD_DATE)).thenReturn(targetRecord);
+        when(weightRecordMapper.countWeightRecordsUpToTwo(USER_ID)).thenReturn(1);
+
+        assertThatThrownBy(() -> weightRecordService.deleteWeightRecord(USER_ID, RECORD_DATE))
+                .isInstanceOf(WeightRecordException.class)
+                .extracting("errorCode")
+                .isEqualTo(WeightRecordErrorCode.MINIMUM_WEIGHT_RECORD_REQUIRED);
+        verify(weightRecordMapper, never()).deleteWeightRecordByDate(USER_ID, RECORD_DATE);
     }
 }

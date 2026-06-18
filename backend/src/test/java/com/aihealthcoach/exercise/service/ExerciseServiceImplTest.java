@@ -14,6 +14,7 @@ import com.aihealthcoach.exercise.exception.ExerciseException;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
+import com.aihealthcoach.weight.mapper.WeightRecordMapper;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -31,6 +32,9 @@ class ExerciseServiceImplTest {
 
     @Mock
     private UserMapper userDao;
+
+    @Mock
+    private WeightRecordMapper weightRecordDao;
 
     @InjectMocks
     private ExerciseServiceImpl exerciseService;
@@ -71,6 +75,89 @@ class ExerciseServiceImplTest {
         assertThat(response.caloriesBurned()).isEqualTo(133);
         assertThat(response.activityNameKo()).isEqualTo("걷기");
         assertThat(response.metValue()).isEqualByComparingTo("3.8");
+    }
+
+    @Test
+    void insertExerciseRecordUsesLatestWeightOnOrBeforeExerciseDate() {
+        ExerciseActivityOption activityOption = ExerciseActivityOption.builder()
+                .id(1L)
+                .activityNameKo("걷기")
+                .mediumMetValue(BigDecimal.valueOf(4.0))
+                .build();
+
+        UserProfile userProfile = UserProfile.builder().userId(1L).currentWeightKg(BigDecimal.valueOf(70)).build();
+
+        when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
+        when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
+        when(weightRecordDao.findLatestWeightOnOrBefore(1L, LocalDate.of(2026, 6, 1)))
+                .thenReturn(new BigDecimal("71.50"));
+
+        ArgumentCaptor<ExerciseRecord> recordCaptor = ArgumentCaptor.forClass(ExerciseRecord.class);
+        when(exerciseDao.insertExerciseRecord(recordCaptor.capture())).thenAnswer(invocation -> {
+            ExerciseRecord record = invocation.getArgument(0);
+            record.setId(10L);
+            record.setExerciseActivityOption(activityOption);
+            return record;
+        });
+
+        ExerciseRecordResponse response = exerciseService.insertExerciseRecord(1L,
+                ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
+                        .exerciseDate(LocalDate.of(2026, 6, 1))
+                        .durationMinutes(30).build());
+
+        assertThat(recordCaptor.getValue().getCaloriesBurned()).isEqualTo(143);
+        assertThat(response.caloriesBurned()).isEqualTo(143);
+    }
+
+    @Test
+    void insertExerciseRecordFallsBackToProfileWeightWhenNoWeightRecordExists() {
+        ExerciseActivityOption activityOption = ExerciseActivityOption.builder()
+                .id(1L)
+                .activityNameKo("걷기")
+                .mediumMetValue(BigDecimal.valueOf(4.0))
+                .build();
+
+        UserProfile userProfile = UserProfile.builder().userId(1L).currentWeightKg(BigDecimal.valueOf(70)).build();
+
+        when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
+        when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
+
+        ArgumentCaptor<ExerciseRecord> recordCaptor = ArgumentCaptor.forClass(ExerciseRecord.class);
+        when(exerciseDao.insertExerciseRecord(recordCaptor.capture())).thenAnswer(invocation -> {
+            ExerciseRecord record = invocation.getArgument(0);
+            record.setId(10L);
+            record.setExerciseActivityOption(activityOption);
+            return record;
+        });
+
+        ExerciseRecordResponse response = exerciseService.insertExerciseRecord(1L,
+                ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
+                        .exerciseDate(LocalDate.of(2026, 6, 1))
+                        .durationMinutes(30).build());
+
+        assertThat(recordCaptor.getValue().getCaloriesBurned()).isEqualTo(140);
+        assertThat(response.caloriesBurned()).isEqualTo(140);
+    }
+
+    @Test
+    void insertExerciseRecordRejectsWhenWeightRecordAndProfileWeightAreMissing() {
+        ExerciseActivityOption activityOption = ExerciseActivityOption.builder()
+                .id(1L)
+                .activityNameKo("걷기")
+                .mediumMetValue(BigDecimal.valueOf(4.0))
+                .build();
+
+        UserProfile userProfile = UserProfile.builder().userId(1L).build();
+
+        when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
+        when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
+
+        assertThatThrownBy(() -> exerciseService.insertExerciseRecord(1L,
+                ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
+                        .exerciseDate(LocalDate.of(2026, 6, 1))
+                        .durationMinutes(30).build()))
+                .isInstanceOf(ExerciseException.class)
+                .hasMessage("소모 칼로리 계산에 필요한 현재 체중이 없습니다.");
     }
 
     @Test
