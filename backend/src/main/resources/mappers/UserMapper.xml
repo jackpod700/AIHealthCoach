@@ -78,4 +78,40 @@
         </set>
         WHERE user_id = #{userId}
     </update>
+
+    <select id="findUserById" parameterType="long" resultType="com.aihealthcoach.user.entity.User">
+        SELECT id, email, password, nickname, created_at, updated_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <select id="findOAuthAccount" resultType="com.aihealthcoach.user.entity.OAuthAccount">
+        SELECT id, user_id, provider, provider_user_id, email, created_at, updated_at
+        FROM oauth_accounts
+        WHERE provider = #{provider}
+        AND provider_user_id = #{providerUserId}
+    </select>
+
+    <insert id="insertOAuthAccount"
+            parameterType="com.aihealthcoach.user.entity.OAuthAccount"
+            useGeneratedKeys="true"
+            keyProperty="id">
+        INSERT INTO oauth_accounts (
+        user_id,
+        provider,
+        provider_user_id,
+        email,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{userId},
+        #{provider},
+        #{providerUserId},
+        #{email},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
 </mapper>

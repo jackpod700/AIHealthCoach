@@ -1,6 +1,7 @@
 package com.aihealthcoach.user.mapper;
 
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
+import com.aihealthcoach.user.entity.OAuthAccount;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import org.apache.ibatis.annotations.Mapper;
@@ -12,5 +13,13 @@ public interface UserMapper {
     void insertUser(User user);
     void insertUserProfile(UserProfile userProfile);
     UserProfile findUserProfileByUserId(Long id);
-    void updateUserProfile(@Param("userId") Long userId, @Param("request") UserProfileUpdateRequest request);
+    void updateUserProfile(
+            @Param("userId") Long userId,
+            @Param("request") UserProfileUpdateRequest request);
+    User findUserById(Long id);
+    OAuthAccount findOAuthAccount(
+            @Param("userId") String provider,
+            @Param("providerUserId") String providerUserId
+    );
+    void insertOAuthAccount(OAuthAccount oAuthAccount);
 }
