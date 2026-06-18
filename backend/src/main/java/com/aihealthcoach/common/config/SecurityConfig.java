@@ -1,7 +1,12 @@
 package com.aihealthcoach.common.config;
 
+import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
+import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
+import com.aihealthcoach.common.auth.JwtAuthenticationFilter;
+import com.aihealthcoach.common.auth.SecurityPaths;
 import com.aihealthcoach.user.oauth.OAuth2LoginFailureHandler;
 import com.aihealthcoach.user.oauth.OAuth2LoginSuccessHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -12,13 +17,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
-import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
-import com.aihealthcoach.common.auth.JwtAuthenticationFilter;
-import com.aihealthcoach.common.auth.SecurityPaths;
-
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -37,15 +35,18 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler))
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/oauth/**",
-                                        "/oauth2/**",
-                                        "/login/oauth2/**"
+                                "/oauth2/**",
+                                "/login/oauth2/**"
                         ).permitAll()
-                        .requestMatchers(HttpMethod.PATCH, "/api/user/*/profile").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/user/*/profile").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/user/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/user/nickname").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/user/profile").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/user/profile").authenticated()
                         .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )
