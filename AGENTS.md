@@ -1,50 +1,93 @@
 # AGENTS.md
 
-## 역할
+## Purpose
 
-당신은 이 저장소 안에서 작업하는 AI 코딩 에이전트입니다.
+This file defines the stable working rules for AI coding agents in this repository. Keep it short, operational, and project-specific.
 
-## 핵심 규칙
+## Repo Layout
 
-- 파일을 변경하기 전에 작업 내용을 먼저 이해합니다.
-- 관련 파일, 명령어, 프로젝트 규칙을 먼저 확인합니다.
-- 큰 범위의 재작성보다 작고 안전한 변경을 우선합니다.
-- 관련 없는 파일은 수정하지 않습니다.
-- 명시적으로 요청받지 않은 한 사용자의 변경 사항을 되돌리지 않습니다.
-- 비밀값, 인증 정보, 토큰, 개인 정보를 노출하지 않습니다.
-- API, 의존성, 명령어, 프로젝트 규칙을 임의로 만들어내지 않습니다.
-- 확실하지 않을 때는 결정하기 전에 코드베이스를 먼저 확인합니다.
-- 임의의 명령어보다 프로젝트 내부 스크립트와 문서화된 명령어를 우선 사용합니다.
-- 가능하다면 작업을 마무리하기 전에 프로젝트 검증 명령을 실행합니다.
+- `frontend/`: Vue/Vite client application.
+- `backend/`: Spring Boot API, MyBatis mappers, backend tests, and backend docs.
+- `data/`: local seed data, import scripts, benchmark assets, and generated data artifacts.
+- `scripts/`: root-level project commands.
+- `frontend/harness/scripts/`: frontend validation entry points.
+- `backend/harness/scripts/`: backend validation entry points.
+- `PROJECT_PROFILE.md`: project stack, commands, and current conventions.
+- `TASK_TEMPLATE.md`: task request/reporting template.
 
-## 표준 작업 흐름
+## Read First
 
-1. 사용자 요청을 이해합니다.
-2. 관련 파일과 프로젝트 규칙을 확인합니다.
-3. 단순하지 않은 작업이라면 간단한 구현 계획을 세웁니다.
-4. 필요한 범위 안에서 가장 작은 유용한 변경을 수행합니다.
-5. 동작이 변경되는 경우 테스트를 추가하거나 수정합니다.
-6. 검증 명령을 실행합니다.
-7. 실패가 발생하면 원인을 분석하고 수정합니다.
-8. 동작이나 작업 흐름이 바뀌었다면 문서를 업데이트합니다.
-9. 변경된 파일, 검증 결과, 남은 위험 요소를 보고합니다.
+Before non-trivial work, read:
 
-## 검증
+1. `PROJECT_PROFILE.md`
+2. `docs/PROJECT_INDEX.md`
+3. Relevant docs for the changed area
+4. Nearby implementation and tests
 
-단일 하네스 진입점을 사용합니다.
+## Commands
+
+Run the root verification entry point before finishing work when practical:
 
 ```bash
 ./scripts/check
 ```
 
-현재 환경에서 `./scripts/check`를 사용할 수 없거나 실행할 수 없다면 `PROJECT_PROFILE.md`를 확인하고, 문서화된 프로젝트별 명령어를 사용합니다.
+If the root script is not executable in the current checkout, run:
 
-## 보고
+```bash
+sh scripts/check
+```
 
-최종 보고에는 다음 내용을 포함합니다.
+The root check runs every script under:
 
-- 변경 내용 요약
-- 변경된 파일
-- 실행한 검증 명령과 결과
-- 추가하거나 수정한 테스트
-- 남은 위험 요소 또는 후속 작업
+- `frontend/harness/scripts/`
+- `backend/harness/scripts/`
+
+Useful narrower commands:
+
+```bash
+cd frontend && npm ci && npm run build
+cd backend && mvn test
+docker compose up --build
+docker compose down
+```
+
+If `./scripts/check` cannot run in the current environment, read `PROJECT_PROFILE.md` and use the documented narrower command for the changed area.
+
+In WSL environments where harness scripts try to invoke Windows `cmd.exe` and fail, run the native narrower commands from the project directory instead.
+
+## Engineering Rules
+
+- Read `PROJECT_PROFILE.md` before starting non-trivial work to confirm the current stack, commands, paths, and project conventions.
+- Understand the relevant code, docs, and existing patterns before changing files.
+- Prefer small, focused changes over broad rewrites.
+- Follow nearby package, naming, DTO, mapper, service, and test conventions.
+- Keep controller, service, and mapper responsibilities separate:
+  - Controller: HTTP boundary, request/response mapping, authenticated user lookup.
+  - Service: business flow, validation decisions, transaction-level behavior.
+  - Mapper/Repository: database access only.
+- Derive `userId` from authenticated user context, not from client-controlled request bodies or query parameters.
+- Do not call real LLM providers from tests; use fake or mocked LLM boundaries.
+- Prefer project scripts and documented commands over ad hoc commands.
+- Add or update tests when behavior changes.
+- Update docs only when behavior, workflow, or project rules change.
+
+## Forbidden
+
+- Do not expose secrets, tokens, credentials, personal data, or `.env` values.
+- Do not invent APIs, dependencies, commands, tables, or project rules.
+- Do not modify unrelated files.
+- Do not revert user changes unless explicitly asked.
+- Do not perform destructive git or filesystem operations unless explicitly requested.
+- Do not hide failing checks or report unrun validation as successful.
+- Do not mix unrelated implementation, docs, formatting, and local-only changes in one task unless requested.
+
+## Done Criteria
+
+A task is complete when:
+
+- The requested behavior is implemented within the agreed scope.
+- Relevant tests are added or updated when behavior changed.
+- The appropriate verification command was run, or the reason it could not run is documented.
+- Changed files are summarized clearly.
+- Remaining risks, skipped validation, or follow-up work are called out.
