@@ -61,7 +61,10 @@ In WSL environments where harness scripts try to invoke Windows `cmd.exe` and fa
 - Read `PROJECT_PROFILE.md` before starting non-trivial work to confirm the current stack, commands, paths, and project conventions.
 - Understand the relevant code, docs, and existing patterns before changing files.
 - Prefer small, focused changes over broad rewrites.
-- Follow nearby package, naming, DTO, mapper, service, and test conventions.
+- Backend domain packages are separated by responsibility: `controller`, `dto`, `entity`, `exception`, `mapper`, and `service`.
+- Keep the `service` package for service interfaces, implementations, prompt/factory helpers, and business orchestration collaborators.
+- Keep data carrier types in the domain `dto` package. Request, response, result, extraction, proposal, and provider-boundary payload types belong in `dto`, even when they are internal to service-to-service or LLM-boundary flows.
+- DTOs are grouped in domain-level `*Dto` wrapper classes with nested `record` types, such as `ChatDto`, `AiMealDto`, `AiExerciseDto`, `AiWeightDto`, and `UserDto`.
 - Keep controller, service, and mapper responsibilities separate:
   - Controller: HTTP boundary, request/response mapping, authenticated user lookup.
   - Service: business flow, validation decisions, transaction-level behavior.
