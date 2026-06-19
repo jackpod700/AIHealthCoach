@@ -4,7 +4,6 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.MimeType;
@@ -13,6 +12,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
+import com.aihealthcoach.chat.dto.LlmDto.LlmImage;
+import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
+import com.aihealthcoach.chat.dto.LlmDto.LlmResponse;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
@@ -31,7 +33,7 @@ public class AiChatServiceImpl implements AiChatService {
     private static final long MAX_TOTAL_IMAGE_SIZE_BYTES = 50L * 1024L;
     private static final String DEFAULT_IMAGE_MESSAGE = "사진을 분석해서 식단 후보를 만들어줘.";
 
-    private final ChatClient chatClient;
+    private final LlmService llmService;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AiPromptFactory promptFactory;
@@ -40,12 +42,12 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     public AiChatResult generate(ChatMessageRequest userMessage) {
         try {
-            AiChatResult result = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
-                    .user(userMessage.content())
-                    .call()
-                    .entity(AiChatResult.class);
+            LlmResponse response = llmService.generate(LlmRequest.text(
+                    systemPrompt(LocalDate.now(clock)),
+                    userMessage.content()
+            ));
 
-            return normalizeAiResult(result);
+            return parseAiResult(response.content());
         } catch (Exception exception) {
             log.warn("Failed to map AI chat response to AiChatResult.", exception);
             return fallback();
@@ -58,15 +60,16 @@ public class AiChatServiceImpl implements AiChatService {
 
         String userText = normalizeImageMessage(content);
         try {
-            AiChatResult result = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
-                    .user(user -> {
-                        user.text(userText);
-                        images.forEach(image -> user.media(toMimeType(image), image.getResource()));
-                    })
-                    .call()
-                    .entity(AiChatResult.class);
+            List<LlmImage> llmImages = images.stream()
+                    .map(image -> new LlmImage(toMimeType(image), image.getResource()))
+                    .toList();
+            LlmResponse response = llmService.generate(LlmRequest.image(
+                    promptFactory.imageMealPrompt(LocalDate.now(clock)),
+                    userText,
+                    llmImages
+            ));
 
-            return normalizeAiResult(result);
+            return parseAiResult(response.content());
         } catch (Exception exception) {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
             return fallback();
