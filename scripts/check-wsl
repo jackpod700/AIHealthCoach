@@ -1,0 +1,30 @@
+#!/usr/bin/env sh
+set -eu
+
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+
+require_command() {
+  command_name=$1
+
+  if ! command -v "$command_name" >/dev/null 2>&1; then
+    printf 'Missing required command: %s\n' "$command_name" >&2
+    exit 127
+  fi
+}
+
+printf '\n[frontend] running native WSL npm validation\n'
+(
+  cd "$ROOT_DIR/frontend"
+  require_command npm
+  npm ci
+  npm run build
+)
+
+printf '\n[backend] running native WSL Maven validation\n'
+(
+  cd "$ROOT_DIR/backend"
+  require_command mvn
+  mvn test
+)
+
+printf '\nAll WSL checks passed.\n'
