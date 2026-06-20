@@ -6,7 +6,25 @@ import org.springframework.stereotype.Component;
 public class AiPromptFactory {
 
     public String textChatPrompt() {
-        return commonPrompt() + """
+        return commonPrompt() + healthCoachingRules() + textExtractionRules();
+    }
+
+    private String healthCoachingRules() {
+        return """
+
+                Health coaching rules:
+                - When user context is relevant to the question, use it to personalize assistantMessage.
+                - Use only server-provided context values. If needed context is missing, say a precise assessment is not possible and give concise general guidance.
+                - When daily goals and today's records are available, compare them and give practical, non-judgmental feedback.
+                - If exercise, protein, or calorie progress is below goal, suggest realistic next actions.
+                - Do not treat current extraction proposals as already saved records.
+                - Even when all extraction intents are false, assistantMessage must answer the user's question.
+                - Keep advice concise, specific, actionable, and non-medical.
+                """;
+    }
+
+    private String textExtractionRules() {
+        return """
 
                 mealIntent must be true only when the user describes food they ate or explicitly asks to record food.
                 exerciseIntent must be true only when the user describes exercise they did or explicitly asks to record exercise.
@@ -43,7 +61,7 @@ public class AiPromptFactory {
 
                 Return only JSON with this exact shape:
                 {
-                  "assistantMessage": "message to show user",
+                  "assistantMessage": "Korean message to show user, using relevant user context when available",
                   "mealExtraction": {
                     "mealIntent": true,
                     "mealDate": "yyyy-MM-dd or null",
@@ -70,6 +88,10 @@ public class AiPromptFactory {
                     "content": "long-term detail to remember or null"
                   }
                 }
+
+                The response must begin with { and end with }.
+                Even for general conversations, you must maintain the JSON format.
+                Do not wrap JSON in Markdown code fences.
 
                 For relative dates, convert them to yyyy-MM-dd using today's date.
                 If meal date, exercise date, or weight record date is truly absent, use null.
