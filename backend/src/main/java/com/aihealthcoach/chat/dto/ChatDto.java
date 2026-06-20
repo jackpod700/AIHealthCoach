@@ -8,6 +8,7 @@ import com.aihealthcoach.exercise.dto.AiExerciseDto.ExerciseProposalResponse;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.dto.AiMealDto.MealProposalResponse;
+import com.aihealthcoach.memory.dto.UserMemoryDto.MemorySaveCommand;
 import com.aihealthcoach.weight.dto.AiWeightDto.ExtractedWeightResult;
 import com.aihealthcoach.weight.dto.AiWeightDto.WeightProposalResponse;
 
@@ -70,7 +71,8 @@ public class ChatDto {
         String assistantMessage,
         ExtractedMealResult mealExtraction,
         ExtractedExerciseResult exerciseExtraction,
-        ExtractedWeightResult weightExtraction
+        ExtractedWeightResult weightExtraction,
+        MemorySaveCommand memorySaveCommand
     ) {
     }
 

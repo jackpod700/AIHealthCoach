@@ -43,4 +43,13 @@ public class UserMemoryDto {
             }
         }
     }
+
+    public record MemorySaveCommand(
+        boolean memorySaveIntent,
+        String content
+    ) {
+        public static MemorySaveCommand noCommand() {
+            return new MemorySaveCommand(false, null);
+        }
+    }
 }
