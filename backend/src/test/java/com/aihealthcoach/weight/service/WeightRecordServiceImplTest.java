@@ -15,12 +15,15 @@ import com.aihealthcoach.weight.exception.WeightRecordErrorCode;
 import com.aihealthcoach.weight.exception.WeightRecordException;
 import com.aihealthcoach.weight.mapper.WeightRecordMapper;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,6 +32,10 @@ class WeightRecordServiceImplTest {
 
     private static final Long USER_ID = 1L;
     private static final LocalDate RECORD_DATE = LocalDate.of(2026, 6, 17);
+    private static final Clock CLOCK = Clock.fixed(
+            Instant.parse("2026-06-20T03:00:00Z"),
+            ZoneId.of("Asia/Seoul")
+    );
 
     @Mock
     private WeightRecordMapper weightRecordMapper;
@@ -36,8 +43,12 @@ class WeightRecordServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
-    @InjectMocks
     private WeightRecordServiceImpl weightRecordService;
+
+    @BeforeEach
+    void setUp() {
+        weightRecordService = new WeightRecordServiceImpl(weightRecordMapper, userMapper, CLOCK);
+    }
 
     @Test
     void upsertWeightRecordReturnsMinimalResponseAndSyncsCurrentWeight() {
@@ -62,6 +73,27 @@ class WeightRecordServiceImplTest {
     }
 
     @Test
+    void upsertWeightRecordAllowsToday() {
+        LocalDate today = LocalDate.of(2026, 6, 20);
+        WeightRecord savedRecord = WeightRecord.builder()
+                .userId(USER_ID)
+                .recordDate(today)
+                .weightKg(new BigDecimal("68.40"))
+                .updatedAt(LocalDateTime.of(2026, 6, 20, 12, 0))
+                .build();
+        when(weightRecordMapper.upsertWeightRecord(any(WeightRecord.class))).thenReturn(savedRecord);
+        when(weightRecordMapper.findLatestWeightRecord(USER_ID)).thenReturn(savedRecord);
+
+        WeightRecordResponse response = weightRecordService.upsertWeightRecord(
+                USER_ID,
+                new WeightRecordRequest(today, new BigDecimal("68.40"))
+        );
+
+        assertThat(response.recordDate()).isEqualTo(today);
+        verify(weightRecordMapper).upsertWeightRecord(any(WeightRecord.class));
+    }
+
+    @Test
     void findWeightRecordsReturnsAllRecordsWhenRangeIsNotProvided() {
         when(weightRecordMapper.findAllWeightRecords(USER_ID)).thenReturn(List.of(WeightRecord.builder()
                 .recordDate(RECORD_DATE)
@@ -82,6 +114,22 @@ class WeightRecordServiceImplTest {
                 .isInstanceOf(WeightRecordException.class)
                 .extracting("errorCode")
                 .isEqualTo(WeightRecordErrorCode.INVALID_DATE_RANGE);
+    }
+
+    @Test
+    void upsertWeightRecordRejectsFutureRecordDateBeforeWriting() {
+        LocalDate futureDate = LocalDate.of(2026, 6, 21);
+
+        assertThatThrownBy(() -> weightRecordService.upsertWeightRecord(
+                USER_ID,
+                new WeightRecordRequest(futureDate, new BigDecimal("68.40"))
+        ))
+                .isInstanceOf(WeightRecordException.class)
+                .extracting("errorCode")
+                .isEqualTo(WeightRecordErrorCode.FUTURE_RECORD_DATE);
+
+        verify(weightRecordMapper, never()).upsertWeightRecord(any(WeightRecord.class));
+        verify(userMapper, never()).updateUserProfileCurrentWeight(any(), any());
     }
 
     @Test
