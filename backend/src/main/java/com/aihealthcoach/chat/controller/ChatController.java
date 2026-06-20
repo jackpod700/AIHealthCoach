@@ -54,8 +54,8 @@ public class ChatController {
     public ResponseEntity<ChatMessageSendResponse> insertMessage(@RequestBody ChatMessageRequest message, Authentication authentication){
         List<ChatMessageResponse> messages = new ArrayList<>();
         Long userId = (Long)authentication.getPrincipal();
+        AiChatResult aiResult = aiChatService.generate(userId, message);
         messages.add(chatService.insert(userId, message));
-        AiChatResult aiResult = aiChatService.generate(message);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")
@@ -78,6 +78,7 @@ public class ChatController {
         List<ChatMessageResponse> messages = new ArrayList<>();
         Long userId = (Long) authentication.getPrincipal();
         String userMessageSummary = imageMessageSummary(content, images);
+        AiChatResult aiResult = aiChatService.generateWithImages(userId, content, images);
 
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
@@ -85,7 +86,6 @@ public class ChatController {
                 .content(userMessageSummary)
                 .build()));
 
-        AiChatResult aiResult = aiChatService.generateWithImages(content, images);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")
