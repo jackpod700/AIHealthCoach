@@ -2,7 +2,7 @@
 
 ## Status
 
-proposed
+done
 
 ## Goal
 
@@ -158,13 +158,13 @@ sequenceDiagram
 
 ## Acceptance Criteria
 
-- [ ] fallback 원인이 context/prompt/provider/parse/invalid 단계로 구분된다.
-- [ ] 각 failure log에 correlation id와 reason code가 있다.
-- [ ] raw response debug logging은 명시적 설정이 있을 때만 동작한다.
-- [ ] debug logging은 길이 제한을 적용한다.
-- [ ] 기본 설정에서 raw response와 dynamic context가 로그에 남지 않는다.
-- [ ] 사용자 fallback 메시지와 Chat API 응답 형식이 유지된다.
-- [ ] 실제 provider 없이 failure path 테스트가 통과한다.
+- [x] fallback 원인이 context/prompt/provider/parse/invalid 단계로 구분된다.
+- [x] 각 failure log에 correlation id와 reason code가 있다.
+- [x] raw response debug logging은 명시적 설정이 있을 때만 동작한다.
+- [x] debug logging은 길이 제한을 적용한다.
+- [x] 기본 설정에서 raw response와 dynamic context가 로그에 남지 않는다.
+- [x] 사용자 fallback 메시지와 Chat API 응답 형식이 유지된다.
+- [x] 실제 provider 없이 failure path 테스트가 통과한다.
 
 ## Verification
 
@@ -192,6 +192,14 @@ sh backend/harness/scripts/build
 - 제외:
   - 실제 GMS/OpenAI provider response 관찰
   - 운영 로그 수집 시스템 integration test
+
+## Result
+
+- `AiChatFallbackLogger`와 `ConsoleAiChatFallbackLogger`를 추가해 fallback 원인을 고정 `key=value` WARN 로그로 남긴다.
+- 기본 설정에서는 raw provider response를 남기지 않으며, local/dev에서만 `ai.chat.observability.raw-response-preview-enabled=true`로 preview를 활성화할 수 있다.
+- `sh backend/harness/scripts/build`를 실행해 테스트 129개가 통과했다.
+- 일반 대화의 경우 json 형태로의 응답을 제공하지 않는다는 오류 원인을 찾았으므로, 결과에 대해서만 정리 한 뒤 AOP에 어긋나는 국소 logging에 대해 삭제한다.
+
 
 ## Notes / Risks
 
