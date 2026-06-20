@@ -2,7 +2,7 @@
 
 ## Status
 
-proposed
+done
 
 ## Goal
 
@@ -171,16 +171,16 @@ sequenceDiagram
 
 ## Acceptance Criteria
 
-- [ ] 테스트용 Fake LLM 구현 또는 mock 주입 구조가 마련되어 있다.
-- [ ] Fake LLM은 실제 provider 또는 `ChatClient`를 호출하지 않는다.
-- [ ] AI Chat Harness 테스트에서 `AiChatService`에 fake `LlmService`를 주입할 수 있다.
-- [ ] 사용자 발화 1개 이상이 fake LLM 응답을 거쳐 `AiChatResult`로 변환되는 테스트가 있다.
-- [ ] meal extraction 결과를 검증하는 최소 시나리오가 있다.
-- [ ] exercise 또는 weight extraction 결과를 검증하는 최소 시나리오가 있다.
-- [ ] invalid JSON 또는 no intent fallback 경로를 검증하는 최소 시나리오가 있다.
-- [ ] 테스트가 실제 provider API key 없이 통과한다.
-- [ ] 기존 `AiChatServiceImplTest`와 역할이 중복되면 중복을 줄이거나, 단위 테스트와 harness 테스트의 역할 차이가 명확하다.
-- [ ] 관련 테스트가 문서화된 명령으로 통과한다.
+- [x] 테스트용 Fake LLM 구현 또는 mock 주입 구조가 마련되어 있다.
+- [x] Fake LLM은 실제 provider 또는 `ChatClient`를 호출하지 않는다.
+- [x] AI Chat Harness 테스트에서 `AiChatService`에 fake `LlmService`를 주입할 수 있다.
+- [x] 사용자 발화 1개 이상이 fake LLM 응답을 거쳐 `AiChatResult`로 변환되는 테스트가 있다.
+- [x] meal extraction 결과를 검증하는 최소 시나리오가 있다.
+- [x] exercise 또는 weight extraction 결과를 검증하는 최소 시나리오가 있다.
+- [x] invalid JSON 또는 no intent fallback 경로를 검증하는 최소 시나리오가 있다.
+- [x] 테스트가 실제 provider API key 없이 통과한다.
+- [x] 기존 `AiChatServiceImplTest`와 역할이 중복되면 중복을 줄이거나, 단위 테스트와 harness 테스트의 역할 차이가 명확하다.
+- [x] 관련 테스트가 문서화된 명령으로 통과한다.
 
 ## Verification
 
@@ -205,6 +205,13 @@ cd backend && mvn test
 정확한 명령은 `PROJECT_PROFILE.md`와 기존 프로젝트 파일을 기준으로 확인한다.
 
 전체 검증을 실행할 수 없다면, 이유를 기록하고 가장 좁은 관련 테스트 명령을 실행한다.
+
+완료 검증:
+
+```bash
+cd backend && JWT_SECRET=<test-secret> mvn -Dmaven.repo.local=/tmp/m2-aihealthcoach -Dtest=AiChatServiceImplTest,AiChatHarnessTest test
+cd backend && sh harness/scripts/build
+```
 
 ## Tests
 
