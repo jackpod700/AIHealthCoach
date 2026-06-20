@@ -2,9 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aihealthcoach.user.mapper.UserMapper">
+
     <resultMap id="user" type="com.aihealthcoach.user.entity.User">
         <id column="id" property="id"/>
-        <result column="id" property="id"/>
         <result column="email" property="email"/>
         <result column="password" property="password"/>
         <result column="nickname" property="nickname"/>
@@ -14,49 +14,120 @@
 
     <resultMap id="userProfile" type="com.aihealthcoach.user.entity.UserProfile">
         <id column="id" property="id"/>
-        <result column="id" property="id"/>
         <result column="user_id" property="userId"/>
         <result column="height_cm" property="heightCm"/>
         <result column="current_weight_kg" property="currentWeightKg"/>
         <result column="target_weight_kg" property="targetWeightKg"/>
         <result column="goal_type" property="goalType"/>
         <result column="updated_at" property="updatedAt"/>
-    </resultMap> 
+    </resultMap>
 
-    <select id="findUserByEmail" parameterType="String" resultMap="user">
-        SELECT  id, email, password, nickname, created_at, updated_at
-        FROM    users
-        WHERE   email = #{email}
+    <resultMap id="oauthAccount" type="com.aihealthcoach.user.entity.OAuthAccount">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="provider" property="provider"/>
+        <result column="provider_user_id" property="providerUserId"/>
+        <result column="email" property="email"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findUserByEmail" parameterType="string" resultMap="user">
+        SELECT
+        id,
+        email,
+        password,
+        nickname,
+        created_at,
+        updated_at
+        FROM users
+        WHERE email = #{email}
     </select>
 
-    <insert id="insertUser" parameterType="com.aihealthcoach.user.entity.User">
-        INSERT INTO users (email, password, nickname, created_at, updated_at)
-        VALUES  (#{email}, #{password}, #{nickname}, NOW(), NOW())
+    <select id="findUserById" parameterType="long" resultMap="user">
+        SELECT
+        id,
+        email,
+        password,
+        nickname,
+        created_at,
+        updated_at
+        FROM users
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insertUser"
+            parameterType="com.aihealthcoach.user.entity.User"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO users (
+        email,
+        password,
+        nickname,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{email},
+        #{password},
+        #{nickname},
+        NOW(),
+        NOW()
+        )
     </insert>
+
+    <select id="insertOAuthUser"
+            parameterType="com.aihealthcoach.user.entity.User"
+            resultType="long"
+            affectData="true">
+        INSERT INTO users (
+        email,
+        password,
+        nickname,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{email},
+        #{password},
+        #{nickname},
+        NOW(),
+        NOW()
+        )
+        RETURNING id
+    </select>
 
     <insert id="insertUserProfile" parameterType="com.aihealthcoach.user.entity.UserProfile">
         INSERT INTO user_profiles (
-            user_id,
-            height_cm,
-            current_weight_kg,
-            target_weight_kg,
-            goal_type,
-            updated_at
+        user_id,
+        height_cm,
+        current_weight_kg,
+        target_weight_kg,
+        goal_type,
+        updated_at
         )
         VALUES (
-            #{userId},
-            #{heightCm},
-            #{currentWeightKg},
-            #{targetWeightKg},
-            #{goalType},
-            NOW()
+        #{userId},
+        #{heightCm},
+        #{currentWeightKg},
+        #{targetWeightKg},
+        #{goalType},
+        NOW()
         )
     </insert>
 
-    <select id="findUserProfileByUserId" parameterType="Long" resultMap="userProfile">
-        SELECT  id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, updated_at
-        FROM    user_profiles
-        WHERE   user_id = #{userId}
+    <select id="findUserProfileByUserId" parameterType="long" resultMap="userProfile">
+        SELECT
+        id,
+        user_id,
+        height_cm,
+        current_weight_kg,
+        target_weight_kg,
+        goal_type,
+        updated_at
+        FROM user_profiles
+        WHERE user_id = #{id}
     </select>
 
     <update id="updateUserProfile">
@@ -78,4 +149,50 @@
         </set>
         WHERE user_id = #{userId}
     </update>
+
+    <select id="findOAuthAccount" resultMap="oauthAccount">
+        SELECT
+        id,
+        user_id,
+        provider,
+        provider_user_id,
+        email,
+        created_at,
+        updated_at
+        FROM oauth_accounts
+        WHERE provider = #{provider}
+        AND provider_user_id = #{providerUserId}
+    </select>
+
+    <insert id="insertOAuthAccount"
+            parameterType="com.aihealthcoach.user.entity.OAuthAccount"
+            useGeneratedKeys="true"
+            keyProperty="id"
+            keyColumn="id">
+        INSERT INTO oauth_accounts (
+        user_id,
+        provider,
+        provider_user_id,
+        email,
+        created_at,
+        updated_at
+        )
+        VALUES (
+        #{userId},
+        #{provider},
+        #{providerUserId},
+        #{email},
+        NOW(),
+        NOW()
+        )
+    </insert>
+
+    <update id="updateUserNickname">
+        UPDATE users
+        SET
+        nickname = #{nickname},
+        updated_at = NOW()
+        WHERE id = #{userId}
+    </update>
+
 </mapper>
