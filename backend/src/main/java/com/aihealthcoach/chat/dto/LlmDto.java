@@ -5,24 +5,32 @@ import java.util.List;
 import org.springframework.core.io.Resource;
 import org.springframework.util.MimeType;
 
+import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
+
 public class LlmDto {
 
     public record LlmRequest(
             String systemPrompt,
             String userMessage,
-            List<LlmImage> images
+            List<LlmImage> images,
+            UserChatContext context
     ) {
 
         public LlmRequest {
             images = images == null ? List.of() : List.copyOf(images);
         }
 
-        public static LlmRequest text(String systemPrompt, String userMessage) {
-            return new LlmRequest(systemPrompt, userMessage, List.of());
+        public static LlmRequest text(String systemPrompt, String userMessage, UserChatContext context) {
+            return new LlmRequest(systemPrompt, userMessage, List.of(), context);
         }
 
-        public static LlmRequest image(String systemPrompt, String userMessage, List<LlmImage> images) {
-            return new LlmRequest(systemPrompt, userMessage, images);
+        public static LlmRequest image(
+                String systemPrompt,
+                String userMessage,
+                List<LlmImage> images,
+                UserChatContext context
+        ) {
+            return new LlmRequest(systemPrompt, userMessage, images, context);
         }
 
         public boolean hasImages() {

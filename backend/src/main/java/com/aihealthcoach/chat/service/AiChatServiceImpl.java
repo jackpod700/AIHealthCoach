@@ -12,6 +12,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
+import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
 import com.aihealthcoach.chat.dto.LlmDto.LlmImage;
 import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 import com.aihealthcoach.chat.dto.LlmDto.LlmResponse;
@@ -37,14 +38,17 @@ public class AiChatServiceImpl implements AiChatService {
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AiPromptFactory promptFactory;
-
+    private final ContextBuilder contextBuilder;
 
     @Override
-    public AiChatResult generate(ChatMessageRequest userMessage) {
+    public AiChatResult generate(Long userId, ChatMessageRequest userMessage) {
         try {
+            LocalDate contextDate = LocalDate.now(clock);
+            UserChatContext context = contextBuilder.build(userId, contextDate);
             LlmResponse response = llmService.generate(LlmRequest.text(
-                    systemPrompt(LocalDate.now(clock)),
-                    userMessage.content()
+                    systemPrompt(contextDate),
+                    userMessage.content(),
+                    context
             ));
 
             return parseAiResult(response.content());
@@ -55,18 +59,21 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     @Override
-    public AiChatResult generateWithImages(String content, List<MultipartFile> images) {
+    public AiChatResult generateWithImages(Long userId, String content, List<MultipartFile> images) {
         validateImages(images);
 
         String userText = normalizeImageMessage(content);
         try {
+            LocalDate contextDate = LocalDate.now(clock);
+            UserChatContext context = contextBuilder.build(userId, contextDate);
             List<LlmImage> llmImages = images.stream()
                     .map(image -> new LlmImage(toMimeType(image), image.getResource()))
                     .toList();
             LlmResponse response = llmService.generate(LlmRequest.image(
-                    promptFactory.imageMealPrompt(LocalDate.now(clock)),
+                    promptFactory.imageMealPrompt(contextDate),
                     userText,
-                    llmImages
+                    llmImages,
+                    context
             ));
 
             return parseAiResult(response.content());

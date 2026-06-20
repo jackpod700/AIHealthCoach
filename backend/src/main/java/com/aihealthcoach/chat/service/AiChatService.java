@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface AiChatService {
-    AiChatResult generate(ChatMessageRequest userMessage);
+    AiChatResult generate(Long userId, ChatMessageRequest userMessage);
 
-    AiChatResult generateWithImages(String content, List<MultipartFile> images);
+    AiChatResult generateWithImages(Long userId, String content, List<MultipartFile> images);
 }
