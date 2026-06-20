@@ -74,6 +74,13 @@ public class DailyGoalServiceImpl implements DailyGoalService {
 
     @Override
     @Transactional(readOnly = true)
+    public DailyGoalResponse findCurrentGoalIfExists(Long userId) {
+        DailyGoal dailyGoal = dailyGoalMapper.findByUserId(userId);
+        return dailyGoal == null ? null : toGoalResponse(dailyGoal);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public DailyGoalProgressResponse findProgress(Long userId, LocalDate date) {
         DailyGoal dailyGoal = dailyGoalMapper.findByUserId(userId);
 

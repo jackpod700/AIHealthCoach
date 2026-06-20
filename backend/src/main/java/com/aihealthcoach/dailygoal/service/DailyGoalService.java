@@ -11,5 +11,7 @@ public interface DailyGoalService {
 
     DailyGoalResponse upsertCurrentGoal(Long userId, DailyGoalUpsertRequest request);
 
+    DailyGoalResponse findCurrentGoalIfExists(Long userId);
+
     DailyGoalProgressResponse findProgress(Long userId, LocalDate date);
 }
