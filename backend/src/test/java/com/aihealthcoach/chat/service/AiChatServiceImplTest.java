@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
+import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.aihealthcoach.chat.support.FakeContextBuilder;
 import com.aihealthcoach.chat.support.FakeLlmService;
@@ -52,7 +53,8 @@ class AiChatServiceImplTest {
         assertThat(result.mealExtraction().mealIntent()).isTrue();
         assertThat(result.mealExtraction().mealDate()).isEqualTo(LocalDate.of(2026, 6, 8));
         assertThat(result.mealExtraction().items()).extracting("name").containsExactly("oatmeal");
-        assertThat(llmService.lastRequest().systemPrompt()).contains("Today's date is 2026-06-08");
+        assertThat(llmService.lastRequest().stableSystemPrompt()).contains("You are AI Health Coach.");
+        assertThat(llmService.lastRequest().dynamicContextPrompt()).contains("<reference_date>\n2026-06-08");
         assertThat(llmService.lastRequest().userMessage()).isEqualTo(userMessage);
         assertThat(llmService.lastRequest().images()).isEmpty();
     }
@@ -99,7 +101,7 @@ class AiChatServiceImplTest {
 
         assertThat(result.assistantMessage()).isEqualTo("사진에서 식사를 찾았어요.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
-        assertThat(llmService.lastRequest().systemPrompt()).contains("If no food is visible");
+        assertThat(llmService.lastRequest().stableSystemPrompt()).contains("If no food is visible");
         assertThat(llmService.lastRequest().userMessage()).isEqualTo("점심 사진이야");
         assertThat(llmService.lastRequest().images()).hasSize(1);
         assertThat(llmService.lastRequest().images().getFirst().mimeType().toString()).isEqualTo("image/jpeg");
@@ -236,15 +238,19 @@ class AiChatServiceImplTest {
     }
 
     @Test
-    void systemPromptIncludesTodayAndRelativeDateRules() {
-        AiChatServiceImpl service = newService();
+    void textPromptKeepsDateInDynamicContext() {
+        PromptBuilder promptBuilder = new PromptBuilderImpl(new AiPromptFactory());
 
-        String prompt = service.systemPrompt(LocalDate.of(2026, 6, 8));
+        LlmRequest request = promptBuilder.buildText(
+                LocalDate.of(2026, 6, 8),
+                "안녕하세요",
+                null
+        );
 
-        assertThat(prompt).contains("Today's date is 2026-06-08");
-        assertThat(prompt).contains("For relative dates");
-        assertThat(prompt).contains("today's date");
-        assertThat(prompt).contains("do not claim that the memory was saved");
+        assertThat(request.stableSystemPrompt()).contains("For relative dates");
+        assertThat(request.stableSystemPrompt()).contains("do not claim that the memory was saved");
+        assertThat(request.stableSystemPrompt()).doesNotContain("2026-06-08");
+        assertThat(request.dynamicContextPrompt()).contains("<reference_date>\n2026-06-08");
     }
 
     @Test
@@ -279,7 +285,7 @@ class AiChatServiceImplTest {
     void imagePromptIncludesNonFoodImageRules() {
         AiPromptFactory promptFactory = new AiPromptFactory();
 
-        String prompt = promptFactory.imageMealPrompt(LocalDate.of(2026, 6, 8));
+        String prompt = promptFactory.imageMealPrompt();
 
         assertThat(prompt).contains("If no food is visible");
         assertThat(prompt).contains("mealIntent false");
@@ -306,8 +312,8 @@ class AiChatServiceImplTest {
                 llmService,
                 new ObjectMapper(),
                 CLOCK,
-                new AiPromptFactory(),
                 contextBuilder,
+                new PromptBuilderImpl(new AiPromptFactory()),
                 userMemoryService
         );
     }

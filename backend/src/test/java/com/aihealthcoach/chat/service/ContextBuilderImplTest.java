@@ -23,6 +23,8 @@ import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.exercise.service.ExerciseService;
 import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.service.MealService;
+import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
+import com.aihealthcoach.memory.service.UserMemoryService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.service.UserService;
 
@@ -42,6 +44,8 @@ class ContextBuilderImplTest {
     private ExerciseService exerciseService;
     @Mock
     private ChatService chatService;
+    @Mock
+    private UserMemoryService userMemoryService;
 
     private ContextBuilderImpl contextBuilder;
 
@@ -52,7 +56,8 @@ class ContextBuilderImplTest {
                 dailyGoalService,
                 mealService,
                 exerciseService,
-                chatService
+                chatService,
+                userMemoryService
         );
     }
 
@@ -69,11 +74,15 @@ class ContextBuilderImplTest {
                 ChatMessageResponse.builder().role("USER").content("어제 점심은 샐러드였어").build(),
                 ChatMessageResponse.builder().role("ASSISTANT").content("기록해둘게요.").build()
         );
+        List<UserMemoryResponse> activeMemories = List.of(
+                new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null)
+        );
         when(userService.findProfileIfExists(USER_ID)).thenReturn(profile);
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(dailyGoal);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(dailyMeals);
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(dailyExercises);
         when(chatService.findRecentMessages(USER_ID, 10)).thenReturn(recentTurns);
+        when(userMemoryService.findActiveMemories(USER_ID, 10)).thenReturn(activeMemories);
 
         UserChatContext context = contextBuilder.build(USER_ID, CONTEXT_DATE);
 
@@ -83,7 +92,10 @@ class ContextBuilderImplTest {
         assertThat(context.dailyExercises()).isEmpty();
         assertThat(context.recentTurns()).extracting(ChatMessageResponse::content)
                 .containsExactly("어제 점심은 샐러드였어", "기록해둘게요.");
+        assertThat(context.activeMemories()).extracting(UserMemoryResponse::content)
+                .containsExactly("유제품은 피하고 싶어");
         verify(chatService).findRecentMessages(USER_ID, 10);
+        verify(userMemoryService).findActiveMemories(USER_ID, 10);
     }
 
     @Test
@@ -93,6 +105,7 @@ class ContextBuilderImplTest {
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(emptyDailyMeals());
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(List.of());
         when(chatService.findRecentMessages(USER_ID, 10)).thenReturn(List.of());
+        when(userMemoryService.findActiveMemories(USER_ID, 10)).thenReturn(List.of());
 
         UserChatContext context = contextBuilder.build(USER_ID, CONTEXT_DATE);
 
@@ -100,6 +113,7 @@ class ContextBuilderImplTest {
         assertThat(context.dailyGoal()).isNull();
         assertThat(context.dailyExercises()).isEmpty();
         assertThat(context.recentTurns()).isEmpty();
+        assertThat(context.activeMemories()).isEmpty();
     }
 
     private DailyMealResponse emptyDailyMeals() {

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
 import com.aihealthcoach.chat.support.AiChatHarness;
+import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
 
 class AiChatHarnessTest {
 
@@ -94,9 +95,16 @@ class AiChatHarnessTest {
     }
 
     @Test
-    void scenarioPassesConfiguredContextToLlmRequest() {
+    void scenarioRendersStoredMemoryIntoTheNextLlmRequest() {
         String userMessage = "어제 먹은 내용을 기억해?";
-        UserChatContext context = new UserChatContext(null, null, null, List.of(), List.of());
+        UserChatContext context = new UserChatContext(
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                List.of(new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null))
+        );
         AiChatHarness harness = new AiChatHarness()
                 .withContext(context)
                 .respondTo(userMessage, """
@@ -107,7 +115,8 @@ class AiChatHarnessTest {
 
         harness.send(userMessage);
 
-        assertThat(harness.fakeLlmService().lastRequest().context()).isSameAs(context);
+        assertThat(harness.fakeLlmService().lastRequest().dynamicContextPrompt())
+                .contains("<user_memories>\n- 유제품은 피하고 싶어\n</user_memories>");
     }
 
     @Test

@@ -9,6 +9,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
 import com.aihealthcoach.chat.service.AiChatServiceImpl;
 import com.aihealthcoach.chat.service.AiPromptFactory;
+import com.aihealthcoach.chat.service.PromptBuilderImpl;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class AiChatHarness {
@@ -25,8 +26,8 @@ public class AiChatHarness {
             fakeLlmService,
             new ObjectMapper(),
             CLOCK,
-            new AiPromptFactory(),
             fakeContextBuilder,
+            new PromptBuilderImpl(new AiPromptFactory()),
             fakeUserMemoryService
     );
 
