@@ -18,6 +18,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.aihealthcoach.chat.support.FakeContextBuilder;
 import com.aihealthcoach.chat.support.FakeLlmService;
+import com.aihealthcoach.chat.support.FakeUserMemoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class AiChatServiceImplTest {
@@ -152,6 +153,73 @@ class AiChatServiceImplTest {
         assertThat(result.weightExtraction().weightIntent()).isTrue();
         assertThat(result.weightExtraction().recordDate()).isEqualTo(LocalDate.of(2026, 6, 2));
         assertThat(result.weightExtraction().weightKg()).isEqualByComparingTo(new BigDecimal("68.4"));
+        assertThat(result.memorySaveCommand().memorySaveIntent()).isFalse();
+    }
+
+    @Test
+    void generateSavesOnlyAnExplicitMemoryCommand() {
+        String userMessage = "유제품은 피하고 싶은 걸 기억해줘";
+        FakeLlmService llmService = new FakeLlmService().respondTo(userMessage, """
+                {
+                  "assistantMessage": "점심으로 라면을 드셨군요! 식사 후보를 만들었어요.",
+                  "memorySaveCommand": {
+                    "memorySaveIntent": true,
+                    "content": "유제품은 피하고 싶어"
+                  }
+                }
+                """);
+        FakeUserMemoryService userMemoryService = new FakeUserMemoryService();
+        AiChatServiceImpl service = newService(llmService, new FakeContextBuilder(), userMemoryService);
+
+        AiChatResult result = service.generate(1L, new ChatMessageRequest(userMessage));
+
+        assertThat(result.assistantMessage()).isEqualTo(
+                "점심으로 라면을 드셨군요! 식사 후보를 만들었어요.\n\n요청하신 내용을 기억에 추가했어요."
+        );
+        assertThat(result.memorySaveCommand().memorySaveIntent()).isTrue();
+        assertThat(userMemoryService.createRequestCount()).isEqualTo(1);
+        assertThat(userMemoryService.lastCreateRequest().content()).isEqualTo("유제품은 피하고 싶어");
+    }
+
+    @Test
+    void generateDoesNotSaveMemoryForGeneralChat() {
+        String userMessage = "유제품을 먹지 않는 식단을 추천해줘";
+        FakeLlmService llmService = new FakeLlmService().respondTo(userMessage, """
+                {
+                  "assistantMessage": "유제품 없이도 단백질을 챙길 수 있는 식단을 추천해 드릴게요."
+                }
+                """);
+        FakeUserMemoryService userMemoryService = new FakeUserMemoryService();
+        AiChatServiceImpl service = newService(llmService, new FakeContextBuilder(), userMemoryService);
+
+        service.generate(1L, new ChatMessageRequest(userMessage));
+
+        assertThat(userMemoryService.createRequestCount()).isZero();
+    }
+
+    @Test
+    void generateReturnsFailureMessageWhenMemorySaveFails() {
+        String userMessage = "유제품은 피하고 싶은 걸 기억해줘";
+        FakeLlmService llmService = new FakeLlmService().respondTo(userMessage, """
+                {
+                  "assistantMessage": "점심으로 라면을 드셨군요! 식사 후보를 만들었어요.",
+                  "memorySaveCommand": {
+                    "memorySaveIntent": true,
+                    "content": "유제품은 피하고 싶어"
+                  }
+                }
+                """);
+        FakeUserMemoryService userMemoryService = new FakeUserMemoryService()
+                .failCreateWith(new IllegalStateException("database unavailable"));
+        AiChatServiceImpl service = newService(llmService, new FakeContextBuilder(), userMemoryService);
+
+        AiChatResult result = service.generate(1L, new ChatMessageRequest(userMessage));
+
+        assertThat(result.assistantMessage()).isEqualTo(
+                "점심으로 라면을 드셨군요! 식사 후보를 만들었어요.\n\n기억을 저장하지 못했어요. 다시 한 번 요청해 주세요."
+        );
+        assertThat(result.memorySaveCommand().memorySaveIntent()).isTrue();
+        assertThat(userMemoryService.createRequestCount()).isEqualTo(1);
     }
 
     @Test
@@ -176,6 +244,7 @@ class AiChatServiceImplTest {
         assertThat(prompt).contains("Today's date is 2026-06-08");
         assertThat(prompt).contains("For relative dates");
         assertThat(prompt).contains("today's date");
+        assertThat(prompt).contains("do not claim that the memory was saved");
     }
 
     @Test
@@ -217,14 +286,29 @@ class AiChatServiceImplTest {
     }
 
     private AiChatServiceImpl newService() {
-        return newService(new FakeLlmService(), new FakeContextBuilder());
+        return newService(new FakeLlmService(), new FakeContextBuilder(), new FakeUserMemoryService());
     }
 
     private AiChatServiceImpl newService(LlmService llmService) {
-        return newService(llmService, new FakeContextBuilder());
+        return newService(llmService, new FakeContextBuilder(), new FakeUserMemoryService());
     }
 
     private AiChatServiceImpl newService(LlmService llmService, ContextBuilder contextBuilder) {
-        return new AiChatServiceImpl(llmService, new ObjectMapper(), CLOCK, new AiPromptFactory(), contextBuilder);
+        return newService(llmService, contextBuilder, new FakeUserMemoryService());
+    }
+
+    private AiChatServiceImpl newService(
+            LlmService llmService,
+            ContextBuilder contextBuilder,
+            FakeUserMemoryService userMemoryService
+    ) {
+        return new AiChatServiceImpl(
+                llmService,
+                new ObjectMapper(),
+                CLOCK,
+                new AiPromptFactory(),
+                contextBuilder,
+                userMemoryService
+        );
     }
 }

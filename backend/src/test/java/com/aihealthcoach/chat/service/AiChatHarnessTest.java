@@ -109,4 +109,25 @@ class AiChatHarnessTest {
 
         assertThat(harness.fakeLlmService().lastRequest().context()).isSameAs(context);
     }
+
+    @Test
+    void memorySaveScenarioRoutesTheExtractedContentToTheFakeService() {
+        String userMessage = "아침 운동을 좋아한다는 걸 기억해줘";
+        AiChatHarness harness = new AiChatHarness().respondTo(userMessage, """
+                {
+                  "assistantMessage": "아침 운동 선호를 반영할게요.",
+                  "memorySaveCommand": {
+                    "memorySaveIntent": true,
+                    "content": "아침 운동을 좋아한다"
+                  }
+                }
+                """);
+
+        AiChatResult result = harness.send(userMessage);
+
+        assertThat(result.assistantMessage()).isEqualTo(
+                "아침 운동 선호를 반영할게요.\n\n요청하신 내용을 기억에 추가했어요."
+        );
+        assertThat(harness.fakeUserMemoryService().lastCreateRequest().content()).isEqualTo("아침 운동을 좋아한다");
+    }
 }

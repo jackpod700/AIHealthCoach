@@ -20,12 +20,14 @@ public class AiChatHarness {
 
     private final FakeLlmService fakeLlmService = new FakeLlmService();
     private final FakeContextBuilder fakeContextBuilder = new FakeContextBuilder();
+    private final FakeUserMemoryService fakeUserMemoryService = new FakeUserMemoryService();
     private final AiChatServiceImpl aiChatService = new AiChatServiceImpl(
             fakeLlmService,
             new ObjectMapper(),
             CLOCK,
             new AiPromptFactory(),
-            fakeContextBuilder
+            fakeContextBuilder,
+            fakeUserMemoryService
     );
 
     public AiChatHarness respondTo(String userMessage, String responseContent) {
@@ -50,5 +52,9 @@ public class AiChatHarness {
 
     public FakeContextBuilder fakeContextBuilder() {
         return fakeContextBuilder;
+    }
+
+    public FakeUserMemoryService fakeUserMemoryService() {
+        return fakeUserMemoryService;
     }
 }

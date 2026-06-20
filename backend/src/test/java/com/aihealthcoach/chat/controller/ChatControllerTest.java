@@ -25,6 +25,7 @@ import com.aihealthcoach.chat.service.ChatService;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.service.AiMealProposalService;
+import com.aihealthcoach.memory.dto.UserMemoryDto.MemorySaveCommand;
 import com.aihealthcoach.weight.dto.AiWeightDto.ExtractedWeightResult;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,7 +58,8 @@ class ChatControllerTest {
                 "응답을 정리하지 못했어요. 다시 한 번 자연스럽게 말해 주세요.",
                 ExtractedMealResult.noMeal(),
                 ExtractedExerciseResult.noExercise(),
-                ExtractedWeightResult.noWeight()
+                ExtractedWeightResult.noWeight(),
+                MemorySaveCommand.noCommand()
         );
         when(authentication.getPrincipal()).thenReturn(USER_ID);
         when(aiChatService.generate(USER_ID, request)).thenReturn(fallbackResult);
