@@ -14,7 +14,7 @@ This document connects product domains to database tables, backend packages, and
 | Weight | `weight_records`, `user_profiles.current_weight_kg` | `backend/src/main/java/com/aihealthcoach/weight/`, `backend/src/main/java/com/aihealthcoach/user/` | `frontend/src/views/profile/`, `frontend/src/components/profile/`, `frontend/src/stores/weightRecordStore.js` | One weight record per user per date. Latest weight can influence exercise calorie calculation. |
 | Daily Goal | `daily_goals` | `backend/src/main/java/com/aihealthcoach/dailygoal/` | `frontend/src/components/chat/DailyGoalSetupCard.vue`, `frontend/src/stores/dailyGoalStore.js` | One active goal row per user. Goal type values mirror profile goal types. |
 | API Response/Error | none | `backend/src/main/java/com/aihealthcoach/common/response/`, `backend/src/main/java/com/aihealthcoach/common/error/` | `frontend/src/api/apiClient.js` | Successful DTO responses are wrapped by `ApiResponseAdvice`; errors go through `GlobalExceptionHandler` or security handlers. |
-| User Memory | not present yet | planned: `memory` or `chat` boundary | planned: chat/profile | No `user_memories` table exists in the current schema. Add schema and service docs before implementation. |
+| User Memory | `user_memories` | `backend/src/main/java/com/aihealthcoach/memory/` | planned: chat/profile | Stores user-provided memory text. Active rows are later consumed by AI Chat context work. |
 
 ## Table Relationships
 
@@ -22,6 +22,7 @@ This document connects product domains to database tables, backend packages, and
 erDiagram
     users ||--o| user_profiles : has
     users ||--o{ chat_messages : writes
+    users ||--o{ user_memories : owns
     users ||--o{ meals : owns
     meals ||--o{ meal_items : contains
     foods ||--o{ meal_items : referenced_by
@@ -39,6 +40,7 @@ erDiagram
 | `users` | User/Auth | Unique email. Root user identity table. |
 | `user_profiles` | User/Profile | Unique `user_id`; stores height, current weight, target weight, goal type, gender, and age. |
 | `chat_messages` | Chat | `role` is constrained to `USER` or `ASSISTANT`; stores message text and timestamp. |
+| `user_memories` | User Memory | Stores user-provided text with soft deactivation through `is_active`; active rows are ordered by most recent update. |
 | `foods` | Food/Meal | Shared food master data; unique by `source_key` and generated `serving_key`; nutrients must be non-negative when present. |
 | `meals` | Meal | Unique by `user_id`, `meal_type`, and `meal_date`; meal type is `BREAKFAST`, `LUNCH`, `DINNER`, or `SNACK`. |
 | `meal_items` | Meal | Join table between meals and foods; quantity must be positive. |
@@ -59,4 +61,3 @@ erDiagram
 | Change auth ownership or `userId` handling | `common/auth/`, domain controller, and `user/` service tests. |
 | Change frontend data flow | `frontend/src/api/`, matching store, then view/component. |
 | Add a new domain table | `data/db/schema.sql`, seed/import data if needed, entity, mapper interface/XML, service, tests, and docs. |
-
