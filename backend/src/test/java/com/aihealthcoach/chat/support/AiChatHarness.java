@@ -6,6 +6,7 @@ import java.time.ZoneId;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
+import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
 import com.aihealthcoach.chat.service.AiChatServiceImpl;
 import com.aihealthcoach.chat.service.AiPromptFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -18,11 +19,13 @@ public class AiChatHarness {
     );
 
     private final FakeLlmService fakeLlmService = new FakeLlmService();
+    private final FakeContextBuilder fakeContextBuilder = new FakeContextBuilder();
     private final AiChatServiceImpl aiChatService = new AiChatServiceImpl(
             fakeLlmService,
             new ObjectMapper(),
             CLOCK,
-            new AiPromptFactory()
+            new AiPromptFactory(),
+            fakeContextBuilder
     );
 
     public AiChatHarness respondTo(String userMessage, String responseContent) {
@@ -30,13 +33,22 @@ public class AiChatHarness {
         return this;
     }
 
+    public AiChatHarness withContext(UserChatContext context) {
+        fakeContextBuilder.withContext(context);
+        return this;
+    }
+
     public AiChatResult send(String userMessage) {
-        AiChatResult result = aiChatService.generate(new ChatMessageRequest(userMessage));
+        AiChatResult result = aiChatService.generate(1L, new ChatMessageRequest(userMessage));
         fakeLlmService.assertAllRequestsMatched();
         return result;
     }
 
     public FakeLlmService fakeLlmService() {
         return fakeLlmService;
+    }
+
+    public FakeContextBuilder fakeContextBuilder() {
+        return fakeContextBuilder;
     }
 }

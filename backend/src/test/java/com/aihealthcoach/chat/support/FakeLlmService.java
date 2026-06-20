@@ -40,6 +40,10 @@ public class FakeLlmService implements LlmService {
         return requests.getLast();
     }
 
+    public int requestCount() {
+        return requests.size();
+    }
+
     public void assertAllRequestsMatched() {
         if (!missingResponseMessages.isEmpty()) {
             throw new AssertionError("No fake LLM response configured for: " + missingResponseMessages);

@@ -16,6 +16,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.exception.ChatException;
+import com.aihealthcoach.chat.support.FakeContextBuilder;
 import com.aihealthcoach.chat.support.FakeLlmService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -44,7 +45,7 @@ class AiChatServiceImplTest {
                 """);
         AiChatServiceImpl service = newService(llmService);
 
-        AiChatResult result = service.generate(new ChatMessageRequest(userMessage));
+        AiChatResult result = service.generate(1L, new ChatMessageRequest(userMessage));
 
         assertThat(result.assistantMessage()).isEqualTo("기록할 식사를 찾았어요.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
@@ -53,6 +54,21 @@ class AiChatServiceImplTest {
         assertThat(llmService.lastRequest().systemPrompt()).contains("Today's date is 2026-06-08");
         assertThat(llmService.lastRequest().userMessage()).isEqualTo(userMessage);
         assertThat(llmService.lastRequest().images()).isEmpty();
+    }
+
+    @Test
+    void generateReturnsFallbackWhenContextBuildingFails() {
+        FakeLlmService llmService = new FakeLlmService();
+        AiChatServiceImpl service = newService(
+                llmService,
+                new FakeContextBuilder().failWith(new IllegalStateException("context unavailable"))
+        );
+
+        AiChatResult result = service.generate(1L, new ChatMessageRequest("아침에 오트밀 먹었어"));
+
+        assertThat(result.assistantMessage()).isNotBlank();
+        assertThat(result.mealExtraction().mealIntent()).isFalse();
+        assertThat(llmService.requestCount()).isZero();
     }
 
     @Test
@@ -78,7 +94,7 @@ class AiChatServiceImplTest {
                 "image".getBytes()
         );
 
-        AiChatResult result = service.generateWithImages("점심 사진이야", List.of(image));
+        AiChatResult result = service.generateWithImages(1L, "점심 사진이야", List.of(image));
 
         assertThat(result.assistantMessage()).isEqualTo("사진에서 식사를 찾았어요.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
@@ -172,7 +188,7 @@ class AiChatServiceImplTest {
                 "not image".getBytes()
         );
 
-        assertThatThrownBy(() -> service.generateWithImages("", List.of(textFile)))
+        assertThatThrownBy(() -> service.generateWithImages(1L, "", List.of(textFile)))
                 .isInstanceOf(ChatException.class);
     }
 
@@ -186,7 +202,7 @@ class AiChatServiceImplTest {
                 new byte[(10 * 1024) + 1]
         );
 
-        assertThatThrownBy(() -> service.generateWithImages("", List.of(largeImage)))
+        assertThatThrownBy(() -> service.generateWithImages(1L, "", List.of(largeImage)))
                 .isInstanceOf(ChatException.class);
     }
 
@@ -201,10 +217,14 @@ class AiChatServiceImplTest {
     }
 
     private AiChatServiceImpl newService() {
-        return newService(new FakeLlmService());
+        return newService(new FakeLlmService(), new FakeContextBuilder());
     }
 
     private AiChatServiceImpl newService(LlmService llmService) {
-        return new AiChatServiceImpl(llmService, new ObjectMapper(), CLOCK, new AiPromptFactory());
+        return newService(llmService, new FakeContextBuilder());
+    }
+
+    private AiChatServiceImpl newService(LlmService llmService, ContextBuilder contextBuilder) {
+        return new AiChatServiceImpl(llmService, new ObjectMapper(), CLOCK, new AiPromptFactory(), contextBuilder);
     }
 }

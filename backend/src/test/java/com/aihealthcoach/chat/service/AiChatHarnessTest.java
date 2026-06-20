@@ -5,10 +5,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
+import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
 import com.aihealthcoach.chat.support.AiChatHarness;
 
 class AiChatHarnessTest {
@@ -89,5 +91,22 @@ class AiChatHarnessTest {
         assertThatThrownBy(() -> harness.send("등록되지 않은 발화"))
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("No fake LLM response configured");
+    }
+
+    @Test
+    void scenarioPassesConfiguredContextToLlmRequest() {
+        String userMessage = "어제 먹은 내용을 기억해?";
+        UserChatContext context = new UserChatContext(null, null, null, List.of(), List.of());
+        AiChatHarness harness = new AiChatHarness()
+                .withContext(context)
+                .respondTo(userMessage, """
+                        {
+                          "assistantMessage": "네, 최근 대화를 확인했어요."
+                        }
+                        """);
+
+        harness.send(userMessage);
+
+        assertThat(harness.fakeLlmService().lastRequest().context()).isSameAs(context);
     }
 }
