@@ -2,7 +2,7 @@
 
 ## Status
 
-proposed
+done
 
 ## Goal
 
@@ -28,6 +28,7 @@ proposed
 ## Target Behavior
 
 - 인증된 사용자는 `POST /api/user-memories`로 장기 정보를 추가할 수 있다.
+- 인증된 사용자는 `GET /api/user-memories`로 자신의 active·inactive memory 전체를 조회할 수 있다.
 - 인증된 사용자는 `DELETE /api/user-memories/{memoryId}`로 자신의 memory를 비활성화할 수 있다.
 - 같은 user가 유사하거나 같은 문장을 다시 추가해도 각 요청은 별도 memory row로 저장한다.
 - `UserMemoryService.findActiveMemories(userId, limit)`은 최근 수정 순으로 최대 10개를 반환해 이후 AI Chat context 작업에서 재사용할 수 있다.
@@ -37,7 +38,8 @@ proposed
 | From | To | Method/Call | Input | Output | Error |
 |---|---|---|---|---|---|
 | Client | `UserMemoryController` | `POST /api/user-memories` | `content` | saved memory | 400/401/403 |
-| Client | `UserMemoryController` | `DELETE /api/user-memories/{memoryId}` | path memoryId | no content | 401/403/404 |
+| Client | `UserMemoryController` | `GET /api/user-memories` | none | all user memories | 401/403 |
+| Client | `UserMemoryController` | `DELETE /api/user-memories/{memoryId}` | path memoryId | success message | 401/403/404 |
 | Controller | `UserMemoryService` | `createMemory` | authenticated `userId`, request | memory response | domain validation error |
 | Controller | `UserMemoryService` | `deactivateMemory` | authenticated `userId`, memoryId | no content | memory not found |
 | Future chat flow | `UserMemoryService` | `findActiveMemories` | authenticated `userId`, limit | active memories | empty list when none |
@@ -50,6 +52,7 @@ proposed
   - columns: `id`, `user_id`, `content`, `is_active`, `created_at`, `updated_at`
   - active memory 조회를 위한 partial index `user_id, updated_at DESC WHERE is_active = TRUE`를 추가한다.
 - `POST /api/user-memories`를 추가한다.
+- `GET /api/user-memories`를 추가하고 active·inactive memory를 최신 수정 순으로 반환한다.
 - `DELETE /api/user-memories/{memoryId}`를 추가하고 hard delete 대신 `is_active = FALSE`로 처리한다.
 - request는 공백을 제외한 `content`를 요구하고, 최대 `500`자를 검증한다.
 - 저장 전 content의 앞뒤 공백을 제거한다.
@@ -84,14 +87,15 @@ proposed
 
 ## Acceptance Criteria
 
-- [ ] `user_memories` schema와 memory domain 경계가 있다.
-- [ ] 인증된 사용자가 content로 memory를 생성할 수 있다.
-- [ ] 인증된 사용자가 자신의 memory를 비활성화할 수 있다.
-- [ ] 빈 content와 길이 초과 content가 거절된다.
-- [ ] 같은 user의 같은 또는 유사한 content 요청도 각각 별도 memory로 저장된다.
-- [ ] 다른 user의 동일 content는 별도 memory로 저장된다.
-- [ ] active memory 조회가 userId, 최신 수정 순, 최대 10개 limit을 지킨다.
-- [ ] controller, service, mapper 관련 테스트가 통과한다.
+- [x] `user_memories` schema와 memory domain 경계가 있다.
+- [x] 인증된 사용자가 content로 memory를 생성할 수 있다.
+- [x] 인증된 사용자가 자신의 memory 전체를 조회할 수 있다.
+- [x] 인증된 사용자가 자신의 memory를 비활성화할 수 있다.
+- [x] 빈 content와 길이 초과 content가 거절된다.
+- [x] 같은 user의 같은 또는 유사한 content 요청도 각각 별도 memory로 저장된다.
+- [x] 다른 user의 동일 content는 별도 memory로 저장된다.
+- [x] active memory 조회가 userId, 최신 수정 순, 최대 10개 limit을 지킨다.
+- [x] controller, service, mapper 관련 테스트가 통과한다.
 
 ## Verification
 
@@ -109,6 +113,7 @@ WSL 환경에서 root harness가 막히면:
 
 - 추가:
   - memory 생성 성공과 인증 userId 사용 controller test
+  - memory 전체 조회와 인증 userId 사용 controller test
   - memory 비활성화 성공과 다른 user row 비활성화 거절 controller test
   - 빈 값/길이 초과 validation test
   - 같은 user의 같은 content가 별도 memory로 보존되는 service test
@@ -116,6 +121,7 @@ WSL 환경에서 root harness가 막히면:
   - active memory 최신 수정 순, limit 0, 최대 10개 test
 - 제외:
   - Chat routing, prompt rendering, 실제 LLM provider 호출
+  - live PostgreSQL query integration test (local `ai-health-postgres` container not running)
 
 ## Notes / Risks
 
