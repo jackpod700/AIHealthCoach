@@ -146,6 +146,16 @@ public class UserServiceImpl implements UserService {
             throw UserException.profileNotFound();
         }
 
+        return toProfileResponse(userProfile);
+    }
+
+    @Override
+    public UserProfileResponse findProfileIfExists(Long userId) {
+        UserProfile userProfile = userDao.findUserProfileByUserId(userId);
+        return userProfile == null ? null : toProfileResponse(userProfile);
+    }
+
+    private UserProfileResponse toProfileResponse(UserProfile userProfile) {
         return UserProfileResponse.builder()
                 .userId(userProfile.getUserId())
                 .heightCm(userProfile.getHeightCm())
@@ -170,16 +180,7 @@ public class UserServiceImpl implements UserService {
 
         UserProfile updatedProfile = userDao.findUserProfileByUserId(userId);
 
-        return UserProfileResponse.builder()
-                .userId(updatedProfile.getUserId())
-                .heightCm(updatedProfile.getHeightCm())
-                .currentWeightKg(updatedProfile.getCurrentWeightKg())
-                .targetWeightKg(updatedProfile.getTargetWeightKg())
-                .goalType(updatedProfile.getGoalType())
-                .gender(updatedProfile.getGender())
-                .age(updatedProfile.getAge())
-                .updatedAt(updatedProfile.getUpdatedAt())
-                .build();
+        return toProfileResponse(updatedProfile);
     }
     
 }
