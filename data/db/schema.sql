@@ -73,6 +73,30 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
+CREATE TABLE IF NOT EXISTS user_memories (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_memories_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_user_memories_content_not_blank
+        CHECK (length(trim(content)) > 0),
+
+    CONSTRAINT chk_user_memories_content_length
+        CHECK (char_length(content) <= 500)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_memories_active
+    ON user_memories(user_id, updated_at DESC)
+    WHERE is_active = TRUE;
+
 CREATE TABLE IF NOT EXISTS foods (
     id BIGSERIAL PRIMARY KEY,
     source_key VARCHAR(40) NOT NULL,
