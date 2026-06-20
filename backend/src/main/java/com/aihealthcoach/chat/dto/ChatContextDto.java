@@ -6,6 +6,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalResponse;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
+import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 
 public class ChatContextDto {
@@ -15,11 +16,13 @@ public class ChatContextDto {
             DailyGoalResponse dailyGoal,
             DailyMealResponse dailyMeals,
             List<ExerciseRecordResponse> dailyExercises,
-            List<ChatMessageResponse> recentTurns
+            List<ChatMessageResponse> recentTurns,
+            List<UserMemoryResponse> activeMemories
     ) {
         public UserChatContext {
             dailyExercises = dailyExercises == null ? List.of() : List.copyOf(dailyExercises);
             recentTurns = recentTurns == null ? List.of() : List.copyOf(recentTurns);
+            activeMemories = activeMemories == null ? List.of() : List.copyOf(activeMemories);
         }
     }
 
