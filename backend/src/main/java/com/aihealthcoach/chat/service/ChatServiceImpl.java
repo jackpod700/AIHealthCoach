@@ -1,5 +1,7 @@
 package com.aihealthcoach.chat.service;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -21,6 +23,20 @@ public class ChatServiceImpl implements ChatService {
     public List<ChatMessageResponse> findMessagesByUserId(Long userId) {
         List<ChatMessage> messages = chatDao.findMessagesByUserId(userId);
         return messages.stream().map(ChatMessageResponse::fromEntity).toList();
+    }
+
+    @Override
+    public List<ChatMessageResponse> findRecentMessages(Long userId, int limit) {
+        if (limit <= 0) {
+            return List.of();
+        }
+
+        List<ChatMessageResponse> messages = new ArrayList<>(chatDao.findRecentMessages(userId, limit)
+                .stream()
+                .map(ChatMessageResponse::fromEntity)
+                .toList());
+        Collections.reverse(messages);
+        return messages;
     }
 
     @Override

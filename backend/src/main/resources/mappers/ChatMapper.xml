@@ -21,6 +21,14 @@
         WHERE user_id=#{userId}
     </select>
 
+    <select id="findRecentMessages" resultMap="chatMessage">
+        SELECT id, user_id, role, content, created_at
+        FROM chat_messages
+        WHERE user_id = #{userId}
+        ORDER BY created_at DESC, id DESC
+        LIMIT #{limit}
+    </select>
+
     <select id="insertMessage"
         parameterType="com.aihealthcoach.chat.entity.ChatMessage"
         resultMap="chatMessage">
