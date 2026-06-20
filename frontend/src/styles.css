@@ -74,3 +74,215 @@ button:disabled {
     transform: none;
   }
 }
+
+.food-submission-panel,
+.admin-food-request-list,
+.admin-food-review-panel {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 14px 32px rgba(38, 51, 43, 0.08);
+}
+
+.food-submission-panel {
+  margin-top: 24px;
+  padding: 24px;
+}
+
+.food-submission-head,
+.admin-section-title,
+.admin-food-review-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.food-submission-head h2,
+.admin-section-title h2 {
+  margin: 4px 0 0;
+}
+
+.food-submission-head span,
+.food-submission-history span,
+.admin-food-request-item span,
+.admin-food-request-item small {
+  color: var(--muted);
+}
+
+.food-submission-head button,
+.food-submission-form button,
+.admin-primary-button,
+.admin-secondary-button {
+  min-height: 44px;
+  border-radius: 8px;
+  padding: 0 18px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.food-submission-head button,
+.admin-primary-button {
+  background: var(--navy);
+  color: #fff;
+}
+
+.food-submission-form {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+}
+
+.food-submission-form label,
+.admin-food-review-grid label,
+.admin-food-review-note,
+.admin-food-reject-box label {
+  display: grid;
+  gap: 8px;
+  font-weight: 800;
+}
+
+.food-submission-form input,
+.admin-food-review-grid input,
+.admin-food-review-note textarea,
+.admin-food-reject-box textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  color: var(--ink);
+  background: #fff;
+}
+
+.food-submission-form button {
+  align-self: end;
+  background: var(--orange);
+  color: #fff;
+}
+
+.food-submission-form button:disabled,
+.admin-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.food-submission-history {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.food-submission-history strong {
+  width: 100%;
+}
+
+.food-submission-history span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--cream);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-food-request-layout {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.9fr) minmax(520px, 1.4fr);
+  gap: 24px;
+  padding: 28px;
+}
+
+.admin-food-request-list,
+.admin-food-review-panel {
+  padding: 24px;
+}
+
+.admin-food-request-item {
+  display: grid;
+  width: 100%;
+  gap: 6px;
+  margin-top: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-inline-refresh {
+  display: inline-grid;
+  width: 40px;
+  height: 40px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.admin-inline-refresh:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-food-request-item.selected {
+  border-color: var(--navy);
+  box-shadow: inset 4px 0 0 var(--navy);
+}
+
+.admin-food-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.admin-food-review-note,
+.admin-food-reject-box {
+  margin-top: 16px;
+}
+
+.admin-food-review-actions {
+  margin-top: 18px;
+  justify-content: flex-end;
+}
+
+.admin-food-reject-box {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+
+.admin-secondary-button {
+  margin-top: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--ink);
+}
+
+.admin-success {
+  margin-top: 12px;
+  border-radius: 8px;
+  padding: 12px 14px;
+  background: #e6f4ec;
+  color: #2f6b4f;
+  font-weight: 800;
+}
+
+.admin-empty {
+  margin-top: 20px;
+  color: var(--muted);
+  font-weight: 800;
+}
+
+@media (max-width: 1180px) {
+  .food-submission-form,
+  .admin-food-review-grid,
+  .admin-food-request-layout {
+    grid-template-columns: 1fr;
+  }
+}

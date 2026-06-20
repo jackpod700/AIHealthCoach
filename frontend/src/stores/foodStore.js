@@ -1,5 +1,9 @@
 import { defineStore } from "pinia";
-import { fetchFoodGroups } from "../api/foodApi";
+import {
+  createFoodSubmissionRequest,
+  fetchFoodGroups,
+  fetchMyFoodSubmissionRequests,
+} from "../api/foodApi";
 import { useAuthStore } from "./authStore";
 
 export const useFoodStore = defineStore("food", {
@@ -16,6 +20,16 @@ export const useFoodStore = defineStore("food", {
     size: 20,
     isLoading: false,
     error: "",
+    submissionPage: {
+      items: [],
+      page: 1,
+      size: 20,
+      totalItems: 0,
+      totalPages: 0,
+    },
+    isSubmittingFood: false,
+    submissionError: "",
+    submissionMessage: "",
   }),
   getters: {
     foods: (state) => state.foodPage?.items || [],
@@ -51,6 +65,46 @@ export const useFoodStore = defineStore("food", {
         this.error = error.message;
       } finally {
         this.isLoading = false;
+      }
+    },
+    async submitMissingFood(payload) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated) {
+        return null;
+      }
+
+      this.isSubmittingFood = true;
+      this.submissionError = "";
+      this.submissionMessage = "";
+
+      try {
+        const response = await createFoodSubmissionRequest(authStore.accessToken, payload);
+        this.submissionMessage = "등록 요청을 보냈어요. 관리자가 확인한 뒤 음식 DB에 반영됩니다.";
+        await this.loadMyFoodSubmissions();
+        return response;
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.submissionError = error.message;
+        }
+        return null;
+      } finally {
+        this.isSubmittingFood = false;
+      }
+    },
+    async loadMyFoodSubmissions({ page = 1, size = 20 } = {}) {
+      const authStore = useAuthStore();
+
+      if (!authStore.isAuthenticated) {
+        return;
+      }
+
+      try {
+        this.submissionPage = await fetchMyFoodSubmissionRequests(authStore.accessToken, { page, size });
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.submissionError = error.message;
+        }
       }
     },
     clearFoods() {

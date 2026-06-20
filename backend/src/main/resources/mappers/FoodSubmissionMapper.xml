@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.meal.mapper.FoodSubmissionMapper">
+    <resultMap id="foodSubmissionRequest" type="com.aihealthcoach.meal.entity.FoodSubmissionRequest">
+        <id column="id" property="id"/>
+        <result column="submitted_by_user_id" property="submittedByUserId"/>
+        <result column="submitter_nickname" property="submitterNickname"/>
+        <result column="submitter_email" property="submitterEmail"/>
+        <result column="status" property="status"/>
+        <result column="name" property="name"/>
+        <result column="brand" property="brand"/>
+        <result column="serving_description" property="servingDescription"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
+        <result column="calories" property="calories"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="fat" property="fat"/>
+        <result column="admin_note" property="adminNote"/>
+        <result column="rejection_reason" property="rejectionReason"/>
+        <result column="approved_food_id" property="approvedFoodId"/>
+        <result column="reviewed_by_admin_id" property="reviewedByAdminId"/>
+        <result column="submitted_at" property="submittedAt"/>
+        <result column="reviewed_at" property="reviewedAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="foodSubmissionColumns">
+        fsr.id,
+        fsr.submitted_by_user_id,
+        u.nickname AS submitter_nickname,
+        u.email AS submitter_email,
+        fsr.status,
+        fsr.name,
+        fsr.brand,
+        fsr.serving_description,
+        fsr.serving_size,
+        fsr.serving_unit,
+        fsr.calories,
+        fsr.carbohydrate,
+        fsr.protein,
+        fsr.fat,
+        fsr.admin_note,
+        fsr.rejection_reason,
+        fsr.approved_food_id,
+        fsr.reviewed_by_admin_id,
+        fsr.submitted_at,
+        fsr.reviewed_at,
+        fsr.created_at,
+        fsr.updated_at
+    </sql>
+
+    <select id="insertFoodSubmissionRequest" resultType="long">
+        INSERT INTO food_submission_requests (
+            submitted_by_user_id,
+            name,
+            brand,
+            serving_description,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat
+        )
+        VALUES (
+            #{request.submittedByUserId},
+            #{request.name},
+            #{request.brand},
+            #{request.servingDescription},
+            #{request.servingSize},
+            #{request.servingUnit},
+            #{request.calories},
+            #{request.carbohydrate},
+            #{request.protein},
+            #{request.fat}
+        )
+        RETURNING id
+    </select>
+
+    <select id="countFoodSubmissionRequestsByUser" resultType="long">
+        SELECT COUNT(*)
+        FROM food_submission_requests
+        WHERE submitted_by_user_id = #{userId}
+    </select>
+
+    <select id="findFoodSubmissionRequestsByUser" resultMap="foodSubmissionRequest">
+        SELECT
+            <include refid="foodSubmissionColumns"/>
+        FROM food_submission_requests fsr
+        JOIN users u
+            ON u.id = fsr.submitted_by_user_id
+        WHERE fsr.submitted_by_user_id = #{userId}
+        ORDER BY fsr.submitted_at DESC, fsr.id DESC
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="countFoodSubmissionRequestsByStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM food_submission_requests
+        WHERE status = #{status}
+    </select>
+
+    <select id="findFoodSubmissionRequestsByStatus" resultMap="foodSubmissionRequest">
+        SELECT
+            <include refid="foodSubmissionColumns"/>
+        FROM food_submission_requests fsr
+        JOIN users u
+            ON u.id = fsr.submitted_by_user_id
+        WHERE fsr.status = #{status}
+        ORDER BY fsr.submitted_at DESC, fsr.id DESC
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="findFoodSubmissionRequestById" resultMap="foodSubmissionRequest">
+        SELECT
+            <include refid="foodSubmissionColumns"/>
+        FROM food_submission_requests fsr
+        JOIN users u
+            ON u.id = fsr.submitted_by_user_id
+        WHERE fsr.id = #{requestId}
+    </select>
+
+    <select id="findFoodSubmissionRequestByIdForUpdate" resultMap="foodSubmissionRequest">
+        SELECT
+            <include refid="foodSubmissionColumns"/>
+        FROM food_submission_requests fsr
+        JOIN users u
+            ON u.id = fsr.submitted_by_user_id
+        WHERE fsr.id = #{requestId}
+        FOR UPDATE OF fsr
+    </select>
+
+    <select id="findFoodIdBySourceKeyServing" resultType="long">
+        SELECT id
+        FROM foods
+        WHERE source_key = #{sourceKey}
+          AND serving_key = COALESCE(#{servingDescription}, '')
+        LIMIT 1
+    </select>
+
+    <select id="insertApprovedFood" resultType="long">
+        INSERT INTO foods (
+            source_key,
+            source_url,
+            name,
+            brand,
+            serving_description,
+            serving_size,
+            serving_unit,
+            calories,
+            carbohydrate,
+            protein,
+            fat,
+            content_hash
+        )
+        VALUES (
+            #{sourceKey},
+            #{sourceUrl},
+            #{name},
+            #{brand},
+            #{servingDescription},
+            #{servingSize},
+            #{servingUnit},
+            #{calories},
+            #{carbohydrate},
+            #{protein},
+            #{fat},
+            #{contentHash}
+        )
+        RETURNING id
+    </select>
+
+    <update id="approveFoodSubmissionRequest">
+        UPDATE food_submission_requests
+        SET
+            status = 'APPROVED',
+            name = #{name},
+            brand = #{brand},
+            serving_description = #{servingDescription},
+            serving_size = #{servingSize},
+            serving_unit = #{servingUnit},
+            calories = #{calories},
+            carbohydrate = #{carbohydrate},
+            protein = #{protein},
+            fat = #{fat},
+            admin_note = #{adminNote},
+            rejection_reason = NULL,
+            approved_food_id = #{foodId},
+            reviewed_by_admin_id = #{adminId},
+            reviewed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{requestId}
+          AND status = 'PENDING'
+    </update>
+
+    <update id="rejectFoodSubmissionRequest">
+        UPDATE food_submission_requests
+        SET
+            status = 'REJECTED',
+            rejection_reason = #{rejectionReason},
+            reviewed_by_admin_id = #{adminId},
+            reviewed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{requestId}
+          AND status = 'PENDING'
+    </update>
+</mapper>
