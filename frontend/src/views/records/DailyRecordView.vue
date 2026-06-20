@@ -65,6 +65,7 @@ const selectedDateLabel = computed(() => {
 });
 
 const isToday = computed(() => selectedDate.value === toDateKey(new Date()));
+const todayDateKey = computed(() => toDateKey(new Date()));
 
 const meals = computed(() => {
   return [...(mealStore.dailyMeal?.meals || [])].sort((a, b) => {
@@ -109,7 +110,13 @@ const canSaveExercise = computed(() => {
 const canSaveWeight = computed(() => {
   const weightKg = Number(weightEditForm.weightKg);
 
-  return /^\d{4}-\d{2}-\d{2}$/.test(weightEditForm.recordDate) && Number.isFinite(weightKg) && weightKg > 0 && weightKg <= 500;
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(weightEditForm.recordDate) &&
+    weightEditForm.recordDate <= todayDateKey.value &&
+    Number.isFinite(weightKg) &&
+    weightKg > 0 &&
+    weightKg <= 500
+  );
 });
 
 onMounted(async () => {
@@ -981,7 +988,7 @@ function servingCalorieLabel(item) {
         <div class="weight-edit-fields">
           <label>
             <span>기록 날짜</span>
-            <input v-model="weightEditForm.recordDate" type="date" />
+            <input v-model="weightEditForm.recordDate" :max="todayDateKey" type="date" />
           </label>
 
           <label>

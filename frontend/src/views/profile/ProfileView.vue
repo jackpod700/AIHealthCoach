@@ -85,7 +85,13 @@ const selectedWeightRecord = computed(() => weightRecordStore.recordsByDate[weig
 const canSaveWeightRecord = computed(() => {
   const weightKg = Number(weightForm.weightKg);
 
-  return Boolean(weightForm.recordDate) && Number.isFinite(weightKg) && weightKg > 0 && weightKg <= 500;
+  return (
+    /^\d{4}-\d{2}-\d{2}$/.test(weightForm.recordDate) &&
+    weightForm.recordDate <= todayDateKey &&
+    Number.isFinite(weightKg) &&
+    weightKg > 0 &&
+    weightKg <= 500
+  );
 });
 
 onMounted(async () => {
@@ -307,7 +313,7 @@ function toDateKey(date) {
             <form class="weight-record-form" @submit.prevent="saveWeightRecord">
               <label>
                 <span>기록 날짜</span>
-                <input v-model="weightForm.recordDate" type="date" />
+                <input v-model="weightForm.recordDate" :max="todayDateKey" type="date" />
               </label>
 
               <label>

@@ -22,12 +22,14 @@ const form = reactive({
   recordDate: "",
   weightKg: "",
 });
+const todayDateKey = toDateKey(new Date());
 
 const canConfirm = computed(() => {
   const weight = Number(form.weightKg);
 
   return (
     /^\d{4}-\d{2}-\d{2}$/.test(form.recordDate) &&
+    form.recordDate <= todayDateKey &&
     Number.isFinite(weight) &&
     weight > 0 &&
     weight <= 500
@@ -44,6 +46,10 @@ watch(
 );
 
 function confirm() {
+  if (!canConfirm.value) {
+    return;
+  }
+
   emit("confirm", {
     recordDate: form.recordDate,
     weightKg: Number(form.weightKg),
@@ -78,7 +84,7 @@ function toDateKey(date) {
     <div class="exercise-proposal-fields weight-proposal-fields">
       <label>
         <span>기록 날짜</span>
-        <input v-model="form.recordDate" type="date" />
+        <input v-model="form.recordDate" :max="todayDateKey" type="date" />
       </label>
 
       <label>
