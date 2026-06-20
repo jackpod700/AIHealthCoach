@@ -7,7 +7,7 @@ import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
-import com.aihealthcoach.admin.service.AiUsageLogService;
+import com.aihealthcoach.admin.service.AiUsageMetricsService;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,11 +18,11 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class AiUsageLoggingAspect {
 
-    private final AiUsageLogService aiUsageLogService;
+    private final AiUsageMetricsService aiUsageMetricsService;
 
     /**
-     * Spring AOP는 bean 바깥에서 들어오는 public 메서드 호출만 안정적으로 감싼다.
-     * 그래서 실제 ChatClient 호출을 gateway bean으로 분리하고, 이 aspect가 그 경계를 감싸 사용량을 기록한다.
+     * Spring AOP는 외부에서 Spring bean의 public method로 들어오는 호출만 안정적으로 감싼다.
+     * 그래서 실제 ChatClient 호출을 gateway bean에 두고, 이 aspect가 그 경계에서 AI metric을 기록한다.
      */
     @Around("@annotation(aiUsageTracked)")
     public Object recordAiUsage(ProceedingJoinPoint joinPoint, AiUsageTracked aiUsageTracked) throws Throwable {
@@ -34,41 +34,38 @@ public class AiUsageLoggingAspect {
             recordSuccess(userId, aiUsageTracked, startedAt, result);
             return result;
         } catch (Exception exception) {
-            recordFailure(userId, aiUsageTracked, startedAt, exception);
+            recordFailure(userId, aiUsageTracked, startedAt);
             throw exception;
         }
     }
 
     private void recordSuccess(Long userId, AiUsageTracked aiUsageTracked, long startedAt, Object result) {
         if (userId == null) {
-            log.warn("AI usage log skipped because userId was not found.");
+            log.warn("AI usage metric skipped because userId was not found.");
             return;
         }
         if (!(result instanceof ResponseEntity<?, ?> responseEntity)
                 || !(responseEntity.response() instanceof ChatResponse chatResponse)) {
-            log.warn("AI usage log skipped because result does not contain ChatResponse metadata.");
+            log.warn("AI usage metric skipped because result does not contain ChatResponse metadata.");
             return;
         }
 
-        aiUsageLogService.recordSuccess(
-                userId,
+        aiUsageMetricsService.recordSuccess(
                 aiUsageTracked.requestType(),
                 elapsedMillis(startedAt),
                 chatResponse
         );
     }
 
-    private void recordFailure(Long userId, AiUsageTracked aiUsageTracked, long startedAt, Exception exception) {
+    private void recordFailure(Long userId, AiUsageTracked aiUsageTracked, long startedAt) {
         if (userId == null) {
-            log.warn("AI usage failure log skipped because userId was not found.");
+            log.warn("AI usage failure metric skipped because userId was not found.");
             return;
         }
 
-        aiUsageLogService.recordFailure(
-                userId,
+        aiUsageMetricsService.recordFailure(
                 aiUsageTracked.requestType(),
-                elapsedMillis(startedAt),
-                exception
+                elapsedMillis(startedAt)
         );
     }
 

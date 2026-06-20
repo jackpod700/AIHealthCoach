@@ -57,31 +57,6 @@ CREATE TABLE IF NOT EXISTS chat_messages (
         FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE IF NOT EXISTS ai_usage_logs (
-    id BIGSERIAL PRIMARY KEY,
-    user_id BIGINT,
-    request_type VARCHAR(30) NOT NULL,
-    model VARCHAR(100),
-    latency_ms BIGINT NOT NULL,
-    success BOOLEAN NOT NULL,
-    error_message TEXT,
-    input_tokens BIGINT,
-    output_tokens BIGINT,
-    total_tokens BIGINT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT chk_ai_usage_logs_request_type
-        CHECK (request_type IN ('TEXT_CHAT', 'IMAGE_MEAL')),
-    CONSTRAINT fk_ai_usage_logs_users
-        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
-
-CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_created_at
-    ON ai_usage_logs(created_at);
-
-CREATE INDEX IF NOT EXISTS idx_ai_usage_logs_user_id
-    ON ai_usage_logs(user_id);
-
 CREATE TABLE IF NOT EXISTS foods (
     id BIGSERIAL PRIMARY KEY,
     source_key VARCHAR(40) NOT NULL,

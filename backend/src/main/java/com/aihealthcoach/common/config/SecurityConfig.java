@@ -12,8 +12,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
-import com.aihealthcoach.admin.filter.ApiTrafficMetricsFilter;
-import com.aihealthcoach.admin.service.ApiTrafficMetricsService;
+import com.aihealthcoach.admin.filter.ActiveUserMetricsFilter;
+import com.aihealthcoach.admin.service.ActiveUserMetricsService;
 import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
 import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtAuthenticationFilter;
@@ -33,7 +33,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
-            ApiTrafficMetricsFilter apiTrafficMetricsFilter
+            ActiveUserMetricsFilter activeUserMetricsFilter
     ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
@@ -41,6 +41,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
                         .accessDeniedHandler(jwtAccessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/user/*/profile").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/user/*/profile").authenticated()
@@ -48,15 +49,15 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterAfter(apiTrafficMetricsFilter, JwtAuthenticationFilter.class)
+                .addFilterAfter(activeUserMetricsFilter, JwtAuthenticationFilter.class)
                 .build();
     }
 
     @Bean
-    public ApiTrafficMetricsFilter apiTrafficMetricsFilter(
-            ObjectProvider<ApiTrafficMetricsService> apiTrafficMetricsServiceProvider
+    public ActiveUserMetricsFilter activeUserMetricsFilter(
+            ObjectProvider<ActiveUserMetricsService> activeUserMetricsServiceProvider
     ) {
-        return new ApiTrafficMetricsFilter(apiTrafficMetricsServiceProvider);
+        return new ActiveUserMetricsFilter(activeUserMetricsServiceProvider);
     }
 
     @Bean
