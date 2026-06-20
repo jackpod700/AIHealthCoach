@@ -44,8 +44,8 @@ public class AiChatServiceImpl implements AiChatService {
     private final LlmService llmService;
     private final ObjectMapper objectMapper;
     private final Clock clock;
-    private final AiPromptFactory promptFactory;
     private final ContextBuilder contextBuilder;
+    private final PromptBuilder promptBuilder;
     private final UserMemoryService userMemoryService;
 
     @Override
@@ -53,8 +53,8 @@ public class AiChatServiceImpl implements AiChatService {
         try {
             LocalDate contextDate = LocalDate.now(clock);
             UserChatContext context = contextBuilder.build(userId, contextDate);
-            LlmResponse response = llmService.generate(LlmRequest.text(
-                    systemPrompt(contextDate),
+            LlmResponse response = llmService.generate(promptBuilder.buildText(
+                    contextDate,
                     userMessage.content(),
                     context
             ));
@@ -77,8 +77,8 @@ public class AiChatServiceImpl implements AiChatService {
             List<LlmImage> llmImages = images.stream()
                     .map(image -> new LlmImage(toMimeType(image), image.getResource()))
                     .toList();
-            LlmResponse response = llmService.generate(LlmRequest.image(
-                    promptFactory.imageMealPrompt(contextDate),
+            LlmResponse response = llmService.generate(promptBuilder.buildImage(
+                    contextDate,
                     userText,
                     llmImages,
                     context
@@ -89,10 +89,6 @@ public class AiChatServiceImpl implements AiChatService {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
             return fallback();
         }
-    }
-
-    String systemPrompt(LocalDate today) {
-        return promptFactory.textChatPrompt(today);
     }
 
     AiChatResult parseAiResult(String content) {
