@@ -20,6 +20,9 @@ import com.aihealthcoach.chat.exception.ChatException;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.weight.dto.AiWeightDto.ExtractedWeightResult;
+import com.aihealthcoach.memory.dto.UserMemoryDto.MemorySaveCommand;
+import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryCreateRequest;
+import com.aihealthcoach.memory.service.UserMemoryService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.RequiredArgsConstructor;
@@ -32,13 +35,18 @@ public class AiChatServiceImpl implements AiChatService {
 
     private static final long MAX_IMAGE_SIZE_BYTES = 10L * 1024L;
     private static final long MAX_TOTAL_IMAGE_SIZE_BYTES = 50L * 1024L;
+    private static final int MAX_MEMORY_CONTENT_LENGTH = 500;
     private static final String DEFAULT_IMAGE_MESSAGE = "사진을 분석해서 식단 후보를 만들어줘.";
+    private static final String MEMORY_SAVE_SUCCESS_MESSAGE = "요청하신 내용을 기억에 추가했어요.";
+    private static final String MEMORY_SAVE_FAILURE_MESSAGE = "기억을 저장하지 못했어요. 다시 한 번 요청해 주세요.";
+    private static final String ASSISTANT_MESSAGE_SEPARATOR = "\n\n";
 
     private final LlmService llmService;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AiPromptFactory promptFactory;
     private final ContextBuilder contextBuilder;
+    private final UserMemoryService userMemoryService;
 
     @Override
     public AiChatResult generate(Long userId, ChatMessageRequest userMessage) {
@@ -51,7 +59,7 @@ public class AiChatServiceImpl implements AiChatService {
                     context
             ));
 
-            return parseAiResult(response.content());
+            return saveMemoryIfRequested(userId, parseAiResult(response.content()));
         } catch (Exception exception) {
             log.warn("Failed to map AI chat response to AiChatResult.", exception);
             return fallback();
@@ -76,7 +84,7 @@ public class AiChatServiceImpl implements AiChatService {
                     context
             ));
 
-            return parseAiResult(response.content());
+            return saveMemoryIfRequested(userId, parseAiResult(response.content()));
         } catch (Exception exception) {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
             return fallback();
@@ -106,7 +114,8 @@ public class AiChatServiceImpl implements AiChatService {
                 result.assistantMessage(),
                 result.mealExtraction() == null ? ExtractedMealResult.noMeal() : result.mealExtraction(),
                 result.exerciseExtraction() == null ? ExtractedExerciseResult.noExercise() : result.exerciseExtraction(),
-                result.weightExtraction() == null ? ExtractedWeightResult.noWeight() : result.weightExtraction()
+                result.weightExtraction() == null ? ExtractedWeightResult.noWeight() : result.weightExtraction(),
+                normalizeMemorySaveCommand(result.memorySaveCommand())
         );
     }
 
@@ -115,7 +124,46 @@ public class AiChatServiceImpl implements AiChatService {
                 "응답을 정리하지 못했어요. 다시 한 번 자연스럽게 말해 주세요.",
                 ExtractedMealResult.noMeal(),
                 ExtractedExerciseResult.noExercise(),
-                ExtractedWeightResult.noWeight()
+                ExtractedWeightResult.noWeight(),
+                MemorySaveCommand.noCommand()
+        );
+    }
+
+    private AiChatResult saveMemoryIfRequested(Long userId, AiChatResult result) {
+        MemorySaveCommand command = result.memorySaveCommand();
+        if (command == null || !command.memorySaveIntent()) {
+            return result;
+        }
+
+        if (command.content() == null || command.content().isBlank()
+                || command.content().length() > MAX_MEMORY_CONTENT_LENGTH) {
+            return appendMemorySaveMessage(result, MEMORY_SAVE_FAILURE_MESSAGE);
+        }
+
+        try {
+            userMemoryService.createMemory(userId, new UserMemoryCreateRequest(command.content()));
+            return appendMemorySaveMessage(result, MEMORY_SAVE_SUCCESS_MESSAGE);
+        } catch (Exception exception) {
+            log.warn("Failed to save user memory from AI chat.", exception);
+            return appendMemorySaveMessage(result, MEMORY_SAVE_FAILURE_MESSAGE);
+        }
+    }
+
+    private MemorySaveCommand normalizeMemorySaveCommand(MemorySaveCommand command) {
+        if (command == null || !command.memorySaveIntent() || command.content() == null || command.content().isBlank()) {
+            return MemorySaveCommand.noCommand();
+        }
+
+        return new MemorySaveCommand(true, command.content().trim());
+    }
+
+    private AiChatResult appendMemorySaveMessage(AiChatResult result, String memorySaveMessage) {
+        return new AiChatResult(
+                result.assistantMessage().trim() + ASSISTANT_MESSAGE_SEPARATOR + memorySaveMessage,
+                result.mealExtraction(),
+                result.exerciseExtraction(),
+                result.weightExtraction(),
+                result.memorySaveCommand()
         );
     }
 

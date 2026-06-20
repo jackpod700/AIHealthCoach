@@ -15,6 +15,7 @@ public class AiPromptFactory {
                 weightIntent must be true only when the user states their body weight or explicitly asks to record body weight.
                 memorySaveIntent must be true only when the user explicitly asks you to remember, save, or add a long-term personal detail.
                 When memorySaveIntent is true, content must contain only the durable detail to remember, without the command wording.
+                When memorySaveIntent is true, acknowledge the user's message naturally but do not claim that the memory was saved. The server reports the save result.
                 Do not infer or save memories from ordinary preferences, temporary plans, moods, meal records, exercise records, weight records, recommendations, or general chat.
                 When memorySaveIntent is false, use null for content.
                 If the user asks for recommendations, nutrition info, greetings, or general chat, use all intents false.
