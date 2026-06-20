@@ -7,6 +7,7 @@ import com.aihealthcoach.weight.entity.WeightRecord;
 import com.aihealthcoach.weight.exception.WeightRecordException;
 import com.aihealthcoach.weight.mapper.WeightRecordMapper;
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -21,10 +22,12 @@ public class WeightRecordServiceImpl implements WeightRecordService {
 
     private final WeightRecordMapper weightRecordMapper;
     private final UserMapper userMapper;
+    private final Clock clock;
 
     @Override
     @Transactional
     public WeightRecordResponse upsertWeightRecord(Long userId, WeightRecordRequest request) {
+        validateRecordDate(request.recordDate());
         validateWeight(request.weightKg());
 
         WeightRecord savedRecord = weightRecordMapper.upsertWeightRecord(WeightRecord.builder()
@@ -95,6 +98,12 @@ public class WeightRecordServiceImpl implements WeightRecordService {
                 || weightKg.compareTo(BigDecimal.ZERO) <= 0
                 || weightKg.compareTo(MAX_WEIGHT_KG) > 0) {
             throw WeightRecordException.invalidWeight();
+        }
+    }
+
+    private void validateRecordDate(LocalDate recordDate) {
+        if (recordDate.isAfter(LocalDate.now(clock))) {
+            throw WeightRecordException.futureRecordDate();
         }
     }
 

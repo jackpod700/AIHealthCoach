@@ -21,6 +21,10 @@ public class WeightRecordException extends BusinessException {
         return new WeightRecordException(WeightRecordErrorCode.INVALID_WEIGHT);
     }
 
+    public static WeightRecordException futureRecordDate() {
+        return new WeightRecordException(WeightRecordErrorCode.FUTURE_RECORD_DATE);
+    }
+
     public static WeightRecordException invalidDateRange() {
         return new WeightRecordException(WeightRecordErrorCode.INVALID_DATE_RANGE);
     }
