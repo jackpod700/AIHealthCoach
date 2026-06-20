@@ -15,9 +15,8 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
-import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
-import com.aihealthcoach.chat.dto.LlmDto.LlmResponse;
 import com.aihealthcoach.chat.exception.ChatException;
+import com.aihealthcoach.chat.support.FakeLlmService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 class AiChatServiceImplTest {
@@ -29,7 +28,8 @@ class AiChatServiceImplTest {
 
     @Test
     void generateUsesInjectedLlmServiceResponse() {
-        FakeLlmService llmService = new FakeLlmService("""
+        String userMessage = "아침에 오트밀 먹었어";
+        FakeLlmService llmService = new FakeLlmService().respondTo(userMessage, """
                 {
                   "assistantMessage": "기록할 식사를 찾았어요.",
                   "mealExtraction": {
@@ -44,20 +44,20 @@ class AiChatServiceImplTest {
                 """);
         AiChatServiceImpl service = newService(llmService);
 
-        AiChatResult result = service.generate(new ChatMessageRequest("아침에 오트밀 먹었어"));
+        AiChatResult result = service.generate(new ChatMessageRequest(userMessage));
 
         assertThat(result.assistantMessage()).isEqualTo("기록할 식사를 찾았어요.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
         assertThat(result.mealExtraction().mealDate()).isEqualTo(LocalDate.of(2026, 6, 8));
         assertThat(result.mealExtraction().items()).extracting("name").containsExactly("oatmeal");
-        assertThat(llmService.lastRequest.systemPrompt()).contains("Today's date is 2026-06-08");
-        assertThat(llmService.lastRequest.userMessage()).isEqualTo("아침에 오트밀 먹었어");
-        assertThat(llmService.lastRequest.images()).isEmpty();
+        assertThat(llmService.lastRequest().systemPrompt()).contains("Today's date is 2026-06-08");
+        assertThat(llmService.lastRequest().userMessage()).isEqualTo(userMessage);
+        assertThat(llmService.lastRequest().images()).isEmpty();
     }
 
     @Test
     void generateWithImagesUsesInjectedLlmServiceResponse() {
-        FakeLlmService llmService = new FakeLlmService("""
+        FakeLlmService llmService = new FakeLlmService().respondTo("점심 사진이야", """
                 {
                   "assistantMessage": "사진에서 식사를 찾았어요.",
                   "mealExtraction": {
@@ -82,10 +82,10 @@ class AiChatServiceImplTest {
 
         assertThat(result.assistantMessage()).isEqualTo("사진에서 식사를 찾았어요.");
         assertThat(result.mealExtraction().mealIntent()).isTrue();
-        assertThat(llmService.lastRequest.systemPrompt()).contains("If no food is visible");
-        assertThat(llmService.lastRequest.userMessage()).isEqualTo("점심 사진이야");
-        assertThat(llmService.lastRequest.images()).hasSize(1);
-        assertThat(llmService.lastRequest.images().getFirst().mimeType().toString()).isEqualTo("image/jpeg");
+        assertThat(llmService.lastRequest().systemPrompt()).contains("If no food is visible");
+        assertThat(llmService.lastRequest().userMessage()).isEqualTo("점심 사진이야");
+        assertThat(llmService.lastRequest().images()).hasSize(1);
+        assertThat(llmService.lastRequest().images().getFirst().mimeType().toString()).isEqualTo("image/jpeg");
     }
 
     @Test
@@ -201,30 +201,10 @@ class AiChatServiceImplTest {
     }
 
     private AiChatServiceImpl newService() {
-        return newService(new FakeLlmService("""
-                {
-                  "assistantMessage": "ok"
-                }
-                """));
+        return newService(new FakeLlmService());
     }
 
     private AiChatServiceImpl newService(LlmService llmService) {
         return new AiChatServiceImpl(llmService, new ObjectMapper(), CLOCK, new AiPromptFactory());
-    }
-
-    private static class FakeLlmService implements LlmService {
-
-        private final String responseContent;
-        private LlmRequest lastRequest;
-
-        private FakeLlmService(String responseContent) {
-            this.responseContent = responseContent;
-        }
-
-        @Override
-        public LlmResponse generate(LlmRequest request) {
-            this.lastRequest = request;
-            return new LlmResponse(responseContent);
-        }
     }
 }
