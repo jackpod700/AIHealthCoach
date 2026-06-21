@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255),
     nickname VARCHAR(50) NOT NULL,
     role VARCHAR(20) NOT NULL DEFAULT 'USER',
     created_at TIMESTAMP NOT NULL,
@@ -294,3 +294,22 @@ CREATE INDEX IF NOT EXISTS idx_exercise_records_user_date
 
 CREATE INDEX IF NOT EXISTS idx_exercise_records_activity_option
     ON exercise_records(exercise_activity_option_id);
+
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+    id BIGSERIAL NOT NULL,
+    user_id BIGINT NOT NULL,
+    provider VARCHAR(20) NOT NULL,
+    provider_user_id VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_oauth_accounts PRIMARY KEY (id),
+    CONSTRAINT fk_oauth_accounts_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT uk_oauth_accounts_provider_provider_user_id
+        UNIQUE (provider, provider_user_id)
+);
+ALTER TABLE users
+ALTER COLUMN password DROP NOT NULL;

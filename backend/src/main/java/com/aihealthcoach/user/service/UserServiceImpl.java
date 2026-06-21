@@ -2,9 +2,11 @@ package com.aihealthcoach.user.service;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.auth.TokenRedisRepository;
+import com.aihealthcoach.user.dto.UserDto.CurrentUserResponse;
 import com.aihealthcoach.user.dto.UserDto.LoginRequest;
 import com.aihealthcoach.user.dto.UserDto.LoginResponse;
 import com.aihealthcoach.user.dto.UserDto.LoginResult;
@@ -29,10 +31,11 @@ public class UserServiceImpl implements UserService {
     private final TokenRedisRepository tokenRedisRepository;
 
     @Override
+    @Transactional
     public LoginResponse signup(SignupRequest request) {
         User existingUser = userDao.findUserByEmail(request.email());
 
-        if (existingUser != null){
+        if (existingUser != null) {
             throw UserException.duplicateEmail();
         }
 
@@ -48,8 +51,8 @@ public class UserServiceImpl implements UserService {
         User savedUser = userDao.findUserByEmail(request.email());
 
         UserProfile profile = UserProfile.builder()
-                                .userId(savedUser.getId())
-                                .build();
+                .userId(savedUser.getId())
+                .build();
 
         userDao.insertUserProfile(profile);
 
@@ -65,8 +68,12 @@ public class UserServiceImpl implements UserService {
     public LoginResult login(LoginRequest request) {
         User existingUser = userDao.findUserByEmail(request.email());
 
-        if (existingUser == null){
+        if (existingUser == null) {
             throw UserException.userNotFound();
+        }
+
+        if (existingUser.getPassword() == null) {
+            throw UserException.socialLoginAccount();
         }
 
         if (!passwordEncoder.matches(request.password(), existingUser.getPassword())) {
@@ -78,11 +85,12 @@ public class UserServiceImpl implements UserService {
         String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
 
         tokenRedisRepository.saveRefreshToken(
-            existingUser.getId(), 
-            refreshTokenId, 
-            refreshToken, 
-            jwtTokenProvider.getRemaining(refreshToken));
-        
+                existingUser.getId(),
+                refreshTokenId,
+                refreshToken,
+                jwtTokenProvider.getRemaining(refreshToken)
+        );
+
         LoginResponse response = LoginResponse.builder()
             .userId(existingUser.getId())
             .email(existingUser.getEmail())
@@ -92,16 +100,16 @@ public class UserServiceImpl implements UserService {
             .build();
 
         return LoginResult.builder()
-            .response(response)
-            .refreshToken(refreshToken)
-            .build(); 
+                .response(response)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     @Override
     public void logout(String accessToken, String refreshToken) {
         jwtTokenProvider.validateAccessToken(accessToken);
         jwtTokenProvider.validateRefreshToken(refreshToken);
-        
+
         Long accessTokenUserId = jwtTokenProvider.getUserId(accessToken);
         Long refreshTokenUserId = jwtTokenProvider.getUserId(refreshToken);
 
@@ -113,12 +121,13 @@ public class UserServiceImpl implements UserService {
         String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
 
         tokenRedisRepository.blacklistAccessToken(
-            accessTokenId,
-            jwtTokenProvider.getRemaining(accessToken));
-            
+                accessTokenId,
+                jwtTokenProvider.getRemaining(accessToken)
+        );
+
         tokenRedisRepository.deleteRefreshToken(refreshTokenUserId, refreshTokenId);
     }
-    
+
     @Override
     public TokenRefreshResponse refreshAccessToken(String refreshToken) {
         jwtTokenProvider.validateRefreshToken(refreshToken);
@@ -127,8 +136,8 @@ public class UserServiceImpl implements UserService {
         String refreshTokenId = jwtTokenProvider.getTokenId(refreshToken);
 
         String savedRefreshToken = tokenRedisRepository
-            .findRefreshToken(userId, refreshTokenId)
-            .orElseThrow(UserException::invalidToken);
+                .findRefreshToken(userId, refreshTokenId)
+                .orElseThrow(UserException::invalidToken);
 
         if (!savedRefreshToken.equals(refreshToken)) {
             throw UserException.invalidToken();
@@ -137,15 +146,30 @@ public class UserServiceImpl implements UserService {
         String newAccessToken = jwtTokenProvider.createAccessToken(userId);
 
         return TokenRefreshResponse.builder()
-            .accessToken(newAccessToken)
-            .build();
+                .accessToken(newAccessToken)
+                .build();
+    }
+
+    @Override
+    public CurrentUserResponse findCurrentUser(Long userId) {
+        User user = userDao.findUserById(userId);
+
+        if (user == null) {
+            throw UserException.userNotFound();
+        }
+
+        return CurrentUserResponse.builder()
+                .userId(user.getId())
+                .email(user.getEmail())
+                .nickname(user.getNickname())
+                .build();
     }
 
     @Override
     public UserProfileResponse findProfile(Long userId) {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
-        if (userProfile == null){
+        if (userProfile == null) {
             throw UserException.profileNotFound();
         }
 
@@ -163,7 +187,7 @@ public class UserServiceImpl implements UserService {
     public UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
-        if (userProfile == null){
+        if (userProfile == null) {
             throw UserException.profileNotFound();
         }
 
@@ -180,5 +204,14 @@ public class UserServiceImpl implements UserService {
                 .updatedAt(updatedProfile.getUpdatedAt())
                 .build();
     }
-    
+
+    @Override
+    @Transactional
+    public void updateNickname(Long userId, String nickname) {
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("닉네임은 필수입니다.");
+        }
+
+        userDao.updateUserNickname(userId, nickname);
+    }
 }

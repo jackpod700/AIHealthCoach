@@ -25,6 +25,10 @@ public class UserException extends BusinessException {
         return new UserException(UserErrorCode.INVALID_PASSWORD);
     }
 
+    public static UserException socialLoginAccount() {
+        return new UserException(UserErrorCode.SOCIAL_LOGIN_ACCOUNT);
+    }
+
     public static UserException profileNotFound() {
         return new UserException(UserErrorCode.PROFILE_NOT_FOUND);
     }
@@ -35,5 +39,9 @@ public class UserException extends BusinessException {
 
     public static UserException profileAccessDenied(){
         return new UserException(UserErrorCode.PROFILE_ACCESS_DENIED);
+    }
+
+    public static UserException unsupportedOAuthProvider() {
+        return new UserException(UserErrorCode.UNSUPPORTED_OAUTH_PROVIDER);
     }
 }

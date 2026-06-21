@@ -1,8 +1,10 @@
 <script setup>
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
+
 import LoginHero from "../../components/auth/LoginHero.vue";
 import FormField from "../../components/auth/FormField.vue";
+import { getOAuthLoginUrl } from "../../api/authApi";
 import { useAuthStore } from "../../stores/authStore";
 
 const router = useRouter();
@@ -32,6 +34,10 @@ async function submitLogin() {
     router.push("/chat");
   }
 }
+
+function startOAuthLogin(provider) {
+  window.location.href = getOAuthLoginUrl(provider);
+}
 </script>
 
 <template>
@@ -41,7 +47,9 @@ async function submitLogin() {
     <section class="login-panel" aria-label="로그인">
       <div class="login-card">
         <p class="deco">Sign In</p>
+
         <h2>다시 오신 걸 환영해요</h2>
+
         <p class="login-lead">계정에 로그인하고 오늘의 코칭을 받아보세요.</p>
 
         <form class="login-form" @submit.prevent="submitLogin">
@@ -69,6 +77,7 @@ async function submitLogin() {
               <input v-model="loginForm.remember" type="checkbox" />
               <span>로그인 상태 유지</span>
             </label>
+
             <button type="button">비밀번호 찾기</button>
           </div>
 
@@ -88,8 +97,13 @@ async function submitLogin() {
         </div>
 
         <div class="social-actions">
-          <button type="button">Google로 계속</button>
-          <button type="button">Apple로 계속</button>
+          <button type="button" @click="startOAuthLogin('google')">
+            Google로 계속
+          </button>
+
+          <button type="button" @click="startOAuthLogin('naver')">
+            Naver로 계속
+          </button>
         </div>
 
         <p class="login-foot">

@@ -19,3 +19,16 @@ export function loginUser(credentials) {
     body: JSON.stringify(credentials),
   });
 }
+
+export function refreshAccessToken() {
+  return apiRequest("/api/user/token/refresh", {
+    method: "POST",
+    credentials: "include",
+  });
+}
+
+export function getOAuthLoginUrl(provider) {
+  const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:8080";
+
+  return `${apiBaseUrl}/api/oauth/login/${provider}`;
+}

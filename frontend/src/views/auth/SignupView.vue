@@ -1,6 +1,6 @@
 <script setup>
-import { computed, reactive, ref } from "vue";
-import { useRouter } from "vue-router";
+import { computed, onMounted, reactive, ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
 import AuthBrand from "../../components/auth/AuthBrand.vue";
 import FormField from "../../components/auth/FormField.vue";
 import GoalOptionCard from "../../components/auth/GoalOptionCard.vue";
@@ -9,11 +9,17 @@ import { goalOptions, signupSteps } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
 import { useProfileStore } from "../../stores/profileStore";
 
+const route = useRoute();
 const router = useRouter();
 const authStore = useAuthStore();
 const profileStore = useProfileStore();
+
 const signupStep = ref(1);
 const signupValidationError = ref("");
+
+const isOAuthSignup = computed(() => {
+  return route.query.oauth === "true";
+});
 
 const signupForm = reactive({
   nickname: "",
@@ -27,7 +33,26 @@ const signupForm = reactive({
 });
 
 const signupButtonLabel = computed(() => {
+  if (isOAuthSignup.value) {
+    return profileStore.isSavingProfile ? "저장 중..." : "시작하기";
+  }
+
   return authStore.isSigningUp ? "가입 중..." : "시작하기";
+});
+
+onMounted(() => {
+  if (!isOAuthSignup.value) {
+    return;
+  }
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  signupForm.nickname = authStore.user?.nickname || "";
+  signupForm.email = authStore.user?.email || "";
+  signupForm.password = "";
 });
 
 function nextSignupStep() {
@@ -50,6 +75,20 @@ function updateGoalPeriod(delta) {
   signupForm.goalPeriodMonths = Math.min(12, Math.max(1, nextValue));
 }
 
+function toNumber(value) {
+  if (value === null || value === undefined || String(value).trim() === "") {
+    return null;
+  }
+
+  const numberValue = Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    return null;
+  }
+
+  return numberValue;
+}
+
 async function submitSignup() {
   if (signupStep.value < 3) {
     if (signupStep.value === 1 && !validateAccountStep()) {
@@ -65,6 +104,15 @@ async function submitSignup() {
     return;
   }
 
+  if (isOAuthSignup.value) {
+    await submitOAuthSignup();
+    return;
+  }
+
+  await submitNormalSignup();
+}
+
+async function submitNormalSignup() {
   if (authStore.isSigningUp) {
     return;
   }
@@ -79,6 +127,11 @@ async function submitSignup() {
     return;
   }
 
+  if (!validateGoalStep()) {
+    signupStep.value = 3;
+    return;
+  }
+
   await authStore.signup({
     email: signupForm.email.trim(),
     password: signupForm.password.trim(),
@@ -87,12 +140,55 @@ async function submitSignup() {
 
   if (authStore.isAuthenticated) {
     await profileStore.updateProfile({
-      heightCm: Number(signupForm.heightCm),
-      currentWeightKg: Number(signupForm.currentWeightKg),
-      targetWeightKg: Number(signupForm.targetWeightKg),
+      heightCm: toNumber(signupForm.heightCm),
+      currentWeightKg: toNumber(signupForm.currentWeightKg),
+      targetWeightKg: toNumber(signupForm.targetWeightKg),
       goalType: signupForm.goalType,
     });
+
     router.push("/chat");
+  }
+}
+
+async function submitOAuthSignup() {
+  if (profileStore.isSavingProfile) {
+    return;
+  }
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (!validateAccountStep()) {
+    signupStep.value = 1;
+    return;
+  }
+
+  if (!validateBodyInfoStep()) {
+    signupStep.value = 2;
+    return;
+  }
+
+  if (!validateGoalStep()) {
+    signupStep.value = 3;
+    return;
+  }
+
+  try {
+    await profileStore.updateNickname(signupForm.nickname.trim());
+
+    await profileStore.updateProfile({
+      heightCm: toNumber(signupForm.heightCm),
+      currentWeightKg: toNumber(signupForm.currentWeightKg),
+      targetWeightKg: toNumber(signupForm.targetWeightKg),
+      goalType: signupForm.goalType,
+    });
+
+    router.push("/chat");
+  } catch {
+    signupValidationError.value =
+      profileStore.profileError || "가입 정보를 저장하지 못했습니다.";
   }
 }
 
@@ -100,6 +196,21 @@ function validateAccountStep() {
   const nickname = signupForm.nickname.trim();
   const email = signupForm.email.trim();
   const password = signupForm.password.trim();
+
+  if (isOAuthSignup.value) {
+    if (!nickname) {
+      signupValidationError.value = "닉네임을 입력해주세요.";
+      return false;
+    }
+
+    if (!email) {
+      signupValidationError.value = "소셜 로그인 이메일을 확인하지 못했습니다.";
+      return false;
+    }
+
+    signupValidationError.value = "";
+    return true;
+  }
 
   if (!nickname || !email || !password) {
     signupValidationError.value = "닉네임, 이메일, 비밀번호를 모두 입력해주세요.";
@@ -111,25 +222,52 @@ function validateAccountStep() {
     return false;
   }
 
+  if (password.length < 8) {
+    signupValidationError.value = "비밀번호는 8자 이상 입력해주세요.";
+    return false;
+  }
+
+  signupValidationError.value = "";
+  return true;
+}
+
+function validateBodyInfoStep() {
+  const heightCm = toNumber(signupForm.heightCm);
+  const currentWeightKg = toNumber(signupForm.currentWeightKg);
+
+  if (heightCm === null || heightCm < 50 || heightCm > 300) {
+    signupValidationError.value = "키는 50cm 이상 300cm 이하로 입력해주세요.";
+    return false;
+  }
+
+  if (currentWeightKg === null || currentWeightKg < 1 || currentWeightKg > 999.99) {
+    signupValidationError.value = "현재 체중은 1kg 이상 999.99kg 이하로 입력해주세요.";
+    return false;
+  }
+
+  signupValidationError.value = "";
+  return true;
+}
+
+function validateGoalStep() {
+  const targetWeightKg = toNumber(signupForm.targetWeightKg);
+
+  if (targetWeightKg === null || targetWeightKg < 1 || targetWeightKg > 999.99) {
+    signupValidationError.value = "목표 체중은 1kg 이상 999.99kg 이하로 입력해주세요.";
+    return false;
+  }
+
+  if (!signupForm.goalType) {
+    signupValidationError.value = "목표 유형을 선택해주세요.";
+    return false;
+  }
+
   signupValidationError.value = "";
   return true;
 }
 
 function isValidEmail(value) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-function validateBodyInfoStep() {
-  const heightCm = Number(signupForm.heightCm);
-  const currentWeightKg = Number(signupForm.currentWeightKg);
-
-  if (!Number.isFinite(heightCm) || heightCm <= 0 || !Number.isFinite(currentWeightKg) || currentWeightKg <= 0) {
-    signupValidationError.value = "키와 현재 체중은 0보다 큰 값으로 입력해주세요.";
-    return false;
-  }
-
-  signupValidationError.value = "";
-  return true;
 }
 </script>
 
@@ -142,8 +280,18 @@ function validateBodyInfoStep() {
       <form class="signup-card" novalidate @submit.prevent="submitSignup">
         <template v-if="signupStep === 1">
           <p class="deco">Create Account</p>
-          <h1>계정을 만들어볼까요?</h1>
-          <p class="signup-lead">코칭 기록을 안전하게 저장할 수 있도록 기본 계정을 먼저 만들어요.</p>
+
+          <h1>
+            {{ isOAuthSignup ? "가입 정보를 확인해주세요" : "계정을 만들어볼까요?" }}
+          </h1>
+
+          <p class="signup-lead">
+            {{
+              isOAuthSignup
+                ? "소셜 로그인으로 확인된 이메일을 기반으로 기본 정보를 설정해요."
+                : "코칭 기록을 안전하게 저장할 수 있도록 기본 계정을 먼저 만들어요."
+            }}
+          </p>
 
           <div class="signup-fields">
             <FormField
@@ -153,22 +301,42 @@ function validateBodyInfoStep() {
               placeholder="닉네임을 입력하세요"
               autocomplete="nickname"
             />
-            <FormField
-              v-model="signupForm.email"
-              label="이메일"
-              icon="pi pi-envelope"
-              type="email"
-              placeholder="이메일을 입력하세요"
-              autocomplete="email"
-            />
-            <FormField
-              v-model="signupForm.password"
-              label="비밀번호"
-              icon="pi pi-lock"
-              type="password"
-              placeholder="8자 이상 입력하세요"
-              autocomplete="new-password"
-            />
+
+            <template v-if="isOAuthSignup">
+              <label>
+                <span>이메일</span>
+                <div class="field-shell">
+                  <i class="pi pi-envelope"></i>
+                  <input
+                    :value="signupForm.email"
+                    type="email"
+                    readonly
+                    autocomplete="email"
+                    placeholder="소셜 로그인 이메일"
+                  />
+                </div>
+              </label>
+            </template>
+
+            <template v-else>
+              <FormField
+                v-model="signupForm.email"
+                label="이메일"
+                icon="pi pi-envelope"
+                type="email"
+                placeholder="이메일을 입력하세요"
+                autocomplete="email"
+              />
+
+              <FormField
+                v-model="signupForm.password"
+                label="비밀번호"
+                icon="pi pi-lock"
+                type="password"
+                placeholder="8자 이상 입력하세요"
+                autocomplete="new-password"
+              />
+            </template>
           </div>
         </template>
 
@@ -181,14 +349,31 @@ function validateBodyInfoStep() {
             <label>
               <span>키</span>
               <div class="unit-field">
-                <input v-model="signupForm.heightCm" inputmode="decimal" min="0.1" placeholder="168" step="0.1" type="number" />
+                <input
+                  v-model="signupForm.heightCm"
+                  inputmode="decimal"
+                  min="50"
+                  max="300"
+                  placeholder="168"
+                  step="0.1"
+                  type="number"
+                />
                 <em>cm</em>
               </div>
             </label>
+
             <label>
               <span>현재 체중</span>
               <div class="unit-field">
-                <input v-model="signupForm.currentWeightKg" inputmode="decimal" min="0.1" placeholder="65.2" step="0.1" type="number" />
+                <input
+                  v-model="signupForm.currentWeightKg"
+                  inputmode="decimal"
+                  min="1"
+                  max="999.99"
+                  placeholder="65.2"
+                  step="0.1"
+                  type="number"
+                />
                 <em>kg</em>
               </div>
             </label>
@@ -222,10 +407,18 @@ function validateBodyInfoStep() {
             <label>
               <span>목표 몸무게</span>
               <div class="unit-field focused">
-                <input v-model="signupForm.targetWeightKg" inputmode="decimal" />
+                <input
+                  v-model="signupForm.targetWeightKg"
+                  inputmode="decimal"
+                  min="1"
+                  max="999.99"
+                  step="0.1"
+                  type="number"
+                />
                 <em>kg</em>
               </div>
             </label>
+
             <label>
               <span>목표 기간</span>
               <div class="period-stepper">
@@ -237,7 +430,9 @@ function validateBodyInfoStep() {
                 >
                   <i class="pi pi-minus"></i>
                 </button>
+
                 <strong>{{ signupForm.goalPeriodMonths }}개월</strong>
+
                 <button
                   type="button"
                   aria-label="목표 기간 늘리기"
@@ -251,19 +446,29 @@ function validateBodyInfoStep() {
           </div>
         </template>
 
-        <div v-if="signupValidationError || authStore.signupError" class="login-error signup-error">
-          {{ signupValidationError || authStore.signupError }}
+        <div
+          v-if="signupValidationError || authStore.signupError || profileStore.profileError"
+          class="login-error signup-error"
+        >
+          {{ signupValidationError || authStore.signupError || profileStore.profileError }}
         </div>
 
         <div class="signup-actions">
-          <button class="secondary-action" type="button" @click="previousSignupStep">이전</button>
-          <button class="primary-action" type="submit" :disabled="authStore.isSigningUp">
+          <button class="secondary-action" type="button" @click="previousSignupStep">
+            이전
+          </button>
+
+          <button
+            class="primary-action"
+            type="submit"
+            :disabled="authStore.isSigningUp || profileStore.isSavingProfile"
+          >
             {{ signupStep === 3 ? signupButtonLabel : "다음" }}
           </button>
         </div>
       </form>
 
-      <p class="signup-foot">
+      <p v-if="!isOAuthSignup" class="signup-foot">
         이미 계정이 있으신가요?
         <button type="button" @click="router.push('/login')">로그인</button>
       </p>
