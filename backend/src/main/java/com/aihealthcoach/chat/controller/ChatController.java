@@ -54,7 +54,7 @@ public class ChatController {
         List<ChatMessageResponse> messages = new ArrayList<>();
         Long userId = (Long)authentication.getPrincipal();
         messages.add(chatService.insert(userId, message));
-        AiChatResult aiResult = aiChatService.generate(message);
+        AiChatResult aiResult = aiChatService.generate(userId, message);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")
@@ -83,7 +83,7 @@ public class ChatController {
                 .content(userMessageSummary)
                 .build()));
 
-        AiChatResult aiResult = aiChatService.generateWithImages(content, images);
+        AiChatResult aiResult = aiChatService.generateWithImages(userId, content, images);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")

@@ -12,6 +12,8 @@ public interface UserMapper {
 
     User findUserByEmail(String email);
 
+    User findUserById(Long id);
+
     void insertUser(User user);
 
     Long insertOAuthUser(User user);
@@ -24,8 +26,6 @@ public interface UserMapper {
             @Param("userId") Long userId,
             @Param("request") UserProfileUpdateRequest request
     );
-
-    User findUserById(Long id);
 
     OAuthAccount findOAuthAccount(
             @Param("provider") String provider,

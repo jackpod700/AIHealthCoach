@@ -38,6 +38,14 @@
   color: var(--ink);
 }
 
+.admin-home {
+  display: grid;
+  min-height: 100vh;
+  grid-template-columns: 252px 1fr;
+  background: var(--cream);
+  color: var(--ink);
+}
+
 .app-sidebar {
   position: sticky;
   top: 0;
@@ -3139,6 +3147,119 @@
   line-height: 1.6;
 }
 
+.admin-workspace {
+  min-width: 0;
+}
+
+.admin-header {
+  display: flex;
+  height: 86px;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #eee5d8;
+  padding: 0 28px;
+  background: #fff;
+}
+
+.admin-header h1 {
+  margin: 3px 0 0;
+  color: var(--ink);
+  font-size: 25px;
+  font-weight: 900;
+  font-family: inherit;
+  line-height: 1.15;
+  letter-spacing: 0;
+}
+
+.admin-home .section-eyebrow {
+  margin: 0;
+  color: var(--orange);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+}
+
+.admin-live-status {
+  display: block;
+  margin-top: 7px;
+  color: #7a8491;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.admin-refresh-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #eadfce;
+  border-radius: 999px;
+  padding: 0 15px;
+  background: #fffaf3;
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-refresh-button:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.admin-content {
+  min-height: calc(100vh - 86px);
+  padding: 28px;
+}
+
+.admin-loading,
+.admin-error {
+  border: 1px dashed #dfc8ad;
+  border-radius: 14px;
+  padding: 18px;
+  background: #fffaf3;
+  color: #8a7560;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.admin-error {
+  border-color: #f0b5aa;
+  background: #fff1ef;
+  color: #ae4d42;
+}
+
+.admin-user-status {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.admin-user-card {
+  display: grid;
+  gap: 10px;
+  min-height: 180px;
+  border: 1px solid #eee5d8;
+  border-radius: 16px;
+  padding: 24px;
+  background: #fff;
+  box-shadow: 0 14px 36px rgb(32 63 102 / 6%);
+}
+
+.admin-user-card span,
+.admin-user-card small {
+  color: #7a8491;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.admin-user-card strong {
+  color: var(--navy);
+  font-size: 38px;
+  font-weight: 900;
+}
+
 .error-page {
   min-height: 100vh;
   background:
@@ -3283,7 +3404,8 @@
   .profile-home,
   .calendar-home,
   .record-home,
-  .food-home {
+  .food-home,
+  .admin-home {
     grid-template-columns: 190px 1fr;
   }
 
@@ -3329,7 +3451,8 @@
   .profile-home,
   .calendar-home,
   .record-home,
-  .food-home {
+  .food-home,
+  .admin-home {
     grid-template-columns: 1fr;
   }
 
@@ -3378,6 +3501,23 @@
   .food-content {
     min-height: auto;
     padding: 16px;
+  }
+
+  .admin-header {
+    height: auto;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 18px;
+  }
+
+  .admin-content {
+    min-height: auto;
+    padding: 16px;
+  }
+
+  .admin-user-status {
+    grid-template-columns: 1fr;
   }
 
   .food-result-card {

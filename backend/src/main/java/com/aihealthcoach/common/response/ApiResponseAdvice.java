@@ -43,13 +43,13 @@ public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
             ServerHttpRequest request,
             ServerHttpResponse response
     ) {
-        if (isSpringDocRequest(request)) {
+        if (isSpringDocRequest(request) || isActuatorRequest(request)) {
             return body;
         }
 
         // 빈 응답, 이미 감싼 응답, 문자열 응답은 그대로 둔다.
         // 문자열 응답은 StringHttpMessageConverter를 사용하므로 여기서 객체로 바꾸면 실패할 수 있다.
-        if (body == null || body instanceof ApiResponse<?> || body instanceof String) {
+        if (body == null || body instanceof ApiResponse<?> || body instanceof String || body instanceof byte[]) {
             return body;
         }
 
@@ -62,5 +62,9 @@ public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
         return path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
                 || path.equals("/swagger-ui.html");
+    }
+
+    private boolean isActuatorRequest(ServerHttpRequest request) {
+        return request.getURI().getPath().startsWith("/actuator");
     }
 }

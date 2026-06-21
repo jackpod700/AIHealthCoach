@@ -4,13 +4,10 @@ import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.openai.OpenAiChatOptions;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.MimeType;
-import org.springframework.util.MimeTypeUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
@@ -32,21 +29,25 @@ public class AiChatServiceImpl implements AiChatService {
     private static final long MAX_TOTAL_IMAGE_SIZE_BYTES = 50L * 1024L;
     private static final String DEFAULT_IMAGE_MESSAGE = "사진을 분석해서 식단 후보를 만들어줘.";
 
-    private final ChatClient chatClient;
+    private final AiChatClientGateway aiChatClientGateway;
     private final ObjectMapper objectMapper;
     private final Clock clock;
     private final AiPromptFactory promptFactory;
 
 
     @Override
-    public AiChatResult generate(ChatMessageRequest userMessage) {
+    public AiChatResult generate(Long userId, ChatMessageRequest userMessage) {
         try {
-            AiChatResult result = chatClient.prompt(systemPrompt(LocalDate.now(clock)))
-                    .user(userMessage.content())
-                    .call()
-                    .entity(AiChatResult.class);
-
-            return normalizeAiResult(result);
+            /*
+             * AI 사용량 기록은 gateway 메서드에 붙은 AOP에서 처리한다.
+             * 이 서비스는 AI 응답을 도메인에서 쓰기 좋은 형태로 정규화하는 책임만 가진다.
+             */
+            ResponseEntity<ChatResponse, AiChatResult> response = aiChatClientGateway.callTextChat(
+                    userId,
+                    systemPrompt(LocalDate.now(clock)),
+                    userMessage.content()
+            );
+            return normalizeAiResult(response.entity());
         } catch (Exception exception) {
             log.warn("Failed to map AI chat response to AiChatResult.", exception);
             return fallback();
@@ -54,20 +55,21 @@ public class AiChatServiceImpl implements AiChatService {
     }
 
     @Override
-    public AiChatResult generateWithImages(String content, List<MultipartFile> images) {
+    public AiChatResult generateWithImages(Long userId, String content, List<MultipartFile> images) {
         validateImages(images);
 
         String userText = normalizeImageMessage(content);
         try {
-            AiChatResult result = chatClient.prompt(promptFactory.imageMealPrompt(LocalDate.now(clock)))
-                    .user(user -> {
-                        user.text(userText);
-                        images.forEach(image -> user.media(toMimeType(image), image.getResource()));
-                    })
-                    .call()
-                    .entity(AiChatResult.class);
-
-            return normalizeAiResult(result);
+            /*
+             * 이미지 AI 호출도 gateway를 통과하므로 텍스트 채팅과 같은 AOP 로깅 흐름을 사용한다.
+             */
+            ResponseEntity<ChatResponse, AiChatResult> response = aiChatClientGateway.callImageMeal(
+                    userId,
+                    promptFactory.imageMealPrompt(LocalDate.now(clock)),
+                    userText,
+                    images
+            );
+            return normalizeAiResult(response.entity());
         } catch (Exception exception) {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
             return fallback();
@@ -136,10 +138,6 @@ public class AiChatServiceImpl implements AiChatService {
         return MediaType.IMAGE_JPEG_VALUE.equals(contentType)
                 || MediaType.IMAGE_PNG_VALUE.equals(contentType)
                 || "image/webp".equals(contentType);
-    }
-
-    private MimeType toMimeType(MultipartFile image) {
-        return MimeTypeUtils.parseMimeType(image.getContentType());
     }
 
     private String normalizeImageMessage(String content) {

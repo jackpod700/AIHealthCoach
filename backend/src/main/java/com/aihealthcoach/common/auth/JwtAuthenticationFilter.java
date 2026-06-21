@@ -7,11 +7,14 @@ import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
-import org.springframework.util.AntPathMatcher;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.exception.UserException;
+import com.aihealthcoach.user.mapper.UserMapper;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -28,6 +31,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRedisRepository tokenRedisRepository;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
+    private final ObjectProvider<UserMapper> userMapperProvider;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
@@ -64,10 +68,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
+            UserMapper userMapper = userMapperProvider.getIfAvailable();
+            User user = userMapper == null ? null : userMapper.findUserById(userId);
+            String role = user == null || user.getRole() == null || user.getRole().isBlank()
+                    ? "USER"
+                    : user.getRole();
+
             Authentication authentication = new UsernamePasswordAuthenticationToken(
                     userId,
                     null,
-                    List.of()
+                    List.of(new SimpleGrantedAuthority("ROLE_" + role))
             );
 
             SecurityContextHolder.getContext().setAuthentication(authentication);

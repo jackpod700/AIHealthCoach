@@ -28,4 +28,16 @@ public class MealException extends BusinessException {
     public static MealException mealNotFound() {
         return new MealException(MealErrorCode.MEAL_NOT_FOUND);
     }
+
+    public static MealException invalidFoodSubmission() {
+        return new MealException(MealErrorCode.INVALID_FOOD_SUBMISSION);
+    }
+
+    public static MealException foodSubmissionNotFound() {
+        return new MealException(MealErrorCode.FOOD_SUBMISSION_NOT_FOUND);
+    }
+
+    public static MealException foodSubmissionAlreadyReviewed() {
+        return new MealException(MealErrorCode.FOOD_SUBMISSION_ALREADY_REVIEWED);
+    }
 }

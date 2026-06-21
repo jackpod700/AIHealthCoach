@@ -8,6 +8,7 @@
         <result column="email" property="email"/>
         <result column="password" property="password"/>
         <result column="nickname" property="nickname"/>
+        <result column="role" property="role"/>
         <result column="created_at" property="createdAt"/>
         <result column="updated_at" property="updatedAt"/>
     </resultMap>
@@ -38,6 +39,7 @@
         email,
         password,
         nickname,
+        role,
         created_at,
         updated_at
         FROM users
@@ -50,6 +52,7 @@
         email,
         password,
         nickname,
+        role,
         created_at,
         updated_at
         FROM users

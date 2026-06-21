@@ -17,6 +17,8 @@ import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.exception.ChatException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import static org.mockito.Mockito.mock;
+
 class AiChatServiceImplTest {
 
     private static final Clock CLOCK = Clock.fixed(
@@ -99,7 +101,7 @@ class AiChatServiceImplTest {
                 "not image".getBytes()
         );
 
-        assertThatThrownBy(() -> service.generateWithImages("", List.of(textFile)))
+        assertThatThrownBy(() -> service.generateWithImages(1L, "", List.of(textFile)))
                 .isInstanceOf(ChatException.class);
     }
 
@@ -113,7 +115,7 @@ class AiChatServiceImplTest {
                 new byte[(10 * 1024) + 1]
         );
 
-        assertThatThrownBy(() -> service.generateWithImages("", List.of(largeImage)))
+        assertThatThrownBy(() -> service.generateWithImages(1L, "", List.of(largeImage)))
                 .isInstanceOf(ChatException.class);
     }
 
@@ -128,6 +130,6 @@ class AiChatServiceImplTest {
     }
 
     private AiChatServiceImpl newService() {
-        return new AiChatServiceImpl(null, new ObjectMapper(), CLOCK, new AiPromptFactory());
+        return new AiChatServiceImpl(mock(AiChatClientGateway.class), new ObjectMapper(), CLOCK, new AiPromptFactory());
     }
 }

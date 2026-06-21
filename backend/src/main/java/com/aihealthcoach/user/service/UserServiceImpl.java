@@ -40,11 +40,12 @@ public class UserServiceImpl implements UserService {
         }
 
         User newUser = User.builder()
-                .email(request.email())
-                .password(passwordEncoder.encode(request.password()))
-                .nickname(request.nickname())
-                .build();
-
+                        .email(request.email())
+                        .password(passwordEncoder.encode(request.password()))
+                        .nickname(request.nickname())
+                        .role("USER")
+                        .build();
+        
         userDao.insertUser(newUser);
 
         User savedUser = userDao.findUserByEmail(request.email());
@@ -59,7 +60,8 @@ public class UserServiceImpl implements UserService {
                 .userId(savedUser.getId())
                 .email(savedUser.getEmail())
                 .nickname(savedUser.getNickname())
-                .build();
+                .role(savedUser.getRole())
+                .build();            
     }
 
     @Override
@@ -90,11 +92,12 @@ public class UserServiceImpl implements UserService {
         );
 
         LoginResponse response = LoginResponse.builder()
-                .userId(existingUser.getId())
-                .email(existingUser.getEmail())
-                .nickname(existingUser.getNickname())
-                .accessToken(accessToken)
-                .build();
+            .userId(existingUser.getId())
+            .email(existingUser.getEmail())
+            .nickname(existingUser.getNickname())
+            .role(existingUser.getRole())
+            .accessToken(accessToken)
+            .build();
 
         return LoginResult.builder()
                 .response(response)
@@ -159,6 +162,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
+                .role(user.getRole())
                 .build();
     }
 
