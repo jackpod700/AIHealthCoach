@@ -129,6 +129,7 @@ export const useAuthStore = defineStore("auth", {
         this.user = {
           email: currentUser.email,
           nickname: currentUser.nickname,
+          role: currentUser.role || "USER",
         };
 
         saveAuthSession({
