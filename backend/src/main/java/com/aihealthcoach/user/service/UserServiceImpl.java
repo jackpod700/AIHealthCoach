@@ -162,6 +162,7 @@ public class UserServiceImpl implements UserService {
                 .userId(user.getId())
                 .email(user.getEmail())
                 .nickname(user.getNickname())
+                .role(user.getRole())
                 .build();
     }
 

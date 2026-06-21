@@ -39,6 +39,7 @@
         email,
         password,
         nickname,
+        role,
         created_at,
         updated_at
         FROM users
@@ -51,6 +52,7 @@
         email,
         password,
         nickname,
+        role,
         created_at,
         updated_at
         FROM users
