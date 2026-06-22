@@ -456,11 +456,21 @@ CREATE TABLE IF NOT EXISTS daily_chat_summary_states (
     summary_date DATE NOT NULL,
     source_version BIGINT NOT NULL DEFAULT 1,
     source_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'STALE',
+    claim_token VARCHAR(64),
+    claimed_at TIMESTAMP,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at TIMESTAMP,
+    failure_code VARCHAR(80),
+    changed_sources TEXT NOT NULL DEFAULT '',
+    daily_goal_snapshot_payload TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT pk_daily_chat_summary_states
         PRIMARY KEY (user_id, summary_date),
+    CONSTRAINT ck_daily_chat_summary_states_status
+        CHECK (status IN ('STALE', 'CLAIMED', 'FRESH', 'FAILED')),
     CONSTRAINT fk_daily_chat_summary_states_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
@@ -469,3 +479,6 @@ CREATE TABLE IF NOT EXISTS daily_chat_summary_states (
 
 CREATE INDEX IF NOT EXISTS idx_daily_chat_summary_states_date
     ON daily_chat_summary_states(summary_date, user_id);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summary_states_claim
+    ON daily_chat_summary_states(status, next_retry_at, claimed_at, summary_date);
