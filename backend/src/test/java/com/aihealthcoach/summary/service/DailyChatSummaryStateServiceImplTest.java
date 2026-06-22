@@ -19,6 +19,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aihealthcoach.summary.entity.DailyChatSummaryState;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.mapper.DailyChatSummaryStateMapper;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,11 +42,11 @@ class DailyChatSummaryStateServiceImplTest {
 
     @Test
     void markChangedUpsertsStateForTodayAndFutureDates() {
-        stateService.markChanged(1L, LocalDate.of(2026, 6, 20));
-        stateService.markChanged(1L, LocalDate.of(2026, 6, 22));
+        stateService.markChanged(1L, LocalDate.of(2026, 6, 20), DailyChatSummaryChangeSource.CHAT);
+        stateService.markChanged(1L, LocalDate.of(2026, 6, 22), DailyChatSummaryChangeSource.MEAL);
 
         ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
-        verify(dailyChatSummaryStateMapper, times(2)).upsert(captor.capture());
+        verify(dailyChatSummaryStateMapper, times(2)).upsertChanged(captor.capture());
         assertThat(captor.getAllValues())
                 .extracting(DailyChatSummaryState::getSummaryDate)
                 .containsExactly(LocalDate.of(2026, 6, 20), LocalDate.of(2026, 6, 22));
@@ -53,18 +54,29 @@ class DailyChatSummaryStateServiceImplTest {
 
     @Test
     void markChangedIgnoresDatesOlderThanSevenDays() {
-        stateService.markChanged(1L, LocalDate.of(2026, 6, 13));
+        stateService.markChanged(1L, LocalDate.of(2026, 6, 13), DailyChatSummaryChangeSource.CHAT);
 
-        verify(dailyChatSummaryStateMapper, never()).upsert(any());
+        verify(dailyChatSummaryStateMapper, never()).upsertChanged(any());
     }
 
     @Test
     void markChangedKeepsTheUserAndSummaryDateInTheState() {
-        stateService.markChanged(7L, LocalDate.of(2026, 6, 14));
+        stateService.markChanged(7L, LocalDate.of(2026, 6, 14), DailyChatSummaryChangeSource.WEIGHT);
 
         ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
-        verify(dailyChatSummaryStateMapper).upsert(captor.capture());
+        verify(dailyChatSummaryStateMapper).upsertChanged(captor.capture());
         assertThat(captor.getValue().getUserId()).isEqualTo(7L);
         assertThat(captor.getValue().getSummaryDate()).isEqualTo(LocalDate.of(2026, 6, 14));
+        assertThat(captor.getValue().getChangedSources()).isEqualTo("WEIGHT");
+    }
+
+    @Test
+    void markDailyGoalChangedStoresSnapshotPayload() {
+        stateService.markDailyGoalChanged(7L, LocalDate.of(2026, 6, 14), "{\"goalType\":\"WEIGHT_LOSS\"}");
+
+        ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
+        verify(dailyChatSummaryStateMapper).upsertChanged(captor.capture());
+        assertThat(captor.getValue().getChangedSources()).isEqualTo("DAILY_GOAL");
+        assertThat(captor.getValue().getDailyGoalSnapshotPayload()).isEqualTo("{\"goalType\":\"WEIGHT_LOSS\"}");
     }
 }
