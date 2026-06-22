@@ -82,6 +82,8 @@ ITERATIONS=100 data/db/benchmark/measure-daily-summary-context-cache.sh
 | 2차 | `markChanged` user evict + TTL 5분 | Yes | cache hit에서 DB marker 조회를 생략할 수 있어 cache hit 비용 이점을 살릴 수 있음 | 단일 backend 기준 적용 |
 | 2차 보강 | 최근 6일 raw source 전체 조회 추가 | N/A | raw source full lookup은 summary 조회보다 더 느리고 cache hit보다 훨씬 느림 | summary/cache 방향 유지 |
 | 3차 | 최근 완료 6일 window 안 변경률 1/3/10% 비교 | N/A | 동일 7일 데이터셋에서도 변경률에 관계없이 cache hit lower-bound가 압도적으로 낮음 | event-evict + TTL 정책 유지 |
+| 4차 | Redis 구현 후 shell/CLI 기반 비교 | No | per-iteration `docker exec`는 제외했지만 `psql`/`redis-cli` overhead와 timer 양자화가 남음 | 참고치로만 사용 |
+| 5차 | Redis 구현 후 Spring/JVM benchmark test | Yes | 실제 mapper/cache bean 경로에서 Redis hit avg 0.614ms, DB direct avg 0.867ms | Redis 구현 유지, hit ratio 관찰 |
 
 ## Metrics
 
@@ -191,6 +193,142 @@ Interpretation:
 - event-evict + TTL 정책에서는 변경이 없는 요청의 cache hit 비용이 1-2ms 수준으로 남는다.
 - 과거 기록 수정이 드물다는 가정에서는 cache hit 비율이 높아질 가능성이 크다.
 
+### 4차: Redis 구현 후 DB direct vs Redis cache 비교, shell 참고치
+
+Command:
+
+```bash
+ITERATIONS=30 data/db/benchmark/measure-daily-summary-context-redis-cache.sh
+```
+
+환경:
+
+- Docker Compose Postgres: `ai-health-postgres`
+- Docker Compose Redis: `ai-health-redis`
+- `CHANGE_RATE=1`
+- `USER_ID=920500`
+- 측정 스크립트는 반복 loop를 대상 컨테이너 안에서 실행해 per-iteration `docker exec` 비용을 제외한다.
+- 컨테이너 내부 `psql`과 `redis-cli` process overhead는 남아 있다.
+- 컨테이너 타이머는 `/proc/uptime` 기반이라 10ms 단위로 양자화될 수 있다.
+
+| Path | Count | Min | Avg | P50 | P95 | P99 | Max |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| DB direct fresh summary lookup | 30 | 10.000ms | 34.333ms | 40.000ms | 40.000ms | 40.000ms | 50.000ms |
+| DB JSON payload rebuild for Redis miss | 30 | 10.000ms | 21.667ms | 20.000ms | 30.000ms | 30.000ms | 30.000ms |
+| Redis cache hit GET | 30 | 0.000ms | 5.000ms | 0.000ms | 10.000ms | 10.000ms | 20.000ms |
+| Redis cache SET payload | 30 | 0.000ms | 2.667ms | 0.000ms | 10.000ms | 10.000ms | 10.000ms |
+| Redis evict DEL key + user key set | 30 | 0.000ms | 5.667ms | 10.000ms | 10.000ms | 10.000ms | 10.000ms |
+
+Interpretation:
+
+- 이 측정은 app 내부 Redis client latency가 아니라 컨테이너 내부 CLI 기반 측정이다. 절대값은 보수적으로 본다.
+- per-iteration `docker exec` 비용을 제외하자 Redis hit/SET/evict는 DB direct보다 낮은 비용대로 내려왔다.
+- Redis miss는 `DB JSON payload rebuild + Redis SET`으로 해석한다. Redis 정책은 miss를 싸게 만드는 것이 아니라 hit 비율이 높은 경로에서 DB 조회를 줄이는 데 목적이 있다.
+- Redis evict는 user tracked key set 기반 `DEL`로 측정했고 wildcard `KEYS`는 사용하지 않았다.
+- 이 결과는 `psql`/`redis-cli` process overhead와 10ms 단위 timer 양자화가 커서 최종 판단 기준으로 쓰지 않는다.
+
+### 5차: Redis 구현 후 Spring/JVM benchmark test
+
+Command:
+
+```bash
+docker run --rm \
+  --network aihealthcoach_default \
+  -e RUN_REDIS_CACHE_BENCHMARK=true \
+  -e REDIS_CACHE_BENCHMARK_SEED=false \
+  -e REDIS_CACHE_BENCHMARK_ITERATIONS=100 \
+  -e REDIS_CACHE_BENCHMARK_WARMUP_ITERATIONS=10 \
+  -e DB_URL=jdbc:postgresql://postgres:5432/ai_health_coach \
+  -e DB_USERNAME=postgres \
+  -e DB_PASSWORD=postgres \
+  -e REDIS_HOST=redis \
+  -e REDIS_PORT=6379 \
+  -e JWT_SECRET=0123456789012345678901234567890123456789012345678901234567890123 \
+  -e GOOGLE_CLIENT_ID=test-google \
+  -e GOOGLE_CLIENT_SECRET=test-google-secret \
+  -e NAVER_CLIENT_ID=test-naver \
+  -e NAVER_CLIENT_SECRET=test-naver-secret \
+  aihealthcoach-backend-test-runner \
+  mvn -Dtest=DailySummaryContextCacheBenchmarkTest test
+```
+
+환경:
+
+- Docker Compose network: `aihealthcoach_default`
+- Docker Compose Postgres service hostname: `postgres`
+- Docker Compose Redis service hostname: `redis`
+- Benchmark test: `DailySummaryContextCacheBenchmarkTest`
+- `CHANGE_RATE=1` seed가 이미 적용된 DB를 사용한다.
+- 측정은 Spring Boot test 안에서 실제 `DailyChatSummaryMapper`, `RedisDailySummaryContextCache`, `StringRedisTemplate` bean을 호출한다.
+- `docker run`과 Maven startup 시간은 결과에 포함하지 않는다.
+- 각 operation의 측정 시간은 JVM 내부 `System.nanoTime()`으로 잰다.
+
+| Path | Count | Min | Avg | P50 | P95 | P99 | Max |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| DB direct fresh summary lookup | 100 | 0.478ms | 0.867ms | 0.819ms | 1.519ms | 1.972ms | 2.784ms |
+| Redis miss fallback DB lookup + cache write | 100 | 2.584ms | 5.293ms | 5.054ms | 8.368ms | 9.907ms | 11.574ms |
+| Redis cache hit getOrLoad | 100 | 0.243ms | 0.614ms | 0.583ms | 1.176ms | 1.293ms | 1.466ms |
+| Redis evictUser | 100 | 2.065ms | 3.602ms | 3.168ms | 5.763ms | 9.008ms | 12.017ms |
+
+Interpretation:
+
+- 이 측정이 Redis 구현 후 판단 기준이다.
+- Redis hit은 같은 Spring 경로에서 DB direct보다 낮다.
+- Redis miss는 DB 조회에 JSON serialization, Redis write, tracked key set write가 붙기 때문에 DB direct보다 느리다.
+- 따라서 Redis cache는 miss 비용 절감용이 아니라 반복 chat 요청의 hit 비용 절감용이다.
+- `evictUser`는 수정 이벤트 시점에만 발생하는 비용이므로 chat read path의 매 요청 비용과 분리해서 본다.
+- 현재 benchmark 데이터셋에서는 DB direct 자체도 낮지만, raw source full lookup과 실제 LLM context build 조합에서는 summary/cache 방향이 여전히 유효하다.
+
+### Redis 도입 기준
+
+순수 request latency만 보면 Redis는 hit ratio가 높아야 이긴다.
+
+계산식:
+
+```text
+redis_average = hit_ratio * redis_hit + (1 - hit_ratio) * redis_miss
+break_even = (redis_miss - db_direct) / (redis_miss - redis_hit)
+```
+
+이번 Spring/JVM benchmark avg 기준:
+
+```text
+redis_hit = 0.614ms
+redis_miss = 5.293ms
+db_direct = 0.867ms
+break_even = (5.293 - 0.867) / (5.293 - 0.614) = 94.6%
+```
+
+p95 기준:
+
+```text
+redis_hit = 1.176ms
+redis_miss = 8.368ms
+db_direct = 1.519ms
+break_even = (8.368 - 1.519) / (8.368 - 1.176) = 95.2%
+```
+
+| 기준 | Redis 유지 판단 |
+|---|---|
+| request latency만 최적화 | observed hit ratio가 95% 이상이면 Redis 유지 근거가 충분하다. |
+| hit ratio 90-95% | 평균 latency만 보면 애매하다. DB pool 사용률, 동시 요청 수, scale-out 필요성을 같이 본다. |
+| hit ratio 80-90% | request latency 개선 근거는 약하다. 다만 hit 요청이 DB pool을 점유하지 않으므로 DB pool pressure가 있으면 유지할 수 있다. |
+| hit ratio 80% 미만 | Redis miss 비용이 커서 기본값으로 강제하기 어렵다. cache key/window, evict 빈도, preload 여부를 다시 본다. |
+
+DB pool 관점에서는 Redis hit 요청이 `daily_chat_summaries` 조회 커넥션을 점유하지 않는다는 점이 중요하다.
+
+예를 들어 observed hit ratio가 80%면 daily summary context DB 조회와 그에 따른 pool 점유는 약 80% 줄어든다. 이 경우 총 request latency가 DB direct보다 아주 낮지 않더라도, chat 요청이 몰릴 때 DB connection pool을 다른 식사/운동/체중 기록 API와 나눠 쓰는 부담을 줄일 수 있다.
+
+따라서 운영 판단은 다음처럼 둔다.
+
+| 상황 | Decision |
+|---|---|
+| 단일 backend, 낮은 동시성, DB pool 여유 | 기본 `memory` 유지. Redis는 선택 옵션으로 둔다. |
+| scale-out 또는 여러 backend instance | Redis 유지. 인스턴스 간 cache 공유와 heap 부담 감소가 latency break-even보다 중요하다. |
+| DB pool active connection이 자주 높고 hit ratio 80% 이상 | Redis 유지 가능. request latency보다 DB pool 점유 감소를 우선한다. |
+| hit ratio 95% 이상 | Redis 유지. latency와 DB pool 관점 모두 근거가 충분하다. |
+| Redis miss/evict가 자주 발생 | Redis 강제 적용 보류. 변경 이벤트, TTL, cache key 범위를 다시 점검한다. |
+
 ## Safety Check
 
 | Check | Result | Meaning |
@@ -209,13 +347,15 @@ Interpretation:
 
 | Item | Decision |
 |---|---|
-| Production policy | `markChanged` user evict + TTL 5분 in-memory cache 적용 |
+| Production policy | `markChanged` user evict + TTL cache 적용 |
 | Cache key | user id + date range |
 | Cache miss behavior | 기존 `DailyChatSummaryMapper.findFreshSummariesBetween` DB 조회로 fallback |
 | Cache evict trigger | `DailyChatSummaryStateService.markChanged`, `markDailyGoalChanged` |
 | Raw source lookup decision | 최근 6일 원본 전체 조회를 chat context path에서 반복하지 않음 |
-| Current deployment assumption | 단일 backend 인스턴스 |
-| Scale-out follow-up | Redis cache 또는 pub/sub 기반 evict 필요 |
+| Current deployment assumption | 기본값은 local in-memory cache |
+| Scale-out follow-up | Redis cache 구현 추가. `AI_CHAT_SUMMARY_CONTEXT_CACHE_TYPE=redis`로 활성화 |
+| Redis benchmark decision | Spring/JVM benchmark test 기준 Redis hit은 DB direct보다 낮고, Redis miss는 더 비싸므로 hit ratio가 핵심 지표 |
+| Redis adoption threshold | latency 기준 hit ratio 95% 이상. DB pool pressure가 있으면 80% 이상에서도 Redis 유지 가능 |
 
 ## Decision Rule
 
@@ -237,6 +377,7 @@ Interpretation:
 
 - 이 실험은 LLM provider 호출 시간을 포함하지 않는다.
 - shell script의 psql 측정은 docker exec/process overhead를 포함한다. 절대값보다 같은 환경에서의 상대 비교를 우선한다.
+- Redis 비교 script는 per-iteration docker exec overhead를 제외하지만 CLI process overhead와 timer 해상도 한계가 있다. app 내부 latency 검증은 별도 통합 측정이 필요하다.
 - script는 `ON_ERROR_STOP=1`로 실행되어 스키마가 없거나 seed가 실패하면 즉시 중단한다.
 - 실제 cache hit 비용은 Redis/local cache 구현 방식에 따라 달라진다.
 - 정합성이 우선이므로 `daily_chat_summary_states.status = 'FRESH'`와 source version 일치를 만족하지 않는 summary는 cache hit에서도 사용하면 안 된다.
