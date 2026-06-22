@@ -15,14 +15,18 @@ import com.aihealthcoach.dailygoal.mapper.DailyGoalMapper;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
 import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -43,9 +47,23 @@ class DailyGoalServiceImplTest {
 
     @Mock
     private ExerciseMapper exerciseMapper;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
-    @InjectMocks
+    private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T03:00:00Z"), ZoneId.of("Asia/Seoul"));
     private DailyGoalServiceImpl dailyGoalService;
+
+    @BeforeEach
+    void setUp() {
+        dailyGoalService = new DailyGoalServiceImpl(
+                dailyGoalMapper,
+                userMapper,
+                mealMapper,
+                exerciseMapper,
+                dailyChatSummaryStateService,
+                clock
+        );
+    }
 
     @Test
     void recommendGoalUsesRequestedGoalTypeGenderAndAge() {
@@ -95,6 +113,7 @@ class DailyGoalServiceImplTest {
         assertThat(response.exerciseCalorieGoal()).isEqualTo(1200);
         assertThat(response.goalType()).isEqualTo("WEIGHT_LOSS");
         verify(userMapper).updateUserProfileGoalType(USER_ID, "WEIGHT_LOSS");
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, DATE);
     }
 
     @Test

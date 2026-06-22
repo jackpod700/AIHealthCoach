@@ -17,9 +17,11 @@ import com.aihealthcoach.meal.mapper.MealMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.Clock;
 import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -41,6 +43,8 @@ public class DailyGoalServiceImpl implements DailyGoalService {
     private final UserMapper userMapper;
     private final MealMapper mealMapper;
     private final ExerciseMapper exerciseMapper;
+    private final DailyChatSummaryStateService dailyChatSummaryStateService;
+    private final Clock clock;
 
     @Override
     @Transactional(readOnly = true)
@@ -68,6 +72,7 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                 .exerciseCalorieGoal(request.exerciseCalorieGoal())
                 .build());
         userMapper.updateUserProfileGoalType(userId, savedGoal.getGoalType());
+        dailyChatSummaryStateService.markChanged(userId, LocalDate.now(clock));
 
         return toGoalResponse(savedGoal);
     }
