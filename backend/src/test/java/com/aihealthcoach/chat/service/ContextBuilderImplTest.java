@@ -1,6 +1,7 @@
 package com.aihealthcoach.chat.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -25,6 +26,9 @@ import com.aihealthcoach.meal.dto.MealDto.DailyMealResponse;
 import com.aihealthcoach.meal.service.MealService;
 import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
 import com.aihealthcoach.memory.service.UserMemoryService;
+import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextResponse;
+import com.aihealthcoach.summary.mapper.DailyChatSummaryMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.service.UserService;
 
@@ -46,6 +50,10 @@ class ContextBuilderImplTest {
     private ChatService chatService;
     @Mock
     private UserMemoryService userMemoryService;
+    @Mock
+    private DailyChatSummaryService dailyChatSummaryService;
+    @Mock
+    private DailyChatSummaryMapper dailyChatSummaryMapper;
 
     private ContextBuilderImpl contextBuilder;
 
@@ -57,7 +65,9 @@ class ContextBuilderImplTest {
                 mealService,
                 exerciseService,
                 chatService,
-                userMemoryService
+                userMemoryService,
+                dailyChatSummaryService,
+                dailyChatSummaryMapper
         );
     }
 
@@ -77,10 +87,18 @@ class ContextBuilderImplTest {
         List<UserMemoryResponse> activeMemories = List.of(
                 new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null)
         );
+        List<DailyChatSummaryContextResponse> recentDailySummaries = List.of(
+                new DailyChatSummaryContextResponse(LocalDate.of(2026, 6, 7), "전날은 섭취 목표에 가까웠다.")
+        );
         when(userService.findProfileIfExists(USER_ID)).thenReturn(profile);
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(dailyGoal);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(dailyMeals);
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(dailyExercises);
+        when(dailyChatSummaryMapper.findFreshSummariesBetween(
+                USER_ID,
+                LocalDate.of(2026, 6, 2),
+                LocalDate.of(2026, 6, 7)
+        )).thenReturn(recentDailySummaries);
         when(chatService.findRecentMessages(USER_ID, 10)).thenReturn(recentTurns);
         when(userMemoryService.findActiveMemories(USER_ID, 10)).thenReturn(activeMemories);
 
@@ -90,10 +108,17 @@ class ContextBuilderImplTest {
         assertThat(context.dailyGoal()).isEqualTo(dailyGoal);
         assertThat(context.dailyMeals()).isEqualTo(dailyMeals);
         assertThat(context.dailyExercises()).isEmpty();
+        assertThat(context.recentDailySummaries()).isEqualTo(recentDailySummaries);
         assertThat(context.recentTurns()).extracting(ChatMessageResponse::content)
                 .containsExactly("어제 점심은 샐러드였어", "기록해둘게요.");
         assertThat(context.activeMemories()).extracting(UserMemoryResponse::content)
                 .containsExactly("유제품은 피하고 싶어");
+        verify(dailyChatSummaryService).refreshForUser(USER_ID);
+        verify(dailyChatSummaryMapper).findFreshSummariesBetween(
+                USER_ID,
+                LocalDate.of(2026, 6, 2),
+                LocalDate.of(2026, 6, 7)
+        );
         verify(chatService).findRecentMessages(USER_ID, 10);
         verify(userMemoryService).findActiveMemories(USER_ID, 10);
     }
@@ -104,6 +129,11 @@ class ContextBuilderImplTest {
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(null);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(emptyDailyMeals());
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(List.of());
+        when(dailyChatSummaryMapper.findFreshSummariesBetween(
+                USER_ID,
+                LocalDate.of(2026, 6, 2),
+                LocalDate.of(2026, 6, 7)
+        )).thenReturn(List.of());
         when(chatService.findRecentMessages(USER_ID, 10)).thenReturn(List.of());
         when(userMemoryService.findActiveMemories(USER_ID, 10)).thenReturn(List.of());
 
@@ -112,8 +142,32 @@ class ContextBuilderImplTest {
         assertThat(context.profile()).isNull();
         assertThat(context.dailyGoal()).isNull();
         assertThat(context.dailyExercises()).isEmpty();
+        assertThat(context.recentDailySummaries()).isEmpty();
         assertThat(context.recentTurns()).isEmpty();
         assertThat(context.activeMemories()).isEmpty();
+    }
+
+    @Test
+    void buildContinuesWhenDailySummaryRefreshFails() {
+        doThrow(new IllegalStateException("summary refresh failed"))
+                .when(dailyChatSummaryService)
+                .refreshForUser(USER_ID);
+        when(userService.findProfileIfExists(USER_ID)).thenReturn(null);
+        when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(null);
+        when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(emptyDailyMeals());
+        when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(List.of());
+        when(dailyChatSummaryMapper.findFreshSummariesBetween(
+                USER_ID,
+                LocalDate.of(2026, 6, 2),
+                LocalDate.of(2026, 6, 7)
+        )).thenReturn(List.of());
+        when(chatService.findRecentMessages(USER_ID, 10)).thenReturn(List.of());
+        when(userMemoryService.findActiveMemories(USER_ID, 10)).thenReturn(List.of());
+
+        UserChatContext context = contextBuilder.build(USER_ID, CONTEXT_DATE);
+
+        assertThat(context.recentDailySummaries()).isEmpty();
+        verify(dailyChatSummaryService).refreshForUser(USER_ID);
     }
 
     private DailyMealResponse emptyDailyMeals() {

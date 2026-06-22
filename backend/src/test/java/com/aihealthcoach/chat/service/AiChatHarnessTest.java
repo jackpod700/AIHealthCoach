@@ -103,6 +103,7 @@ class AiChatHarnessTest {
                 null,
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of(new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null))
         );
         AiChatHarness harness = new AiChatHarness()

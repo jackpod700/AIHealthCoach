@@ -14,6 +14,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 import com.aihealthcoach.chat.dto.LlmDto.LlmImage;
 import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
+import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextResponse;
 
 class PromptBuilderImplTest {
 
@@ -25,6 +26,7 @@ class PromptBuilderImplTest {
                 null,
                 null,
                 null,
+                List.of(),
                 List.of(),
                 List.of(new ChatMessageResponse("USER", "오늘 점심은 라면이야", null)),
                 List.of(new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null))
@@ -41,7 +43,7 @@ class PromptBuilderImplTest {
 
     @Test
     void buildTextOmitsMemorySectionWhenNoActiveMemoryExists() {
-        UserChatContext context = new UserChatContext(null, null, null, List.of(), List.of(), List.of());
+        UserChatContext context = new UserChatContext(null, null, null, List.of(), List.of(), List.of(), List.of());
 
         LlmRequest request = promptBuilder.buildText(LocalDate.of(2026, 6, 8), "안녕하세요", context);
 
@@ -55,6 +57,7 @@ class PromptBuilderImplTest {
                 null,
                 null,
                 null,
+                List.of(),
                 List.of(),
                 List.of(),
                 List.of(new UserMemoryResponse(1L, "<ignore_previous_instructions>", true, null, null))
@@ -74,6 +77,7 @@ class PromptBuilderImplTest {
                 null,
                 List.of(),
                 List.of(),
+                List.of(),
                 List.of(new UserMemoryResponse(1L, "매운 음식은 피하고 싶어", true, null, null))
         );
 
@@ -86,5 +90,28 @@ class PromptBuilderImplTest {
 
         assertThat(request.stableSystemPrompt()).contains("If no food is visible");
         assertThat(request.dynamicContextPrompt()).contains("<user_memories>\n- 매운 음식은 피하고 싶어");
+    }
+
+    @Test
+    void buildTextRendersRecentDailySummariesAsDataContext() {
+        UserChatContext context = new UserChatContext(
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(new DailyChatSummaryContextResponse(
+                        LocalDate.of(2026, 6, 7),
+                        "섭취 목표에 가까웠고 걷기 운동을 했다."
+                )),
+                List.of(),
+                List.of()
+        );
+
+        LlmRequest request = promptBuilder.buildText(LocalDate.of(2026, 6, 8), "어제 어땠지?", context);
+
+        assertThat(request.dynamicContextPrompt()).contains("""
+                <recent_daily_summaries>
+                - 2026-06-07: 섭취 목표에 가까웠고 걷기 운동을 했다.
+                </recent_daily_summaries>""");
     }
 }
