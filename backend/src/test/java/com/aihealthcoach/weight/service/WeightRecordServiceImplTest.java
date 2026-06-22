@@ -14,6 +14,7 @@ import com.aihealthcoach.weight.entity.WeightRecord;
 import com.aihealthcoach.weight.exception.WeightRecordErrorCode;
 import com.aihealthcoach.weight.exception.WeightRecordException;
 import com.aihealthcoach.weight.mapper.WeightRecordMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
@@ -42,12 +43,19 @@ class WeightRecordServiceImplTest {
 
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
     private WeightRecordServiceImpl weightRecordService;
 
     @BeforeEach
     void setUp() {
-        weightRecordService = new WeightRecordServiceImpl(weightRecordMapper, userMapper, CLOCK);
+        weightRecordService = new WeightRecordServiceImpl(
+                weightRecordMapper,
+                userMapper,
+                CLOCK,
+                dailyChatSummaryStateService
+        );
     }
 
     @Test
@@ -70,6 +78,26 @@ class WeightRecordServiceImplTest {
         assertThat(response.weightKg()).isEqualByComparingTo("68.40");
         assertThat(response.updatedAt()).isEqualTo(LocalDateTime.of(2026, 6, 17, 12, 0));
         verify(userMapper).updateUserProfileCurrentWeight(USER_ID, new BigDecimal("68.40"));
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, RECORD_DATE);
+    }
+
+    @Test
+    void upsertWeightRecordPropagatesSummaryStateFailure() {
+        WeightRecord savedRecord = WeightRecord.builder()
+                .userId(USER_ID)
+                .recordDate(RECORD_DATE)
+                .weightKg(new BigDecimal("68.40"))
+                .build();
+        when(weightRecordMapper.upsertWeightRecord(any(WeightRecord.class))).thenReturn(savedRecord);
+        when(weightRecordMapper.findLatestWeightRecord(USER_ID)).thenReturn(savedRecord);
+        org.mockito.Mockito.doThrow(new IllegalStateException("summary state unavailable"))
+                .when(dailyChatSummaryStateService)
+                .markChanged(USER_ID, RECORD_DATE);
+
+        assertThatThrownBy(() -> weightRecordService.upsertWeightRecord(
+                USER_ID,
+                new WeightRecordRequest(RECORD_DATE, new BigDecimal("68.40"))
+        )).isInstanceOf(IllegalStateException.class);
     }
 
     @Test
