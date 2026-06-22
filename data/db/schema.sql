@@ -421,3 +421,42 @@ CREATE TABLE IF NOT EXISTS oauth_accounts (
 );
 ALTER TABLE users
 ALTER COLUMN password DROP NOT NULL;
+
+CREATE TABLE IF NOT EXISTS daily_chat_summaries (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    summary_date DATE NOT NULL,
+    content TEXT NOT NULL,
+    source_version BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_daily_chat_summaries_user_date
+        UNIQUE (user_id, summary_date),
+    CONSTRAINT fk_daily_chat_summaries_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summaries_date
+    ON daily_chat_summaries(summary_date, user_id);
+
+CREATE TABLE IF NOT EXISTS daily_chat_summary_states (
+    user_id BIGINT NOT NULL,
+    summary_date DATE NOT NULL,
+    source_version BIGINT NOT NULL DEFAULT 1,
+    source_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_daily_chat_summary_states
+        PRIMARY KEY (user_id, summary_date),
+    CONSTRAINT fk_daily_chat_summary_states_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summary_states_date
+    ON daily_chat_summary_states(summary_date, user_id);

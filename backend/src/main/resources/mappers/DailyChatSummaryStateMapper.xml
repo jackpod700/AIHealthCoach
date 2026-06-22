@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.summary.mapper.DailyChatSummaryStateMapper">
+    <insert id="upsert" parameterType="com.aihealthcoach.summary.entity.DailyChatSummaryState">
+        INSERT INTO daily_chat_summary_states (
+            user_id,
+            summary_date,
+            source_version,
+            source_updated_at,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{userId},
+            #{summaryDate},
+            1,
+            NOW(),
+            NOW(),
+            NOW()
+        )
+        ON CONFLICT (user_id, summary_date)
+        DO UPDATE SET
+            source_version = daily_chat_summary_states.source_version + 1,
+            source_updated_at = NOW(),
+            updated_at = NOW()
+    </insert>
+</mapper>
