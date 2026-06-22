@@ -1,6 +1,5 @@
 package com.aihealthcoach.meal.mapper;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -15,8 +14,6 @@ import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 @Mapper
 public interface MealMapper {
     List<MealFood> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
-
-    BigDecimal sumDailyCalories(@Param("userId") Long userId, @Param("date") LocalDate date);
 
     MealFood sumDailyNutrition(@Param("userId") Long userId, @Param("date") LocalDate date);
 
@@ -49,7 +46,7 @@ public interface MealMapper {
 
     void insertMealItem(@Param("mealId") Long mealId, @Param("item") MealItemRequest item);
 
-    boolean existsFoodId(@Param("foodId") Long foodId);
+    List<Long> findFoodIdsByIds(@Param("foodIds") List<Long> foodIds);
 
     long countFoodGroups(@Param("query") String query, @Param("tokens") List<Token> tokens);
 

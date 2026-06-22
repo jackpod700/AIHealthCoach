@@ -198,6 +198,14 @@ CREATE INDEX IF NOT EXISTS idx_food_submission_requests_submitter
 
 CREATE INDEX IF NOT EXISTS idx_food_submission_requests_status
     ON food_submission_requests(status, submitted_at DESC);
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS idx_foods_compact_search_trgm
+    ON foods USING GIN ((
+        REGEXP_REPLACE(name, '\s+', '', 'g')
+        || '|'
+        || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+    ) gin_trgm_ops);
 
 CREATE TABLE IF NOT EXISTS meals (
     id BIGSERIAL PRIMARY KEY,
@@ -403,6 +411,7 @@ CREATE TABLE IF NOT EXISTS weight_records (
 
 CREATE INDEX IF NOT EXISTS idx_weight_records_user_date
     ON weight_records(user_id, record_date);
+
 CREATE TABLE IF NOT EXISTS oauth_accounts (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,

@@ -44,7 +44,7 @@ class AiMealProposalServiceImplTest {
     }
 
     @Test
-    void createProposalAppliesDefaultsAndReturnsUnlimitedFoodCandidates() {
+    void createProposalAppliesDefaultsAndReturnsFoodCandidates() {
         when(clock.instant()).thenReturn(Instant.parse("2026-06-02T03:30:00Z"));
         when(clock.getZone()).thenReturn(SEOUL);
         when(mealMapper.searchFoods("kimchi stew", List.of(new Token("kimchi", "kimchi"), new Token("stew", "stew"))))

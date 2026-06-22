@@ -135,9 +135,11 @@ public class MealServiceImpl implements MealService {
             if (!foodIds.add(item.foodId())) {
                 throw MealException.invalidMealItem();
             }
-            if (!mealMapper.existsFoodId(item.foodId())) {
-                throw MealException.foodNotFound();
-            }
+        }
+
+        List<Long> existingFoodIds = mealMapper.findFoodIdsByIds(List.copyOf(foodIds));
+        if (existingFoodIds.size() != foodIds.size()) {
+            throw MealException.foodNotFound();
         }
     }
 

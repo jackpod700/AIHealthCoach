@@ -65,17 +65,6 @@
             f.name
     </select>
 
-    <select id="sumDailyCalories" resultType="java.math.BigDecimal">
-        SELECT COALESCE(SUM(COALESCE(f.calories, 0) * mi.quantity), 0)
-        FROM meals m
-        JOIN meal_items mi
-            ON mi.meal_id = m.id
-        JOIN foods f
-            ON f.id = mi.food_id
-        WHERE m.user_id = #{userId}
-            AND m.meal_date = #{date}
-    </select>
-
     <select id="sumDailyNutrition" resultType="com.aihealthcoach.meal.entity.MealFood">
         SELECT
             COALESCE(SUM(COALESCE(f.calories, 0) * mi.quantity), 0) AS calories,
@@ -163,12 +152,13 @@
         VALUES (#{mealId}, #{item.foodId}, #{item.quantity})
     </insert>
 
-    <select id="existsFoodId" resultType="boolean">
-        SELECT EXISTS (
-            SELECT 1
-            FROM foods
-            WHERE id = #{foodId}
-        )
+    <select id="findFoodIdsByIds" resultType="long">
+        SELECT id
+        FROM foods
+        WHERE id IN
+        <foreach collection="foodIds" item="foodId" open="(" separator="," close=")">
+            #{foodId}
+        </foreach>
     </select>
 
     <!--
@@ -182,11 +172,10 @@
             <if test="tokens != null and tokens.size() > 0">
                 <foreach collection="tokens" item="token" separator=" AND ">
                     (
-                        name ILIKE CONCAT('%', #{token.value}, '%')
-                        OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
-                        OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                        OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                    )
+                        REGEXP_REPLACE(name, '\s+', '', 'g')
+                        || '|'
+                        || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+                    ) ILIKE CONCAT('%', #{token.compactValue}, '%')
                 </foreach>
             </if>
         </where>
@@ -289,11 +278,10 @@
         WHERE
         <foreach collection="tokens" item="token" separator=" AND ">
             (
-                name ILIKE CONCAT('%', #{token.value}, '%')
-                OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
-                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-            )
+                REGEXP_REPLACE(name, '\s+', '', 'g')
+                || '|'
+                || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+            ) ILIKE CONCAT('%', #{token.compactValue}, '%')
         </foreach>
         ORDER BY
             CASE
@@ -311,5 +299,6 @@
             LENGTH(name),
             name,
             brand
+        LIMIT 20
     </select>
 </mapper>
