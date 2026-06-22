@@ -15,20 +15,24 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
+import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 @ExtendWith(MockitoExtension.class)
 class ChatServiceImplTest {
 
     @Mock
     private ChatMapper chatMapper;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
     private ChatServiceImpl chatService;
 
     @BeforeEach
     void setUp() {
-        chatService = new ChatServiceImpl(chatMapper);
+        chatService = new ChatServiceImpl(chatMapper, dailyChatSummaryStateService);
     }
 
     @Test
@@ -58,5 +62,35 @@ class ChatServiceImplTest {
         assertThat(chatService.findRecentMessages(1L, 0)).isEmpty();
 
         verify(chatMapper, never()).findRecentMessages(1L, 0);
+    }
+
+    @Test
+    void insertUserMessageMarksItsSummaryDate() {
+        ChatMessage savedMessage = ChatMessage.builder()
+                .userId(1L)
+                .role("USER")
+                .content("오늘 운동했어")
+                .createdAt(LocalDateTime.of(2026, 6, 20, 10, 30))
+                .build();
+        when(chatMapper.insertMessage(org.mockito.ArgumentMatchers.any(ChatMessage.class))).thenReturn(savedMessage);
+
+        chatService.insert(1L, new ChatMessageRequest("오늘 운동했어"));
+
+        verify(dailyChatSummaryStateService).markChanged(1L, java.time.LocalDate.of(2026, 6, 20));
+    }
+
+    @Test
+    void insertAssistantMessageDoesNotMarkSummaryState() {
+        ChatMessage assistantMessage = ChatMessage.builder()
+                .userId(1L)
+                .role("ASSISTANT")
+                .content("좋아요.")
+                .createdAt(LocalDateTime.of(2026, 6, 20, 10, 30))
+                .build();
+        when(chatMapper.insertMessage(assistantMessage)).thenReturn(assistantMessage);
+
+        chatService.insert(assistantMessage);
+
+        verify(dailyChatSummaryStateService, never()).markChanged(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
     }
 }

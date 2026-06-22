@@ -5,11 +5,13 @@ import java.util.Collections;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -18,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class ChatServiceImpl implements ChatService {
 
     private final ChatMapper chatDao;
+    private final DailyChatSummaryStateService dailyChatSummaryStateService;
 
     @Override
     public List<ChatMessageResponse> findMessagesByUserId(Long userId) {
@@ -40,12 +43,15 @@ public class ChatServiceImpl implements ChatService {
     }
 
     @Override
+    @Transactional
     public ChatMessageResponse insert(Long userId, ChatMessageRequest message) {
         ChatMessage savedMessage = chatDao.insertMessage(message.toEntity(userId));
+        dailyChatSummaryStateService.markChanged(userId, savedMessage.getCreatedAt().toLocalDate());
         return ChatMessageResponse.fromEntity(savedMessage);
     }
 
     @Override
+    @Transactional
     public ChatMessageResponse insert(ChatMessage message) {
         ChatMessage savedMessage = chatDao.insertMessage(message);
         return ChatMessageResponse.fromEntity(savedMessage);
