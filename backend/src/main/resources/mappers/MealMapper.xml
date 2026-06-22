@@ -145,6 +145,13 @@
         WHERE meal_id = #{mealId}
     </delete>
 
+    <select id="findMealDateById" resultType="java.time.LocalDate">
+        SELECT meal_date
+        FROM meals
+        WHERE id = #{mealId}
+          AND user_id = #{userId}
+    </select>
+
     <delete id="deleteMeal">
         DELETE FROM meals
         WHERE id = #{mealId}
