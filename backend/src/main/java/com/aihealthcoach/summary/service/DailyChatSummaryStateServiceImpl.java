@@ -20,6 +20,7 @@ public class DailyChatSummaryStateServiceImpl implements DailyChatSummaryStateSe
     private static final int REGENERATION_WINDOW_DAYS = 7;
 
     private final DailyChatSummaryStateMapper dailyChatSummaryStateMapper;
+    private final DailySummaryContextCache dailySummaryContextCache;
     private final Clock clock;
 
     @Override
@@ -51,5 +52,6 @@ public class DailyChatSummaryStateServiceImpl implements DailyChatSummaryStateSe
                 .changedSources(source.name())
                 .dailyGoalSnapshotPayload(dailyGoalSnapshotPayload)
                 .build());
+        dailySummaryContextCache.evictUser(userId);
     }
 }

@@ -73,7 +73,7 @@
                         ),
                         ','
                     )) source
-                    WHERE source <> ''
+                    WHERE source &lt;&gt; ''
                 ) merged_sources
             ),
             daily_goal_snapshot_payload = COALESCE(

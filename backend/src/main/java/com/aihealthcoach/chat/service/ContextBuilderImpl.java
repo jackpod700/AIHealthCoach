@@ -17,6 +17,7 @@ import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
 import com.aihealthcoach.memory.service.UserMemoryService;
 import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextResponse;
 import com.aihealthcoach.summary.mapper.DailyChatSummaryMapper;
+import com.aihealthcoach.summary.service.DailySummaryContextCache;
 import com.aihealthcoach.summary.service.DailyChatSummaryService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.service.UserService;
@@ -41,6 +42,7 @@ public class ContextBuilderImpl implements ContextBuilder {
     private final UserMemoryService userMemoryService;
     private final DailyChatSummaryService dailyChatSummaryService;
     private final DailyChatSummaryMapper dailyChatSummaryMapper;
+    private final DailySummaryContextCache dailySummaryContextCache;
 
     @Override
     public UserChatContext build(Long userId, LocalDate contextDate) {
@@ -76,6 +78,11 @@ public class ContextBuilderImpl implements ContextBuilder {
     private List<DailyChatSummaryContextResponse> findRecentDailySummaries(Long userId, LocalDate contextDate) {
         LocalDate from = contextDate.minusDays(RECENT_DAILY_SUMMARY_DAYS);
         LocalDate to = contextDate.minusDays(1);
-        return dailyChatSummaryMapper.findFreshSummariesBetween(userId, from, to);
+        return dailySummaryContextCache.getOrLoad(
+                userId,
+                from,
+                to,
+                () -> dailyChatSummaryMapper.findFreshSummariesBetween(userId, from, to)
+        );
     }
 }
