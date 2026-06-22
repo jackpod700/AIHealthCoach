@@ -25,6 +25,7 @@ import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealErrorCode;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,7 +58,7 @@ class MealServiceImplTest {
         verify(mealMapper).insertMeal(USER_ID, "BREAKFAST", MEAL_DATE);
         verify(mealMapper).insertMealItem(MEAL_ID, request.items().get(0));
         verify(mealMapper, never()).deleteMealItems(any());
-        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE);
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE, DailyChatSummaryChangeSource.MEAL);
     }
 
     @Test
@@ -185,7 +186,7 @@ class MealServiceImplTest {
         mealService.deleteMeal(USER_ID, MEAL_ID);
 
         verify(mealMapper).deleteMeal(USER_ID, MEAL_ID);
-        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE);
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE, DailyChatSummaryChangeSource.MEAL);
     }
 
     @Test

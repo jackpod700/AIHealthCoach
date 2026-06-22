@@ -13,10 +13,11 @@ import com.aihealthcoach.exercise.entity.ExerciseActivityOption;
 import com.aihealthcoach.exercise.entity.ExerciseRecord;
 import com.aihealthcoach.exercise.exception.ExerciseException;
 import com.aihealthcoach.exercise.mapper.ExerciseMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
 import com.aihealthcoach.weight.mapper.WeightRecordMapper;
-import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -79,7 +80,11 @@ class ExerciseServiceImplTest {
         assertThat(response.caloriesBurned()).isEqualTo(133);
         assertThat(response.activityNameKo()).isEqualTo("걷기");
         assertThat(response.metValue()).isEqualByComparingTo("3.8");
-        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 1));
+        verify(dailyChatSummaryStateService).markChanged(
+                1L,
+                LocalDate.of(2026, 6, 1),
+                DailyChatSummaryChangeSource.EXERCISE
+        );
     }
 
     @Test
@@ -201,7 +206,11 @@ class ExerciseServiceImplTest {
         assertThat(response.caloriesBurned()).isEqualTo(210);
         assertThat(response.activityNameKo()).isEqualTo("걷기");
         assertThat(response.metValue()).isEqualByComparingTo("6.0");
-        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 1));
+        verify(dailyChatSummaryStateService).markChanged(
+                1L,
+                LocalDate.of(2026, 6, 1),
+                DailyChatSummaryChangeSource.EXERCISE
+        );
     }
 
     @Test
@@ -223,7 +232,11 @@ class ExerciseServiceImplTest {
         exerciseService.deleteExerciseRecord(1L, 10L);
 
         verify(exerciseDao).deleteExerciseRecord(1L, 10L);
-        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 2));
+        verify(dailyChatSummaryStateService).markChanged(
+                1L,
+                LocalDate.of(2026, 6, 2),
+                DailyChatSummaryChangeSource.EXERCISE
+        );
     }
 
     @Test

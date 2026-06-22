@@ -113,7 +113,11 @@ class DailyGoalServiceImplTest {
         assertThat(response.exerciseCalorieGoal()).isEqualTo(1200);
         assertThat(response.goalType()).isEqualTo("WEIGHT_LOSS");
         verify(userMapper).updateUserProfileGoalType(USER_ID, "WEIGHT_LOSS");
-        verify(dailyChatSummaryStateService).markChanged(USER_ID, DATE);
+        verify(dailyChatSummaryStateService).markDailyGoalChanged(
+                USER_ID,
+                DATE,
+                "{\"goalType\":\"WEIGHT_LOSS\",\"calorieIntakeGoal\":1000,\"exerciseCalorieGoal\":1200}"
+        );
     }
 
     @Test

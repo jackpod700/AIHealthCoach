@@ -18,6 +18,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,11 +77,15 @@ class ChatServiceImplTest {
 
         chatService.insert(1L, new ChatMessageRequest("오늘 운동했어"));
 
-        verify(dailyChatSummaryStateService).markChanged(1L, java.time.LocalDate.of(2026, 6, 20));
+        verify(dailyChatSummaryStateService).markChanged(
+                1L,
+                java.time.LocalDate.of(2026, 6, 20),
+                DailyChatSummaryChangeSource.CHAT
+        );
     }
 
     @Test
-    void insertAssistantMessageDoesNotMarkSummaryState() {
+    void insertAssistantMessageMarksItsSummaryDate() {
         ChatMessage assistantMessage = ChatMessage.builder()
                 .userId(1L)
                 .role("ASSISTANT")
@@ -91,6 +96,10 @@ class ChatServiceImplTest {
 
         chatService.insert(assistantMessage);
 
-        verify(dailyChatSummaryStateService, never()).markChanged(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+        verify(dailyChatSummaryStateService).markChanged(
+                1L,
+                java.time.LocalDate.of(2026, 6, 20),
+                DailyChatSummaryChangeSource.CHAT
+        );
     }
 }
