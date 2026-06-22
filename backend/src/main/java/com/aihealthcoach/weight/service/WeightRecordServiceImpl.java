@@ -1,6 +1,7 @@
 package com.aihealthcoach.weight.service;
 
 import com.aihealthcoach.user.mapper.UserMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import com.aihealthcoach.weight.dto.WeightRecordDto.WeightRecordRequest;
 import com.aihealthcoach.weight.dto.WeightRecordDto.WeightRecordResponse;
@@ -38,7 +39,7 @@ public class WeightRecordServiceImpl implements WeightRecordService {
                 .weightKg(request.weightKg())
                 .build());
         syncCurrentWeight(userId);
-        dailyChatSummaryStateService.markChanged(userId, request.recordDate());
+        dailyChatSummaryStateService.markChanged(userId, request.recordDate(), DailyChatSummaryChangeSource.WEIGHT);
 
         return WeightRecordResponse.fromEntity(savedRecord);
     }
@@ -73,7 +74,7 @@ public class WeightRecordServiceImpl implements WeightRecordService {
         }
 
         syncCurrentWeight(userId);
-        dailyChatSummaryStateService.markChanged(userId, recordDate);
+        dailyChatSummaryStateService.markChanged(userId, recordDate, DailyChatSummaryChangeSource.WEIGHT);
     }
 
     private void validateDeletableWeightRecord(Long userId, LocalDate recordDate) {

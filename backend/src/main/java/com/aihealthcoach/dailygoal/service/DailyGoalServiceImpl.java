@@ -72,7 +72,11 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                 .exerciseCalorieGoal(request.exerciseCalorieGoal())
                 .build());
         userMapper.updateUserProfileGoalType(userId, savedGoal.getGoalType());
-        dailyChatSummaryStateService.markChanged(userId, LocalDate.now(clock));
+        dailyChatSummaryStateService.markDailyGoalChanged(
+                userId,
+                LocalDate.now(clock),
+                toDailyGoalSnapshotPayload(savedGoal)
+        );
 
         return toGoalResponse(savedGoal);
     }
@@ -114,6 +118,16 @@ public class DailyGoalServiceImpl implements DailyGoalService {
                 dailyGoal.getExerciseCalorieGoal(),
                 dailyGoal.getUpdatedAt()
         );
+    }
+
+    private String toDailyGoalSnapshotPayload(DailyGoal dailyGoal) {
+        return """
+                {"goalType":"%s","calorieIntakeGoal":%d,"exerciseCalorieGoal":%d}
+                """.formatted(
+                dailyGoal.getGoalType(),
+                dailyGoal.getCalorieIntakeGoal(),
+                dailyGoal.getExerciseCalorieGoal()
+        ).trim();
     }
 
     private UserProfile findRequiredProfile(Long userId) {

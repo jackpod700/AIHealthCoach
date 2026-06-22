@@ -11,6 +11,7 @@ import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageResponse;
 import com.aihealthcoach.chat.entity.ChatMessage;
 import com.aihealthcoach.chat.mapper.ChatMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 import lombok.RequiredArgsConstructor;
@@ -46,7 +47,7 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public ChatMessageResponse insert(Long userId, ChatMessageRequest message) {
         ChatMessage savedMessage = chatDao.insertMessage(message.toEntity(userId));
-        dailyChatSummaryStateService.markChanged(userId, savedMessage.getCreatedAt().toLocalDate());
+        dailyChatSummaryStateService.markChanged(userId, savedMessage.getCreatedAt().toLocalDate(), DailyChatSummaryChangeSource.CHAT);
         return ChatMessageResponse.fromEntity(savedMessage);
     }
 
@@ -54,6 +55,11 @@ public class ChatServiceImpl implements ChatService {
     @Transactional
     public ChatMessageResponse insert(ChatMessage message) {
         ChatMessage savedMessage = chatDao.insertMessage(message);
+        dailyChatSummaryStateService.markChanged(
+                savedMessage.getUserId(),
+                savedMessage.getCreatedAt().toLocalDate(),
+                DailyChatSummaryChangeSource.CHAT
+        );
         return ChatMessageResponse.fromEntity(savedMessage);
     }
 

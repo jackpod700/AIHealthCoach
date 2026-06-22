@@ -20,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 @Service
@@ -42,7 +43,7 @@ public class ExerciseServiceImpl implements ExerciseService {
     public ExerciseRecordResponse insertExerciseRecord(Long userId, ExerciseRecordRequest request) {
         ExerciseRecord newRecord = buildExerciseRecord(userId, null, request);
         ExerciseRecord savedRecord = exerciseDao.insertExerciseRecord(newRecord);
-        dailyChatSummaryStateService.markChanged(userId, savedRecord.getExerciseDate());
+        dailyChatSummaryStateService.markChanged(userId, savedRecord.getExerciseDate(), DailyChatSummaryChangeSource.EXERCISE);
 
         return ExerciseRecordResponse.fromEntity(savedRecord);
     }
@@ -69,7 +70,7 @@ public class ExerciseServiceImpl implements ExerciseService {
             throw ExerciseException.exerciseRecordNotFound();
         }
 
-        dailyChatSummaryStateService.markChanged(userId, existingExerciseDate);
+        dailyChatSummaryStateService.markChanged(userId, existingExerciseDate, DailyChatSummaryChangeSource.EXERCISE);
 
         return ExerciseRecordResponse.fromEntity(savedRecord);
     }
@@ -88,7 +89,7 @@ public class ExerciseServiceImpl implements ExerciseService {
             throw ExerciseException.exerciseRecordNotFound();
         }
 
-        dailyChatSummaryStateService.markChanged(userId, existingExerciseDate);
+        dailyChatSummaryStateService.markChanged(userId, existingExerciseDate, DailyChatSummaryChangeSource.EXERCISE);
     }
 
     @Override

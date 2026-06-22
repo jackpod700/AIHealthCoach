@@ -22,6 +22,7 @@ import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
 import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 import lombok.RequiredArgsConstructor;
@@ -100,7 +101,7 @@ public class MealServiceImpl implements MealService {
             mealMapper.insertMealItem(mealId, item);
         }
 
-        dailyChatSummaryStateService.markChanged(userId, request.mealDate());
+        dailyChatSummaryStateService.markChanged(userId, request.mealDate(), DailyChatSummaryChangeSource.MEAL);
 
         return findDailyMeals(userId, request.mealDate());
     }
@@ -119,7 +120,7 @@ public class MealServiceImpl implements MealService {
             throw MealException.mealNotFound();
         }
 
-        dailyChatSummaryStateService.markChanged(userId, mealDate);
+        dailyChatSummaryStateService.markChanged(userId, mealDate, DailyChatSummaryChangeSource.MEAL);
     }
 
     private void validateMealType(String mealType) {
