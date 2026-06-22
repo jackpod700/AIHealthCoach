@@ -63,6 +63,13 @@ public class WeightRecordServiceImpl implements WeightRecordService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public WeightRecordResponse findWeightRecordByDate(Long userId, LocalDate recordDate) {
+        WeightRecord record = weightRecordMapper.findWeightRecordByDate(userId, recordDate);
+        return record == null ? null : WeightRecordResponse.fromEntity(record);
+    }
+
+    @Override
     @Transactional
     public void deleteWeightRecord(Long userId, LocalDate recordDate) {
         validateDeletableWeightRecord(userId, recordDate);

@@ -29,6 +29,15 @@
         LIMIT #{limit}
     </select>
 
+    <select id="findMessagesByCreatedAtBetween" resultMap="chatMessage">
+        SELECT id, user_id, role, content, created_at
+        FROM chat_messages
+        WHERE user_id = #{userId}
+          AND created_at &gt;= #{from}
+          AND created_at &lt; #{to}
+        ORDER BY created_at ASC, id ASC
+    </select>
+
     <select id="insertMessage"
         parameterType="com.aihealthcoach.chat.entity.ChatMessage"
         resultMap="chatMessage">

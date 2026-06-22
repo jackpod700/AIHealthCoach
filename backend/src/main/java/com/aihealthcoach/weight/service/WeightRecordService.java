@@ -10,5 +10,7 @@ public interface WeightRecordService {
 
     List<WeightRecordResponse> findWeightRecords(Long userId, LocalDate from, LocalDate to);
 
+    WeightRecordResponse findWeightRecordByDate(Long userId, LocalDate recordDate);
+
     void deleteWeightRecord(Long userId, LocalDate recordDate);
 }
