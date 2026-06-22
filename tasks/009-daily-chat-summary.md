@@ -2,7 +2,7 @@
 
 ## Status
 
-proposed
+done
 
 ## Goal
 
@@ -188,13 +188,13 @@ batch
 
 ## Acceptance Criteria
 
-- [ ] 두 summary 테이블과 제약·index가 schema에 추가된다.
-- [ ] 건강 활동 변경이 올바른 summary date의 state revision을 증가시킨다.
-- [ ] USER 메시지만 대화 summary 입력으로 표시된다.
-- [ ] 삭제 후에도 삭제된 record의 원래 날짜가 summary state에 반영된다.
-- [ ] 최근 7일을 벗어난 과거 수정은 summary state를 만들거나 변경하지 않는다.
-- [ ] 원본 변경 또는 summary state 저장 실패 시 전체 transaction이 rollback된다.
-- [ ] summary AI, scheduler, AI Chat context 주입은 추가되지 않는다.
+- [x] 두 summary 테이블과 제약·index가 schema에 추가된다.
+- [x] 건강 활동 변경이 올바른 summary date의 state revision을 증가시킨다.
+- [x] USER 메시지만 대화 summary 입력으로 표시된다.
+- [x] 삭제 후에도 삭제된 record의 원래 날짜가 summary state에 반영된다.
+- [x] 최근 7일을 벗어난 과거 수정은 summary state를 만들거나 변경하지 않는다.
+- [x] 원본 변경 또는 summary state 저장 실패 시 전체 transaction이 rollback된다.
+- [x] summary AI, scheduler, AI Chat context 주입은 추가되지 않는다.
 
 ## Verification
 
@@ -226,6 +226,14 @@ sh backend/harness/scripts/build
 - 제외:
   - 실제 LLM provider 호출 test
   - scheduler 또는 병렬 worker integration test
+
+## Result
+
+- `daily_chat_summaries`와 `daily_chat_summary_states` schema를 추가했다.
+- `DailyChatSummaryStateService`는 최근 7일 상태만 upsert하고, 같은 사용자·날짜의 변경은 DB `source_version` 증가로 합친다.
+- USER 채팅, 식사, 운동, 몸무게, 일일 목표, profile 변경이 summary state를 갱신한다.
+- 운동 수정은 운동 날짜를 변경할 수 없고, 기존 운동 날짜만 갱신한다.
+- `sh backend/harness/scripts/build`를 실행해 테스트 131개가 통과했다.
 
 ## Notes / Risks
 
