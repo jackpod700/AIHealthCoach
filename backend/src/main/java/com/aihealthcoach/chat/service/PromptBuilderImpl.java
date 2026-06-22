@@ -14,6 +14,7 @@ import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.meal.dto.MealDto.MealResponse;
 import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
+import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextResponse;
 
 import lombok.RequiredArgsConstructor;
 
@@ -54,6 +55,7 @@ public class PromptBuilderImpl implements PromptBuilder {
         appendDailyGoal(prompt, context);
         appendDailyMeals(prompt, context);
         appendDailyExercises(prompt, context);
+        appendRecentDailySummaries(prompt, context);
         appendRecentTurns(prompt, context);
         appendActiveMemories(prompt, context);
         return prompt.toString().trim();
@@ -124,6 +126,17 @@ public class PromptBuilderImpl implements PromptBuilder {
         appendSection(prompt, "recent_chat_turns", turns);
     }
 
+    private void appendRecentDailySummaries(StringBuilder prompt, UserChatContext context) {
+        if (context == null || context.recentDailySummaries().isEmpty()) {
+            return;
+        }
+
+        String summaries = context.recentDailySummaries().stream()
+                .map(this::formatDailySummary)
+                .collect(Collectors.joining("\n"));
+        appendSection(prompt, "recent_daily_summaries", summaries);
+    }
+
     private void appendActiveMemories(StringBuilder prompt, UserChatContext context) {
         if (context == null || context.activeMemories().isEmpty()) {
             return;
@@ -156,6 +169,10 @@ public class PromptBuilderImpl implements PromptBuilder {
 
     private String formatTurn(ChatMessageResponse turn) {
         return "- " + escapeXml(turn.role()) + ": " + escapeXml(turn.content());
+    }
+
+    private String formatDailySummary(DailyChatSummaryContextResponse summary) {
+        return "- " + summary.summaryDate() + ": " + escapeXml(summary.content());
     }
 
     private void appendSection(StringBuilder prompt, String sectionName, String content) {
