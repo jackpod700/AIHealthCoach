@@ -32,12 +32,14 @@ class DailyChatSummaryStateServiceImplTest {
 
     @Mock
     private DailyChatSummaryStateMapper dailyChatSummaryStateMapper;
+    @Mock
+    private DailySummaryContextCache dailySummaryContextCache;
 
     private DailyChatSummaryStateServiceImpl stateService;
 
     @BeforeEach
     void setUp() {
-        stateService = new DailyChatSummaryStateServiceImpl(dailyChatSummaryStateMapper, CLOCK);
+        stateService = new DailyChatSummaryStateServiceImpl(dailyChatSummaryStateMapper, dailySummaryContextCache, CLOCK);
     }
 
     @Test
@@ -47,6 +49,7 @@ class DailyChatSummaryStateServiceImplTest {
 
         ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
         verify(dailyChatSummaryStateMapper, times(2)).upsertChanged(captor.capture());
+        verify(dailySummaryContextCache, times(2)).evictUser(1L);
         assertThat(captor.getAllValues())
                 .extracting(DailyChatSummaryState::getSummaryDate)
                 .containsExactly(LocalDate.of(2026, 6, 20), LocalDate.of(2026, 6, 22));
@@ -57,6 +60,7 @@ class DailyChatSummaryStateServiceImplTest {
         stateService.markChanged(1L, LocalDate.of(2026, 6, 13), DailyChatSummaryChangeSource.CHAT);
 
         verify(dailyChatSummaryStateMapper, never()).upsertChanged(any());
+        verify(dailySummaryContextCache, never()).evictUser(any());
     }
 
     @Test
@@ -65,6 +69,7 @@ class DailyChatSummaryStateServiceImplTest {
 
         ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
         verify(dailyChatSummaryStateMapper).upsertChanged(captor.capture());
+        verify(dailySummaryContextCache).evictUser(7L);
         assertThat(captor.getValue().getUserId()).isEqualTo(7L);
         assertThat(captor.getValue().getSummaryDate()).isEqualTo(LocalDate.of(2026, 6, 14));
         assertThat(captor.getValue().getChangedSources()).isEqualTo("WEIGHT");
@@ -76,6 +81,7 @@ class DailyChatSummaryStateServiceImplTest {
 
         ArgumentCaptor<DailyChatSummaryState> captor = ArgumentCaptor.forClass(DailyChatSummaryState.class);
         verify(dailyChatSummaryStateMapper).upsertChanged(captor.capture());
+        verify(dailySummaryContextCache).evictUser(7L);
         assertThat(captor.getValue().getChangedSources()).isEqualTo("DAILY_GOAL");
         assertThat(captor.getValue().getDailyGoalSnapshotPayload()).isEqualTo("{\"goalType\":\"WEIGHT_LOSS\"}");
     }

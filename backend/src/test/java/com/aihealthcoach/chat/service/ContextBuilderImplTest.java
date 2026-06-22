@@ -1,7 +1,9 @@
 package com.aihealthcoach.chat.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -9,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.function.Supplier;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +31,7 @@ import com.aihealthcoach.memory.dto.UserMemoryDto.UserMemoryResponse;
 import com.aihealthcoach.memory.service.UserMemoryService;
 import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextResponse;
 import com.aihealthcoach.summary.mapper.DailyChatSummaryMapper;
+import com.aihealthcoach.summary.service.DailySummaryContextCache;
 import com.aihealthcoach.summary.service.DailyChatSummaryService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.service.UserService;
@@ -54,6 +58,8 @@ class ContextBuilderImplTest {
     private DailyChatSummaryService dailyChatSummaryService;
     @Mock
     private DailyChatSummaryMapper dailyChatSummaryMapper;
+    @Mock
+    private DailySummaryContextCache dailySummaryContextCache;
 
     private ContextBuilderImpl contextBuilder;
 
@@ -67,7 +73,8 @@ class ContextBuilderImplTest {
                 chatService,
                 userMemoryService,
                 dailyChatSummaryService,
-                dailyChatSummaryMapper
+                dailyChatSummaryMapper,
+                dailySummaryContextCache
         );
     }
 
@@ -94,6 +101,7 @@ class ContextBuilderImplTest {
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(dailyGoal);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(dailyMeals);
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(dailyExercises);
+        stubSummaryCacheWithLoader();
         when(dailyChatSummaryMapper.findFreshSummariesBetween(
                 USER_ID,
                 LocalDate.of(2026, 6, 2),
@@ -129,6 +137,7 @@ class ContextBuilderImplTest {
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(null);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(emptyDailyMeals());
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(List.of());
+        stubSummaryCacheWithLoader();
         when(dailyChatSummaryMapper.findFreshSummariesBetween(
                 USER_ID,
                 LocalDate.of(2026, 6, 2),
@@ -156,6 +165,7 @@ class ContextBuilderImplTest {
         when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenReturn(null);
         when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenReturn(emptyDailyMeals());
         when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenReturn(List.of());
+        stubSummaryCacheWithLoader();
         when(dailyChatSummaryMapper.findFreshSummariesBetween(
                 USER_ID,
                 LocalDate.of(2026, 6, 2),
@@ -168,6 +178,19 @@ class ContextBuilderImplTest {
 
         assertThat(context.recentDailySummaries()).isEmpty();
         verify(dailyChatSummaryService).refreshForUser(USER_ID);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void stubSummaryCacheWithLoader() {
+        when(dailySummaryContextCache.getOrLoad(
+                eq(USER_ID),
+                eq(LocalDate.of(2026, 6, 2)),
+                eq(LocalDate.of(2026, 6, 7)),
+                any(Supplier.class)
+        )).thenAnswer(invocation -> {
+            Supplier<List<DailyChatSummaryContextResponse>> loader = invocation.getArgument(3);
+            return loader.get();
+        });
     }
 
     private DailyMealResponse emptyDailyMeals() {
