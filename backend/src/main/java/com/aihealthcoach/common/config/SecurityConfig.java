@@ -1,8 +1,18 @@
 package com.aihealthcoach.common.config;
 
+import com.aihealthcoach.admin.filter.ActiveUserMetricsFilter;
+import com.aihealthcoach.admin.service.ActiveUserMetricsService;
+import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
+import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
+import com.aihealthcoach.common.auth.JwtAuthenticationFilter;
+import com.aihealthcoach.common.auth.SecurityPaths;
+import com.aihealthcoach.user.oauth.OAuth2LoginFailureHandler;
+import com.aihealthcoach.user.oauth.OAuth2LoginSuccessHandler;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -10,13 +20,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
-import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
-import com.aihealthcoach.common.auth.JwtAuthenticationFilter;
-import com.aihealthcoach.common.auth.SecurityPaths;
-
-import lombok.RequiredArgsConstructor;
 
 @Configuration
 @EnableWebSecurity
@@ -26,22 +29,51 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
+    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
+    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            ActiveUserMetricsFilter activeUserMetricsFilter
+    ) throws Exception {
         return http
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
-                        .accessDeniedHandler(jwtAccessDeniedHandler))
+                        .accessDeniedHandler(jwtAccessDeniedHandler)
+                )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/user/*/profile").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/user/*/profile").authenticated()
+                        .requestMatchers(
+                                "/api/oauth/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**"
+                        ).permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/user/me").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/user/nickname").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/user/profile").authenticated()
+                        .requestMatchers(HttpMethod.PATCH, "/api/user/profile").authenticated()
                         .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth -> oauth
+                        .successHandler(oAuth2LoginSuccessHandler)
+                        .failureHandler(oAuth2LoginFailureHandler)
+                )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(activeUserMetricsFilter, JwtAuthenticationFilter.class)
                 .build();
+    }
+
+    @Bean
+    public ActiveUserMetricsFilter activeUserMetricsFilter(
+            ObjectProvider<ActiveUserMetricsService> activeUserMetricsServiceProvider
+    ) {
+        return new ActiveUserMetricsFilter(activeUserMetricsServiceProvider);
     }
 
     @Bean

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useFoodStore } from "../../stores/foodStore";
 import { useMealStore } from "../../stores/mealStore";
@@ -14,6 +14,18 @@ const debounceTimer = ref(null);
 const mealType = ref(defaultMealType());
 const quantity = ref(1);
 const saveMessage = ref("");
+const submissionOpen = ref(false);
+const submissionForm = reactive({
+  name: "",
+  brand: "",
+  servingDescription: "",
+  servingSize: "",
+  servingUnit: "",
+  calories: "",
+  carbohydrate: "",
+  protein: "",
+  fat: "",
+});
 
 const exampleQueries = ["닭가슴살", "요거트", "제육볶음", "감자칩"];
 const mealTypeOptions = [
@@ -24,6 +36,7 @@ const mealTypeOptions = [
 ];
 
 const foods = computed(() => foodStore.foods);
+const myRequests = computed(() => foodStore.submissionPage?.items || []);
 
 const selectedFood = computed(() => {
   return foods.value.find((food) => food.sourceKey === selectedSourceKey.value) || foods.value[0] || null;
@@ -55,6 +68,18 @@ const canSaveMeal = computed(() => {
   return Boolean(selectedServing.value?.foodId) && Number(quantity.value) > 0 && !mealStore.isSavingMeal;
 });
 
+const canSubmitMissingFood = computed(() => {
+  return submissionForm.name.trim()
+    && Number(submissionForm.calories) >= 0
+    && Number(submissionForm.carbohydrate) >= 0
+    && Number(submissionForm.protein) >= 0
+    && Number(submissionForm.fat) >= 0
+    && (
+      submissionForm.servingDescription.trim()
+      || (Number(submissionForm.servingSize) > 0 && submissionForm.servingUnit.trim())
+    );
+});
+
 watch(foods, (newFoods) => {
   if (!newFoods.length) {
     selectedSourceKey.value = "";
@@ -83,11 +108,8 @@ watch([selectedFood, selectedServing], () => {
 });
 
 onMounted(() => {
-  foodStore.loadFoodGroups({
-    query: "",
-    page: 1,
-    size: foodStore.size,
-  });
+  foodStore.loadFoodGroups({ query: "", page: 1, size: foodStore.size });
+  foodStore.loadMyFoodSubmissions();
 });
 
 onBeforeUnmount(() => {
@@ -160,6 +182,38 @@ async function saveSelectedFoodToToday() {
   }
 }
 
+async function submitMissingFood() {
+  if (!canSubmitMissingFood.value) {
+    return;
+  }
+
+  const created = await foodStore.submitMissingFood({
+    name: submissionForm.name.trim(),
+    brand: blankToNull(submissionForm.brand),
+    servingDescription: blankToNull(submissionForm.servingDescription),
+    servingSize: numberOrNull(submissionForm.servingSize),
+    servingUnit: blankToNull(submissionForm.servingUnit),
+    calories: Number(submissionForm.calories),
+    carbohydrate: Number(submissionForm.carbohydrate),
+    protein: Number(submissionForm.protein),
+    fat: Number(submissionForm.fat),
+  });
+
+  if (created) {
+    Object.assign(submissionForm, {
+      name: "",
+      brand: "",
+      servingDescription: "",
+      servingSize: "",
+      servingUnit: "",
+      calories: "",
+      carbohydrate: "",
+      protein: "",
+      fat: "",
+    });
+  }
+}
+
 function servingLabel(serving) {
   if (!serving) {
     return "-";
@@ -173,6 +227,16 @@ function servingLabel(serving) {
 
 function mealTypeLabel(value) {
   return mealTypeOptions.find((option) => option.value === value)?.label || value;
+}
+
+function statusLabel(status) {
+  if (status === "APPROVED") {
+    return "승인";
+  }
+  if (status === "REJECTED") {
+    return "반려";
+  }
+  return "대기";
 }
 
 function formatBrand(brand) {
@@ -208,15 +272,12 @@ function defaultMealType() {
   if (hour < 10) {
     return "BREAKFAST";
   }
-
   if (hour < 15) {
     return "LUNCH";
   }
-
   if (hour < 21) {
     return "DINNER";
   }
-
   return "SNACK";
 }
 
@@ -227,6 +288,16 @@ function todayDateKey() {
   const day = String(date.getDate()).padStart(2, "0");
 
   return `${year}-${month}-${day}`;
+}
+
+function blankToNull(value) {
+  const trimmed = String(value || "").trim();
+  return trimmed || null;
+}
+
+function numberOrNull(value) {
+  const numberValue = Number(value);
+  return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
 }
 
 function clearDebounceTimer() {
@@ -340,6 +411,76 @@ function clearDebounceTimer() {
             <strong>검색 결과가 없어요</strong>
             <span>다른 음식명이나 제조사명으로 다시 검색해보세요.</span>
           </div>
+
+          <section class="food-submission-panel">
+            <div class="food-submission-head">
+              <div>
+                <p class="deco">Missing Food</p>
+                <h2>찾는 음식이 없나요?</h2>
+                <span>음식 정보를 입력해 등록 요청을 보내면 관리자가 검토합니다.</span>
+              </div>
+              <button type="button" @click="submissionOpen = !submissionOpen">
+                {{ submissionOpen ? "닫기" : "등록 요청" }}
+              </button>
+            </div>
+
+            <form v-if="submissionOpen" class="food-submission-form" @submit.prevent="submitMissingFood">
+              <label>
+                <span>음식명</span>
+                <input v-model="submissionForm.name" type="text" required />
+              </label>
+              <label>
+                <span>브랜드</span>
+                <input v-model="submissionForm.brand" type="text" />
+              </label>
+              <label>
+                <span>기준 설명</span>
+                <input v-model="submissionForm.servingDescription" type="text" placeholder="예: 100g, 1인분" />
+              </label>
+              <label>
+                <span>기준 수치</span>
+                <input v-model="submissionForm.servingSize" type="number" min="0" step="0.01" />
+              </label>
+              <label>
+                <span>기준 단위</span>
+                <input v-model="submissionForm.servingUnit" type="text" placeholder="g, ml, 인분" />
+              </label>
+              <label>
+                <span>칼로리</span>
+                <input v-model="submissionForm.calories" type="number" min="0" step="0.01" required />
+              </label>
+              <label>
+                <span>탄수화물</span>
+                <input v-model="submissionForm.carbohydrate" type="number" min="0" step="0.01" required />
+              </label>
+              <label>
+                <span>단백질</span>
+                <input v-model="submissionForm.protein" type="number" min="0" step="0.01" required />
+              </label>
+              <label>
+                <span>지방</span>
+                <input v-model="submissionForm.fat" type="number" min="0" step="0.01" required />
+              </label>
+
+              <button type="submit" :disabled="!canSubmitMissingFood || foodStore.isSubmittingFood">
+                {{ foodStore.isSubmittingFood ? "요청 중" : "관리자에게 요청" }}
+              </button>
+            </form>
+
+            <small v-if="foodStore.submissionMessage" class="food-meal-record-success">
+              {{ foodStore.submissionMessage }}
+            </small>
+            <small v-if="foodStore.submissionError" class="food-meal-record-error">
+              {{ foodStore.submissionError }}
+            </small>
+
+            <div v-if="myRequests.length" class="food-submission-history">
+              <strong>내 최근 요청</strong>
+              <span v-for="request in myRequests.slice(0, 3)" :key="request.id">
+                {{ request.name }} · {{ statusLabel(request.status) }}
+              </span>
+            </div>
+          </section>
         </section>
 
         <aside class="food-detail-panel" v-if="selectedFood && selectedServing">
@@ -413,7 +554,6 @@ function clearDebounceTimer() {
             <small v-if="saveMessage" class="food-meal-record-success">{{ saveMessage }}</small>
             <small v-if="mealStore.saveMealError" class="food-meal-record-error">{{ mealStore.saveMealError }}</small>
           </div>
-
         </aside>
       </div>
     </section>

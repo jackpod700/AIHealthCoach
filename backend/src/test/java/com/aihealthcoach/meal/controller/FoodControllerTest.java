@@ -28,7 +28,8 @@ import com.aihealthcoach.meal.dto.FoodDto.FoodServingResponse;
 import com.aihealthcoach.meal.service.FoodService;
 
 @WebMvcTest(FoodController.class)
-@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
+        com.aihealthcoach.common.config.OAuthWebMvcTestConfig.class})
 class FoodControllerTest {
 
     private static final String TOKEN = "access-token";

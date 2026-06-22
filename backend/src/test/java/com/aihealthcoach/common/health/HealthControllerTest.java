@@ -22,7 +22,8 @@ import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.user.exception.UserException;
 
 @WebMvcTest(HealthController.class)
-@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
+        com.aihealthcoach.common.config.OAuthWebMvcTestConfig.class})
 class HealthControllerTest {
 
     @Autowired

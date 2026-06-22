@@ -1,6 +1,7 @@
 package com.aihealthcoach.chat.service;
 
-import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
@@ -12,26 +13,17 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class LlmServiceImpl implements LlmService {
 
-    private final ChatClient chatClient;
+    private final AiChatClientGateway aiChatClientGateway;
 
     @Override
     public LlmResponse generate(LlmRequest request) {
-        String content;
+        ResponseEntity<ChatResponse, String> response;
         if (request.hasImages()) {
-            content = chatClient.prompt(request.systemPrompt())
-                    .user(user -> {
-                        user.text(request.userMessage());
-                        request.images().forEach(image -> user.media(image.mimeType(), image.resource()));
-                    })
-                    .call()
-                    .content();
+            response = aiChatClientGateway.callImageMeal(request);
         } else {
-            content = chatClient.prompt(request.systemPrompt())
-                    .user(request.userMessage())
-                    .call()
-                    .content();
+            response = aiChatClientGateway.callTextChat(request.systemPrompt(), request.userMessage());
         }
 
-        return new LlmResponse(content);
+        return new LlmResponse(response.entity());
     }
 }

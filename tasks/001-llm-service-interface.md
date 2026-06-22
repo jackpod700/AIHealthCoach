@@ -52,7 +52,9 @@ Optional only if persistence or response flow becomes unclear:
 
 `AiChatService`는 특정 provider SDK나 HTTP client 세부사항을 알지 않아야 한다.
 
-현재 provider-facing 경계가 `AiChatServiceImpl -> ChatClient`라면, 이번 작업에서는 이를 `AiChatServiceImpl -> LlmService -> ChatClient` 구조로 분리한다.
+현재 provider-facing 경계가 `AiChatServiceImpl -> ChatClient`라면, 이번 작업에서는 이를 `AiChatServiceImpl -> LlmService -> AiChatClientGateway -> ChatClient` 구조로 분리한다.
+
+`AiChatClientGateway`는 provider의 raw response metadata를 사용하는 AOP 관측 지점이다. 이는 `LlmServiceImpl`의 내부 collaborator이며, `AiChatServiceImpl`과 테스트용 Fake LLM은 계속 `LlmService`와 `LlmRequest`/`LlmResponse` 계약에만 의존한다.
 
 ## Target Sequence
 
@@ -64,17 +66,20 @@ sequenceDiagram
     participant ChatService
     participant AiChatService
     participant LlmService
+    participant AiChatClientGateway
     participant RealLlmProvider
 
     User->>Frontend: 채팅 메시지 입력
     Frontend->>ChatController: POST /api/chat/messages
-    ChatController->>ChatService: save user message
     ChatController->>AiChatService: generate(message)
     AiChatService->>LlmService: generate(request)
-    LlmService->>RealLlmProvider: provider-specific request
-    RealLlmProvider-->>LlmService: provider-specific response
+    LlmService->>AiChatClientGateway: provider request
+    AiChatClientGateway->>RealLlmProvider: provider-specific request
+    RealLlmProvider-->>AiChatClientGateway: response + usage metadata
+    AiChatClientGateway-->>LlmService: provider response
     LlmService-->>AiChatService: normalized LlmResponse
     AiChatService-->>ChatController: AiChatResult
+    ChatController->>ChatService: save user message
     ChatController->>ChatService: save assistant message
     ChatController-->>Frontend: JSON 응답
     Frontend-->>User: AI 응답 표시
@@ -104,7 +109,8 @@ sequenceDiagram
 | `ChatController` | `ChatService`        | `insert(...)`          | authenticated `userId`, chat message | `ChatMessageResponse` | mapped domain exception            |
 | `ChatController` | `AiChatService`      | `generate(...)`        | user message                         | `AiChatResult`        | mapped domain exception            |
 | `AiChatService`  | `LlmService`         | `generate(...)`        | `LlmRequest`                         | `LlmResponse`         | `LlmException` or mapped exception |
-| `LlmService`     | Real provider client | provider-specific call | prompt/messages/options              | provider response     | timeout, rate limit, parse error   |
+| `LlmService`     | `AiChatClientGateway` | provider-specific call | prompt/messages/options              | provider response     | timeout, rate limit, parse error   |
+| `AiChatClientGateway` | Real provider client | provider-specific call | prompt/messages/options         | response + usage metadata | timeout, rate limit, parse error |
 | Test             | `AiChatService`      | service/test call      | fixed user message                   | deterministic result  | test failure                       |
 | Test config      | `LlmService`         | bean injection         | fake implementation                  | no real provider call | fail if real provider is called    |
 

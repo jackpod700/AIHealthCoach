@@ -1,8 +1,10 @@
-INSERT INTO users (id, email, password, nickname, created_at, updated_at)
+INSERT INTO users (id, email, password, nickname, created_at, updated_at, role)
 VALUES
-    (1, 'test@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '테스트유저', NOW(), NOW()),
-    (2, 'runner@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '러닝초보', NOW(), NOW()),
-    (3, 'diet@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '다이어터', NOW(), NOW())
+    (1, 'test@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '테스트유저', NOW(), NOW(), 'USER'),
+    (2, 'runner@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '러닝초보', NOW(), NOW(), 'USER'),
+    (3, 'diet@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '다이어터', NOW(), NOW(), 'USER'),
+    (4, 'admin@example.com', '$2a$10$AAxwQvsqyN903xxJSKqC.eFOdhMKNf2xtiQYDbt/RdD6Q3a.qa6Oq', '관리자', NOW(), NOW(), 'ADMIN')
+
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO user_profiles (id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, gender, age, updated_at)

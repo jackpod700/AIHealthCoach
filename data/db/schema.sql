@@ -1,11 +1,30 @@
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     email VARCHAR(255) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
+    password VARCHAR(255),
     nickname VARCHAR(50) NOT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',
     created_at TIMESTAMP NOT NULL,
-    updated_at TIMESTAMP NOT NULL
+    updated_at TIMESTAMP NOT NULL,
+
+    CONSTRAINT chk_users_role
+        CHECK (role IN ('USER', 'ADMIN'))
 );
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'USER';
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_users_role'
+    ) THEN
+        ALTER TABLE users
+            ADD CONSTRAINT chk_users_role CHECK (role IN ('USER', 'ADMIN'));
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS user_profiles (
     id BIGSERIAL PRIMARY KEY,
@@ -127,6 +146,58 @@ CREATE TABLE IF NOT EXISTS foods (
             AND (protein IS NULL OR protein >= 0)
         )
 );
+
+CREATE TABLE IF NOT EXISTS food_submission_requests (
+    id BIGSERIAL PRIMARY KEY,
+    submitted_by_user_id BIGINT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    name VARCHAR(255) NOT NULL,
+    brand VARCHAR(255),
+    serving_description VARCHAR(100),
+    serving_size NUMERIC(8,2),
+    serving_unit VARCHAR(20),
+    calories NUMERIC(8,2),
+    carbohydrate NUMERIC(8,2),
+    protein NUMERIC(8,2),
+    fat NUMERIC(8,2),
+    admin_note TEXT,
+    rejection_reason TEXT,
+    approved_food_id BIGINT,
+    reviewed_by_admin_id BIGINT,
+    submitted_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_food_submission_requests_status
+        CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED')),
+    CONSTRAINT chk_food_submission_requests_name_not_blank
+        CHECK (length(trim(name)) > 0),
+    CONSTRAINT chk_food_submission_requests_serving_required
+        CHECK (
+            serving_description IS NOT NULL
+            OR (serving_size IS NOT NULL AND serving_unit IS NOT NULL)
+        ),
+    CONSTRAINT chk_food_submission_requests_nutrients_non_negative
+        CHECK (
+            (calories IS NULL OR calories >= 0)
+            AND (carbohydrate IS NULL OR carbohydrate >= 0)
+            AND (protein IS NULL OR protein >= 0)
+            AND (fat IS NULL OR fat >= 0)
+        ),
+    CONSTRAINT fk_food_submission_requests_submitter
+        FOREIGN KEY (submitted_by_user_id) REFERENCES users(id),
+    CONSTRAINT fk_food_submission_requests_approved_food
+        FOREIGN KEY (approved_food_id) REFERENCES foods(id),
+    CONSTRAINT fk_food_submission_requests_reviewer
+        FOREIGN KEY (reviewed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_food_submission_requests_submitter
+    ON food_submission_requests(submitted_by_user_id, submitted_at DESC);
+
+CREATE INDEX IF NOT EXISTS idx_food_submission_requests_status
+    ON food_submission_requests(status, submitted_at DESC);
 
 CREATE TABLE IF NOT EXISTS meals (
     id BIGSERIAL PRIMARY KEY,
@@ -332,3 +403,21 @@ CREATE TABLE IF NOT EXISTS weight_records (
 
 CREATE INDEX IF NOT EXISTS idx_weight_records_user_date
     ON weight_records(user_id, record_date);
+CREATE TABLE IF NOT EXISTS oauth_accounts (
+    id BIGSERIAL NOT NULL,
+    user_id BIGINT NOT NULL,
+    provider VARCHAR(20) NOT NULL,
+    provider_user_id VARCHAR(100) NOT NULL,
+    email VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT pk_oauth_accounts PRIMARY KEY (id),
+    CONSTRAINT fk_oauth_accounts_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+    CONSTRAINT uk_oauth_accounts_provider_provider_user_id
+        UNIQUE (provider, provider_user_id)
+);
+ALTER TABLE users
+ALTER COLUMN password DROP NOT NULL;

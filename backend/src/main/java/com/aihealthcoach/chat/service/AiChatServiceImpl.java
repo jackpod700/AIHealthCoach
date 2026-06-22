@@ -53,12 +53,13 @@ public class AiChatServiceImpl implements AiChatService {
         try {
             LocalDate contextDate = LocalDate.now(clock);
             UserChatContext context = contextBuilder.build(userId, contextDate);
-            LlmResponse response = llmService.generate(promptBuilder.buildText(
+            LlmRequest request = promptBuilder.buildText(
                     contextDate,
                     userMessage.content(),
                     context
-            ));
+            );
 
+            LlmResponse response = llmService.generate(request);
             return saveMemoryIfRequested(userId, parseAiResult(response.content()));
         } catch (Exception exception) {
             log.warn("Failed to map AI chat response to AiChatResult.", exception);
@@ -74,16 +75,16 @@ public class AiChatServiceImpl implements AiChatService {
         try {
             LocalDate contextDate = LocalDate.now(clock);
             UserChatContext context = contextBuilder.build(userId, contextDate);
-            List<LlmImage> llmImages = images.stream()
-                    .map(image -> new LlmImage(toMimeType(image), image.getResource()))
-                    .toList();
-            LlmResponse response = llmService.generate(promptBuilder.buildImage(
+            LlmRequest request = promptBuilder.buildImage(
                     contextDate,
                     userText,
-                    llmImages,
+                    images.stream()
+                            .map(image -> new LlmImage(toMimeType(image), image.getResource()))
+                            .toList(),
                     context
-            ));
+            );
 
+            LlmResponse response = llmService.generate(request);
             return saveMemoryIfRequested(userId, parseAiResult(response.content()));
         } catch (Exception exception) {
             log.warn("Failed to map AI image response to AiChatResult.", exception);
@@ -193,14 +194,14 @@ public class AiChatServiceImpl implements AiChatService {
                 || "image/webp".equals(contentType);
     }
 
-    private MimeType toMimeType(MultipartFile image) {
-        return MimeTypeUtils.parseMimeType(image.getContentType());
-    }
-
     private String normalizeImageMessage(String content) {
         if (content == null || content.isBlank()) {
             return DEFAULT_IMAGE_MESSAGE;
         }
         return content.trim();
+    }
+
+    private MimeType toMimeType(MultipartFile image) {
+        return MimeTypeUtils.parseMimeType(image.getContentType());
     }
 }
