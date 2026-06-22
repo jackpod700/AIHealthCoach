@@ -2,12 +2,33 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="com.aihealthcoach.summary.mapper.DailyChatSummaryStateMapper">
-    <insert id="upsert" parameterType="com.aihealthcoach.summary.entity.DailyChatSummaryState">
+    <resultMap id="dailyChatSummaryState" type="com.aihealthcoach.summary.entity.DailyChatSummaryState">
+        <id column="user_id" property="userId"/>
+        <id column="summary_date" property="summaryDate"/>
+        <result column="source_version" property="sourceVersion"/>
+        <result column="source_updated_at" property="sourceUpdatedAt"/>
+        <result column="status" property="status"/>
+        <result column="claim_token" property="claimToken"/>
+        <result column="claimed_at" property="claimedAt"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="next_retry_at" property="nextRetryAt"/>
+        <result column="failure_code" property="failureCode"/>
+        <result column="changed_sources" property="changedSources"/>
+        <result column="daily_goal_snapshot_payload" property="dailyGoalSnapshotPayload"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <insert id="upsertChanged" parameterType="com.aihealthcoach.summary.entity.DailyChatSummaryState">
         INSERT INTO daily_chat_summary_states (
             user_id,
             summary_date,
             source_version,
             source_updated_at,
+            status,
+            retry_count,
+            changed_sources,
+            daily_goal_snapshot_payload,
             created_at,
             updated_at
         )
@@ -16,6 +37,10 @@
             #{summaryDate},
             1,
             NOW(),
+            'STALE',
+            0,
+            #{changedSources},
+            #{dailyGoalSnapshotPayload},
             NOW(),
             NOW()
         )
@@ -23,6 +48,163 @@
         DO UPDATE SET
             source_version = daily_chat_summary_states.source_version + 1,
             source_updated_at = NOW(),
+            status = CASE
+                WHEN daily_chat_summary_states.status = 'CLAIMED' THEN 'CLAIMED'
+                ELSE 'STALE'
+            END,
+            retry_count = CASE
+                WHEN daily_chat_summary_states.status = 'CLAIMED' THEN daily_chat_summary_states.retry_count
+                ELSE 0
+            END,
+            next_retry_at = CASE
+                WHEN daily_chat_summary_states.status = 'CLAIMED' THEN daily_chat_summary_states.next_retry_at
+                ELSE NULL
+            END,
+            failure_code = NULL,
+            changed_sources = (
+                SELECT string_agg(source, ',' ORDER BY source)
+                FROM (
+                    SELECT DISTINCT source
+                    FROM unnest(string_to_array(
+                        concat_ws(
+                            ',',
+                            NULLIF(daily_chat_summary_states.changed_sources, ''),
+                            NULLIF(EXCLUDED.changed_sources, '')
+                        ),
+                        ','
+                    )) source
+                    WHERE source <> ''
+                ) merged_sources
+            ),
+            daily_goal_snapshot_payload = COALESCE(
+                EXCLUDED.daily_goal_snapshot_payload,
+                daily_chat_summary_states.daily_goal_snapshot_payload
+            ),
             updated_at = NOW()
     </insert>
+
+    <select id="claimBatch" resultMap="dailyChatSummaryState">
+        WITH candidates AS (
+            SELECT user_id, summary_date
+            FROM daily_chat_summary_states
+            WHERE summary_date >= #{oldestRegenerableDate}
+              AND summary_date &lt; #{currentDate}
+              AND source_updated_at &lt;= #{debounceExpiredBefore}
+              AND (
+                status = 'STALE'
+                OR (status = 'FAILED' AND next_retry_at &lt;= #{now})
+                OR (status = 'CLAIMED' AND claimed_at &lt;= #{claimExpiredBefore})
+              )
+            ORDER BY summary_date ASC, source_updated_at ASC, user_id ASC
+            LIMIT #{limit}
+            FOR UPDATE SKIP LOCKED
+        )
+        UPDATE daily_chat_summary_states target
+        SET status = 'CLAIMED',
+            claim_token = #{claimToken},
+            claimed_at = #{now},
+            updated_at = NOW()
+        FROM candidates
+        WHERE target.user_id = candidates.user_id
+          AND target.summary_date = candidates.summary_date
+        RETURNING target.user_id,
+                  target.summary_date,
+                  target.source_version,
+                  target.source_updated_at,
+                  target.status,
+                  target.claim_token,
+                  target.claimed_at,
+                  target.retry_count,
+                  target.next_retry_at,
+                  target.failure_code,
+                  target.changed_sources,
+                  target.daily_goal_snapshot_payload,
+                  target.created_at,
+                  target.updated_at
+    </select>
+
+    <select id="claimForUser" resultMap="dailyChatSummaryState">
+        WITH candidates AS (
+            SELECT user_id, summary_date
+            FROM daily_chat_summary_states
+            WHERE user_id = #{userId}
+              AND summary_date >= #{oldestRegenerableDate}
+              AND summary_date &lt; #{currentDate}
+              AND source_updated_at &lt;= #{debounceExpiredBefore}
+              AND (
+                status = 'STALE'
+                OR (status = 'FAILED' AND next_retry_at &lt;= #{now})
+                OR (status = 'CLAIMED' AND claimed_at &lt;= #{claimExpiredBefore})
+              )
+            ORDER BY summary_date DESC, source_updated_at DESC
+            LIMIT #{limit}
+            FOR UPDATE SKIP LOCKED
+        )
+        UPDATE daily_chat_summary_states target
+        SET status = 'CLAIMED',
+            claim_token = #{claimToken},
+            claimed_at = #{now},
+            updated_at = NOW()
+        FROM candidates
+        WHERE target.user_id = candidates.user_id
+          AND target.summary_date = candidates.summary_date
+        RETURNING target.user_id,
+                  target.summary_date,
+                  target.source_version,
+                  target.source_updated_at,
+                  target.status,
+                  target.claim_token,
+                  target.claimed_at,
+                  target.retry_count,
+                  target.next_retry_at,
+                  target.failure_code,
+                  target.changed_sources,
+                  target.daily_goal_snapshot_payload,
+                  target.created_at,
+                  target.updated_at
+    </select>
+
+    <update id="markFresh">
+        UPDATE daily_chat_summary_states
+        SET status = 'FRESH',
+            claim_token = NULL,
+            claimed_at = NULL,
+            retry_count = 0,
+            next_retry_at = NULL,
+            failure_code = NULL,
+            changed_sources = '',
+            daily_goal_snapshot_payload = NULL,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND summary_date = #{summaryDate}
+          AND claim_token = #{claimToken}
+          AND source_version = #{sourceVersion}
+    </update>
+
+    <update id="markFailed">
+        UPDATE daily_chat_summary_states
+        SET status = 'FAILED',
+            claim_token = NULL,
+            claimed_at = NULL,
+            retry_count = retry_count + 1,
+            next_retry_at = #{nextRetryAt},
+            failure_code = #{failureCode},
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND summary_date = #{summaryDate}
+          AND claim_token = #{claimToken}
+          AND source_version = #{sourceVersion}
+    </update>
+
+    <update id="releaseStaleIfChanged">
+        UPDATE daily_chat_summary_states
+        SET status = 'STALE',
+            claim_token = NULL,
+            claimed_at = NULL,
+            updated_at = NOW()
+        WHERE user_id = #{userId}
+          AND summary_date = #{summaryDate}
+          AND claim_token = #{claimToken}
+          AND source_version &lt;&gt; #{sourceVersion}
+    </update>
 </mapper>
