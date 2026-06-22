@@ -14,6 +14,7 @@ import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextCacheEntry;
@@ -21,6 +22,11 @@ import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContext
 import com.aihealthcoach.summary.dto.DailyChatSummaryDto.DailyChatSummaryContextVersion;
 
 @Service
+@ConditionalOnProperty(
+        name = "ai.chat.summary.context-cache.type",
+        havingValue = "memory",
+        matchIfMissing = true
+)
 public class InMemoryDailySummaryContextCache implements DailySummaryContextCache {
 
     private final Map<CacheKey, CacheBundle> cache = new ConcurrentHashMap<>();
