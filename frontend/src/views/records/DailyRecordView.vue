@@ -374,12 +374,14 @@ async function saveEditedExercise() {
   const payload = {
     exerciseActivityOptionId: exerciseEditForm.exerciseActivityOptionId,
     intensityLevel: exerciseEditForm.intensityLevel,
-    exerciseDate: targetDate,
     durationMinutes: Number(exerciseEditForm.durationMinutes),
     memo: exerciseEditForm.memo,
   };
+  if (!exerciseEditForm.recordId) {
+    payload.exerciseDate = targetDate;
+  }
   const saved = exerciseEditForm.recordId
-    ? await exerciseStore.updateRecord(exerciseEditForm.recordId, payload)
+    ? await exerciseStore.updateRecord(exerciseEditForm.recordId, payload, targetDate)
     : await exerciseStore.saveRecord(payload);
 
   if (saved) {
@@ -930,7 +932,7 @@ function servingCalorieLabel(item) {
 
           <label>
             <span>운동 날짜</span>
-            <input v-model="exerciseEditForm.exerciseDate" type="date" />
+            <input v-model="exerciseEditForm.exerciseDate" type="date" :disabled="Boolean(exerciseEditForm.recordId)" />
           </label>
 
           <label>

@@ -19,6 +19,7 @@ import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordUpdateRequest;
 import com.aihealthcoach.exercise.service.ExerciseService;
 import java.time.LocalDate;
 import java.util.List;
@@ -68,7 +69,7 @@ class ExerciseControllerTest {
     @Test
     void updateExerciseRecordUsesAuthenticatedUserAndRecordId() throws Exception {
         when(jwtTokenProvider.getUserId(TOKEN)).thenReturn(USER_ID);
-        when(exerciseService.updateExerciseRecord(eq(USER_ID), eq(RECORD_ID), any(ExerciseRecordRequest.class)))
+        when(exerciseService.updateExerciseRecord(eq(USER_ID), eq(RECORD_ID), any(ExerciseRecordUpdateRequest.class)))
                 .thenReturn(ExerciseRecordResponse.builder()
                         .id(RECORD_ID)
                         .exerciseActivityOptionId(1L)
@@ -86,7 +87,6 @@ class ExerciseControllerTest {
                                 {
                                   "exerciseActivityOptionId": 1,
                                   "intensityLevel": "MEDIUM",
-                                  "exerciseDate": "2026-06-02",
                                   "durationMinutes": 30,
                                   "memo": "퇴근 후 걷기"
                                 }
@@ -96,7 +96,7 @@ class ExerciseControllerTest {
                 .andExpect(jsonPath("$.data.id", is(10)))
                 .andExpect(jsonPath("$.data.activityNameKo", is("걷기")));
 
-        verify(exerciseService).updateExerciseRecord(eq(USER_ID), eq(RECORD_ID), any(ExerciseRecordRequest.class));
+        verify(exerciseService).updateExerciseRecord(eq(USER_ID), eq(RECORD_ID), any(ExerciseRecordUpdateRequest.class));
     }
 
     @Test

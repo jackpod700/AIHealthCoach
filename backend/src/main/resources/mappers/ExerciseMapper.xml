@@ -53,6 +53,20 @@
         eao.high_met_source
     </sql>
 
+    <sql id="exerciseRecordActivityOptionColumns">
+        eao.id AS exercise_activity_option_id,
+        eao.activity_name_ko,
+        CASE WHEN er.intensity_level = 'LOW' THEN eao.low_met_value END AS low_met_value,
+        CASE WHEN er.intensity_level = 'LOW' THEN eao.low_source_description END AS low_source_description,
+        CASE WHEN er.intensity_level = 'LOW' THEN eao.low_met_source END AS low_met_source,
+        CASE WHEN er.intensity_level = 'MEDIUM' THEN eao.medium_met_value END AS medium_met_value,
+        CASE WHEN er.intensity_level = 'MEDIUM' THEN eao.medium_source_description END AS medium_source_description,
+        CASE WHEN er.intensity_level = 'MEDIUM' THEN eao.medium_met_source END AS medium_met_source,
+        CASE WHEN er.intensity_level = 'HIGH' THEN eao.high_met_value END AS high_met_value,
+        CASE WHEN er.intensity_level = 'HIGH' THEN eao.high_source_description END AS high_source_description,
+        CASE WHEN er.intensity_level = 'HIGH' THEN eao.high_met_source END AS high_met_source
+    </sql>
+
     <select id="findExerciseActivityOptions" resultMap="exerciseActivityOption">
         SELECT
             <include refid="exerciseActivityOptionColumns"/>
@@ -147,7 +161,7 @@
             er.memo,
             er.created_at,
             er.updated_at,
-            <include refid="exerciseActivityOptionColumns"/>
+            <include refid="exerciseRecordActivityOptionColumns"/>
         FROM inserted er
         JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
     </select>
@@ -163,9 +177,6 @@
                 </if>
                 <if test="intensityLevel != null">
                     intensity_level = #{intensityLevel},
-                </if>
-                <if test="exerciseDate != null">
-                    exercise_date = #{exerciseDate},
                 </if>
                 <if test="durationMinutes != null">
                     duration_minutes = #{durationMinutes},
@@ -202,9 +213,16 @@
             er.memo,
             er.created_at,
             er.updated_at,
-            <include refid="exerciseActivityOptionColumns"/>
+            <include refid="exerciseRecordActivityOptionColumns"/>
         FROM updated er
         JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
+    </select>
+
+    <select id="findExerciseDateById" resultType="java.time.LocalDate">
+        SELECT exercise_date
+        FROM exercise_records
+        WHERE id = #{recordId}
+          AND user_id = #{userId}
     </select>
 
     <delete id="deleteExerciseRecord">
@@ -224,7 +242,7 @@
             er.memo,
             er.created_at,
             er.updated_at,
-            <include refid="exerciseActivityOptionColumns"/>
+            <include refid="exerciseRecordActivityOptionColumns"/>
         FROM exercise_records er
         JOIN exercise_activity_options eao ON eao.id = er.exercise_activity_option_id
         WHERE er.user_id = #{userId}

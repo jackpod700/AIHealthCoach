@@ -1,6 +1,7 @@
 package com.aihealthcoach.exercise.controller;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordUpdateRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseActivityOptionResponse;
 import com.aihealthcoach.exercise.service.ExerciseService;
@@ -48,7 +49,7 @@ public class ExerciseController {
     @PutMapping("/records/{recordId}")
     public ResponseEntity<ExerciseRecordResponse> updateExerciseRecord(
             @PathVariable Long recordId,
-            @Valid @RequestBody ExerciseRecordRequest request,
+            @Valid @RequestBody ExerciseRecordUpdateRequest request,
             Authentication authentication) {
         Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(exerciseService.updateExerciseRecord(userId, recordId, request));

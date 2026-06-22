@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordUpdateRequest;
 import com.aihealthcoach.exercise.entity.ExerciseActivityOption;
 import com.aihealthcoach.exercise.entity.ExerciseRecord;
 import com.aihealthcoach.exercise.exception.ExerciseException;
@@ -15,6 +16,7 @@ import com.aihealthcoach.exercise.mapper.ExerciseMapper;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
 import com.aihealthcoach.weight.mapper.WeightRecordMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,8 @@ class ExerciseServiceImplTest {
 
     @Mock
     private WeightRecordMapper weightRecordDao;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
     @InjectMocks
     private ExerciseServiceImpl exerciseService;
@@ -75,6 +79,7 @@ class ExerciseServiceImplTest {
         assertThat(response.caloriesBurned()).isEqualTo(133);
         assertThat(response.activityNameKo()).isEqualTo("걷기");
         assertThat(response.metValue()).isEqualByComparingTo("3.8");
+        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 1));
     }
 
     @Test
@@ -121,7 +126,6 @@ class ExerciseServiceImplTest {
 
         when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
         when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
-
         ArgumentCaptor<ExerciseRecord> recordCaptor = ArgumentCaptor.forClass(ExerciseRecord.class);
         when(exerciseDao.insertExerciseRecord(recordCaptor.capture())).thenAnswer(invocation -> {
             ExerciseRecord record = invocation.getArgument(0);
@@ -175,6 +179,7 @@ class ExerciseServiceImplTest {
 
         when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
         when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
+        when(exerciseDao.findExerciseDateById(1L, 10L)).thenReturn(LocalDate.of(2026, 6, 1));
 
         ArgumentCaptor<ExerciseRecord> recordCaptor = ArgumentCaptor.forClass(ExerciseRecord.class);
         when(exerciseDao.updateExerciseRecord(recordCaptor.capture())).thenAnswer(invocation -> {
@@ -184,37 +189,27 @@ class ExerciseServiceImplTest {
         });
 
         ExerciseRecordResponse response = exerciseService.updateExerciseRecord(1L, 10L,
-                ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("HIGH")
-                        .exerciseDate(LocalDate.of(2026, 6, 2))
+                ExerciseRecordUpdateRequest.builder().exerciseActivityOptionId(1L).intensityLevel("HIGH")
                         .durationMinutes(30).memo("언덕 걷기").build());
 
         ExerciseRecord savedRecord = recordCaptor.getValue();
         assertThat(savedRecord.getId()).isEqualTo(10L);
         assertThat(savedRecord.getUserId()).isEqualTo(1L);
+        assertThat(savedRecord.getExerciseDate()).isEqualTo(LocalDate.of(2026, 6, 1));
         assertThat(savedRecord.getIntensityLevel()).isEqualTo("HIGH");
         assertThat(savedRecord.getCaloriesBurned()).isEqualTo(210);
         assertThat(response.caloriesBurned()).isEqualTo(210);
         assertThat(response.activityNameKo()).isEqualTo("걷기");
         assertThat(response.metValue()).isEqualByComparingTo("6.0");
+        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 1));
     }
 
     @Test
     void updateExerciseRecordRejectsMissingRecord() {
-        ExerciseActivityOption activityOption = ExerciseActivityOption.builder()
-                .id(1L)
-                .activityNameKo("걷기")
-                .mediumMetValue(BigDecimal.valueOf(3.8))
-                .build();
-
-        UserProfile userProfile = UserProfile.builder().userId(1L).currentWeightKg(BigDecimal.valueOf(70)).build();
-
-        when(exerciseDao.findExerciseActivityOptionById(1L)).thenReturn(activityOption);
-        when(userDao.findUserProfileByUserId(1L)).thenReturn(userProfile);
-        when(exerciseDao.updateExerciseRecord(any(ExerciseRecord.class))).thenReturn(null);
+        when(exerciseDao.findExerciseDateById(1L, 10L)).thenReturn(null);
 
         assertThatThrownBy(() -> exerciseService.updateExerciseRecord(1L, 10L,
-                ExerciseRecordRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
-                        .exerciseDate(LocalDate.of(2026, 6, 2))
+                ExerciseRecordUpdateRequest.builder().exerciseActivityOptionId(1L).intensityLevel("MEDIUM")
                         .durationMinutes(30).build()))
                 .isInstanceOf(ExerciseException.class)
                 .hasMessage("운동 기록이 존재하지 않습니다.");
@@ -222,16 +217,18 @@ class ExerciseServiceImplTest {
 
     @Test
     void deleteExerciseRecordDeletesByUserAndRecordId() {
+        when(exerciseDao.findExerciseDateById(1L, 10L)).thenReturn(LocalDate.of(2026, 6, 2));
         when(exerciseDao.deleteExerciseRecord(1L, 10L)).thenReturn(1);
 
         exerciseService.deleteExerciseRecord(1L, 10L);
 
         verify(exerciseDao).deleteExerciseRecord(1L, 10L);
+        verify(dailyChatSummaryStateService).markChanged(1L, LocalDate.of(2026, 6, 2));
     }
 
     @Test
     void deleteExerciseRecordRejectsMissingRecord() {
-        when(exerciseDao.deleteExerciseRecord(1L, 10L)).thenReturn(0);
+        when(exerciseDao.findExerciseDateById(1L, 10L)).thenReturn(null);
 
         assertThatThrownBy(() -> exerciseService.deleteExerciseRecord(1L, 10L))
                 .isInstanceOf(ExerciseException.class)

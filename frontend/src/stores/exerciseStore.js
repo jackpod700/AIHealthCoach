@@ -126,7 +126,7 @@ export const useExerciseStore = defineStore("exercise", {
         this.isSavingRecord = false;
       }
     },
-    async updateRecord(recordId, record) {
+    async updateRecord(recordId, record, exerciseDate = this.selectedDate) {
       const authStore = useAuthStore();
 
       if (!authStore.isAuthenticated) {
@@ -138,8 +138,8 @@ export const useExerciseStore = defineStore("exercise", {
 
       try {
         await updateExerciseRecord(authStore.accessToken, recordId, record);
-        await this.loadDailyExerciseRecords(record.exerciseDate);
-        const [year, month] = record.exerciseDate.split("-").map(Number);
+        await this.loadDailyExerciseRecords(exerciseDate);
+        const [year, month] = exerciseDate.split("-").map(Number);
         await this.loadMonthlyExerciseDates(year, month);
         return true;
       } catch (error) {
