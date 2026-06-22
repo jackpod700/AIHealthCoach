@@ -3,7 +3,6 @@ package com.aihealthcoach.admin.aop;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Component;
 
@@ -39,8 +38,7 @@ public class AiUsageLoggingAspect {
     }
 
     private void recordSuccess(AiUsageTracked aiUsageTracked, long startedAt, Object result) {
-        if (!(result instanceof ResponseEntity<?, ?> responseEntity)
-                || !(responseEntity.response() instanceof ChatResponse chatResponse)) {
+        if (!(result instanceof ChatResponse chatResponse)) {
             log.warn("AI usage metric skipped because result does not contain ChatResponse metadata.");
             return;
         }

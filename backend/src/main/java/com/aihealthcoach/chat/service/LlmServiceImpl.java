@@ -1,6 +1,5 @@
 package com.aihealthcoach.chat.service;
 
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.model.ChatResponse;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +16,13 @@ public class LlmServiceImpl implements LlmService {
 
     @Override
     public LlmResponse generate(LlmRequest request) {
-        ResponseEntity<ChatResponse, String> response;
+        ChatResponse response;
         if (request.hasImages()) {
             response = aiChatClientGateway.callImageMeal(request);
         } else {
             response = aiChatClientGateway.callTextChat(request.systemPrompt(), request.userMessage());
         }
 
-        return new LlmResponse(response.entity());
+        return new LlmResponse(response.getResult().getOutput().getText());
     }
 }

@@ -8,8 +8,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.chat.client.ResponseEntity;
+import org.springframework.ai.chat.messages.AssistantMessage;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.chat.model.Generation;
 
 import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 
@@ -19,14 +20,20 @@ class LlmServiceImplTest {
     @Mock
     private AiChatClientGateway aiChatClientGateway;
     @Mock
-    private ResponseEntity<ChatResponse, String> responseEntity;
+    private ChatResponse chatResponse;
+    @Mock
+    private Generation generation;
+    @Mock
+    private AssistantMessage assistantMessage;
 
     @Test
     void generateSendsTheRenderedDynamicContextToTheProvider() {
         LlmRequest request = LlmRequest.text("stable prompt", "<user_memories>\n- 유제품 회피\n</user_memories>", "저녁 추천해줘");
         when(aiChatClientGateway.callTextChat(request.systemPrompt(), "저녁 추천해줘"))
-                .thenReturn(responseEntity);
-        when(responseEntity.entity()).thenReturn("{\"assistantMessage\":\"알겠어요.\"}");
+                .thenReturn(chatResponse);
+        when(chatResponse.getResult()).thenReturn(generation);
+        when(generation.getOutput()).thenReturn(assistantMessage);
+        when(assistantMessage.getText()).thenReturn("{\"assistantMessage\":\"알겠어요.\"}");
         LlmServiceImpl service = new LlmServiceImpl(aiChatClientGateway);
 
         String content = service.generate(request).content();

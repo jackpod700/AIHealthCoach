@@ -10,7 +10,6 @@ import static org.mockito.Mockito.when;
 
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.junit.jupiter.api.Test;
-import org.springframework.ai.chat.client.ResponseEntity;
 import org.springframework.ai.chat.model.ChatResponse;
 
 import com.aihealthcoach.admin.service.AiUsageMetricsService;
@@ -18,22 +17,19 @@ import com.aihealthcoach.admin.service.AiUsageMetricsService;
 class AiUsageLoggingAspectTest {
 
     @Test
-    @SuppressWarnings({"rawtypes", "unchecked"})
     void recordsSuccessWhenAiGatewayReturnsCallResponse() throws Throwable {
         AiUsageMetricsService metricsService = mock(AiUsageMetricsService.class);
         AiUsageLoggingAspect aspect = new AiUsageLoggingAspect(metricsService);
         ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
         AiUsageTracked annotation = mock(AiUsageTracked.class);
         ChatResponse chatResponse = mock(ChatResponse.class);
-        ResponseEntity result = mock(ResponseEntity.class);
 
         when(annotation.requestType()).thenReturn("TEXT_CHAT");
-        when(joinPoint.proceed()).thenReturn(result);
-        when(result.response()).thenReturn(chatResponse);
+        when(joinPoint.proceed()).thenReturn(chatResponse);
 
         Object actual = aspect.recordAiUsage(joinPoint, annotation);
 
-        assertThat(actual).isSameAs(result);
+        assertThat(actual).isSameAs(chatResponse);
         verify(metricsService).recordSuccess(eq("TEXT_CHAT"), anyLong(), eq(chatResponse));
     }
 
@@ -55,22 +51,19 @@ class AiUsageLoggingAspectTest {
     }
 
     @Test
-    @SuppressWarnings("rawtypes")
     void recordsSuccessWithoutUserIdArgument() throws Throwable {
         AiUsageMetricsService metricsService = mock(AiUsageMetricsService.class);
         AiUsageLoggingAspect aspect = new AiUsageLoggingAspect(metricsService);
         ProceedingJoinPoint joinPoint = mock(ProceedingJoinPoint.class);
         AiUsageTracked annotation = mock(AiUsageTracked.class);
         ChatResponse chatResponse = mock(ChatResponse.class);
-        ResponseEntity result = mock(ResponseEntity.class);
 
         when(annotation.requestType()).thenReturn("TEXT_CHAT");
-        when(joinPoint.proceed()).thenReturn(result);
-        when(result.response()).thenReturn(chatResponse);
+        when(joinPoint.proceed()).thenReturn(chatResponse);
 
         Object actual = aspect.recordAiUsage(joinPoint, annotation);
 
-        assertThat(actual).isSameAs(result);
+        assertThat(actual).isSameAs(chatResponse);
         verify(metricsService).recordSuccess(eq("TEXT_CHAT"), anyLong(), eq(chatResponse));
     }
 }
