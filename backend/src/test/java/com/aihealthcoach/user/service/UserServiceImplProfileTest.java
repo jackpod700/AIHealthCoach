@@ -6,15 +6,20 @@ import static org.mockito.Mockito.when;
 
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.auth.TokenRedisRepository;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.mapper.UserMapper;
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,9 +40,23 @@ class UserServiceImplProfileTest {
 
     @Mock
     private TokenRedisRepository tokenRedisRepository;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
-    @InjectMocks
+    private final Clock clock = Clock.fixed(Instant.parse("2026-06-15T03:00:00Z"), ZoneId.of("Asia/Seoul"));
     private UserServiceImpl userService;
+
+    @BeforeEach
+    void setUp() {
+        userService = new UserServiceImpl(
+                userDao,
+                passwordEncoder,
+                jwtTokenProvider,
+                tokenRedisRepository,
+                dailyChatSummaryStateService,
+                clock
+        );
+    }
 
     @Test
     void findProfileIncludesGenderAndAge() {
@@ -77,6 +96,7 @@ class UserServiceImplProfileTest {
         UserProfileResponse response = userService.updateProfile(USER_ID, request);
 
         verify(userDao).updateUserProfile(USER_ID, request);
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, LocalDate.of(2026, 6, 15));
         assertThat(response.gender()).isEqualTo("MALE");
         assertThat(response.age()).isEqualTo(32);
     }

@@ -18,6 +18,10 @@ import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
 import com.aihealthcoach.user.exception.UserException;
 import com.aihealthcoach.user.mapper.UserMapper;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
+
+import java.time.Clock;
+import java.time.LocalDate;
 
 import lombok.RequiredArgsConstructor;
 
@@ -29,6 +33,8 @@ public class UserServiceImpl implements UserService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
     private final TokenRedisRepository tokenRedisRepository;
+    private final DailyChatSummaryStateService dailyChatSummaryStateService;
+    private final Clock clock;
 
     @Override
     @Transactional
@@ -197,6 +203,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional
     public UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
@@ -207,6 +214,7 @@ public class UserServiceImpl implements UserService {
         userDao.updateUserProfile(userId, request);
 
         UserProfile updatedProfile = userDao.findUserProfileByUserId(userId);
+        dailyChatSummaryStateService.markChanged(userId, LocalDate.now(clock));
 
         return toProfileResponse(updatedProfile);
     }
