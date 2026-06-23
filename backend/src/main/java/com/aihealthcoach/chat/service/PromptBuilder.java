@@ -10,6 +10,10 @@ import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 public interface PromptBuilder {
     LlmRequest buildText(LocalDate contextDate, String userMessage, UserChatContext context);
 
+    LlmRequest buildAssistantStream(LocalDate contextDate, String userMessage, UserChatContext context);
+
+    LlmRequest buildToolJson(LocalDate contextDate, String userMessage);
+
     LlmRequest buildImage(
             LocalDate contextDate,
             String userMessage,

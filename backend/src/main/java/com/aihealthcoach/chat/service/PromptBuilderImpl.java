@@ -34,6 +34,24 @@ public class PromptBuilderImpl implements PromptBuilder {
     }
 
     @Override
+    public LlmRequest buildAssistantStream(LocalDate contextDate, String userMessage, UserChatContext context) {
+        return LlmRequest.text(
+                promptFactory.assistantStreamingPrompt(),
+                renderDynamicContext(contextDate, context),
+                userMessage
+        );
+    }
+
+    @Override
+    public LlmRequest buildToolJson(LocalDate contextDate, String userMessage) {
+        return LlmRequest.text(
+                promptFactory.toolExtractionPrompt(),
+                renderReferenceDate(contextDate),
+                userMessage
+        );
+    }
+
+    @Override
     public LlmRequest buildImage(
             LocalDate contextDate,
             String userMessage,
@@ -59,6 +77,12 @@ public class PromptBuilderImpl implements PromptBuilder {
         appendRecentTurns(prompt, context);
         appendActiveMemories(prompt, context);
         return prompt.toString().trim();
+    }
+
+    private String renderReferenceDate(LocalDate contextDate) {
+        StringBuilder prompt = new StringBuilder();
+        appendSection(prompt, "reference_date", contextDate.toString());
+        return prompt.toString();
     }
 
     private void appendProfile(StringBuilder prompt, UserChatContext context) {
