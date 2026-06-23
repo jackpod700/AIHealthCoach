@@ -76,4 +76,81 @@ public class ChatDto {
     ) {
     }
 
+    public record ChatStreamDeltaEvent(
+            String content
+    ) {
+    }
+
+    public record ChatStreamAssistantDoneEvent(
+            ChatMessageResponse message
+    ) {
+    }
+
+    public record ChatStreamToolResultEvent(
+            String status,
+            MealProposalResponse mealProposal,
+            ExerciseProposalResponse exerciseProposal,
+            WeightProposalResponse weightProposal,
+            ChatStreamMemorySaveResult memorySave,
+            String reason
+    ) {
+        public static ChatStreamToolResultEvent success(
+                MealProposalResponse mealProposal,
+                ExerciseProposalResponse exerciseProposal,
+                WeightProposalResponse weightProposal,
+                ChatStreamMemorySaveResult memorySave
+        ) {
+            return new ChatStreamToolResultEvent(
+                    "SUCCESS",
+                    mealProposal,
+                    exerciseProposal,
+                    weightProposal,
+                    memorySave == null ? ChatStreamMemorySaveResult.none() : memorySave,
+                    null
+            );
+        }
+
+        public static ChatStreamToolResultEvent failed(String reason) {
+            return new ChatStreamToolResultEvent(
+                    "FAILED",
+                    null,
+                    null,
+                    null,
+                    ChatStreamMemorySaveResult.none(),
+                    reason
+            );
+        }
+    }
+
+    public record ChatStreamMemorySaveResult(
+            String status,
+            String reason
+    ) {
+        public static ChatStreamMemorySaveResult none() {
+            return new ChatStreamMemorySaveResult("NONE", null);
+        }
+
+        public static ChatStreamMemorySaveResult saved() {
+            return new ChatStreamMemorySaveResult("SAVED", null);
+        }
+
+        public static ChatStreamMemorySaveResult failed(String reason) {
+            return new ChatStreamMemorySaveResult("FAILED", reason);
+        }
+    }
+
+    public record ChatStreamErrorEvent(
+            String code,
+            String message
+    ) {
+    }
+
+    public record ChatStreamDoneEvent(
+            String status
+    ) {
+        public static ChatStreamDoneEvent done() {
+            return new ChatStreamDoneEvent("DONE");
+        }
+    }
+
 }

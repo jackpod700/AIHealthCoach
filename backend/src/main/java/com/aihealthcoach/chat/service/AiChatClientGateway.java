@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import com.aihealthcoach.admin.aop.AiUsageTracked;
 import com.aihealthcoach.chat.dto.LlmDto.LlmRequest;
 import lombok.RequiredArgsConstructor;
+import reactor.core.publisher.Flux;
 
 @Service
 @RequiredArgsConstructor
@@ -23,6 +24,13 @@ public class AiChatClientGateway {
                 .user(userContent)
                 .call()
                 .chatResponse();
+    }
+
+    public Flux<String> streamTextChat(String systemPrompt, String userContent) {
+        return chatClient.prompt(systemPrompt)
+                .user(userContent)
+                .stream()
+                .content();
     }
 
     /**
