@@ -1,5 +1,5 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
@@ -59,6 +59,13 @@ const displayMessages = computed(() => {
 const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
+
+watch(
+  () => displayMessages.value.map((chatMessage) => chatMessage.content).join("\n"),
+  () => {
+    void scrollToBottom();
+  },
+);
 
 const goalLabel = computed(() => {
   return (
@@ -163,6 +170,12 @@ async function sendMessage() {
     await chatStore.sendMessage(content);
   }
 
+  const hasProposal = Boolean(
+    chatStore.mealProposal ||
+      chatStore.exerciseProposal ||
+      chatStore.weightProposal,
+  );
+
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
@@ -170,7 +183,10 @@ async function sendMessage() {
 
   await mealStore.loadDailyMeal(todayDateKey.value);
   await dailyGoalStore.loadProgress(todayDateKey.value);
-  await scrollToBottom();
+
+  if (!hasProposal) {
+    await scrollToBottom();
+  }
 }
 
 function openImagePicker() {
@@ -545,6 +561,10 @@ function isUserMessage(chatMessage) {
   return chatMessage.role === "USER";
 }
 
+function pendingAssistantText(chatMessage) {
+  return chatMessage.pending ? "AI 코치가 답변을 준비하고 있어요..." : "";
+}
+
 function formatMessageTime(value) {
   if (!value) {
     return "";
@@ -732,7 +752,7 @@ function sanitizeHtml(html = "") {
                   </div>
                   <div
                     class="markdown-content"
-                    v-html="renderMarkdown(chatMessage.content)"
+                    v-html="renderMarkdown(chatMessage.content || pendingAssistantText(chatMessage))"
                   ></div>
                   <time>{{ formatMessageTime(chatMessage.createdAt) }}</time>
                 </article>

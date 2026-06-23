@@ -84,14 +84,14 @@
 
 .sidebar-brand strong {
   font-size: 14px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .sidebar-brand span {
   margin-top: 3px;
   color: rgb(255 255 255 / 58%);
   font-size: 8px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -106,7 +106,7 @@
   margin: 0 0 6px 12px;
   color: rgb(255 255 255 / 35%);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .sidebar-nav a {
@@ -118,7 +118,7 @@
   padding: 0 11px;
   color: rgb(255 255 255 / 76%);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   text-decoration: none;
   transition:
     background 140ms ease,
@@ -133,7 +133,7 @@
   color: rgb(255 255 255 / 58%);
   font-size: 8px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .sidebar-nav a.active {
@@ -181,7 +181,7 @@
   background: #fde7c8;
   color: var(--navy);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .sidebar-user strong,
@@ -254,7 +254,7 @@
   margin-top: 5px;
   color: #6f7c72;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.5;
 }
 
@@ -269,7 +269,7 @@
   height: 34px;
   border-radius: 8px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .sidebar-logout-cancel {
@@ -302,7 +302,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-header {
@@ -319,7 +319,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .streak-chip {
@@ -332,7 +332,7 @@
   background: #fffaf3;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .streak-chip i {
@@ -379,7 +379,7 @@
   background: #fff;
   color: #8a98a8;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .message-row {
@@ -401,7 +401,7 @@
   border-radius: 8px;
   padding: 18px 20px;
   font-size: 14px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
   white-space: pre-line;
 }
@@ -417,7 +417,7 @@
   margin-top: 10px;
   color: rgb(255 255 255 / 66%);
   font-size: 10px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   text-align: right;
 }
 
@@ -479,7 +479,7 @@
   border-bottom: 1px solid #ece3d6;
   padding: 8px;
   color: #8a7d70;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: left;
 }
 
@@ -487,13 +487,13 @@
   border-bottom: 1px solid #f0e9de;
   padding: 10px 8px;
   color: #6a7482;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .analysis-card td:nth-child(2),
 .analysis-card td:nth-child(3) {
   color: var(--navy);
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: right;
 }
 
@@ -541,7 +541,7 @@
 .markdown-content {
   color: #526174;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.7;
 }
 
@@ -560,7 +560,7 @@
   margin: 0 0 12px;
   color: var(--ink);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .markdown-content p {
@@ -569,7 +569,7 @@
 
 .markdown-content strong {
   color: var(--navy);
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .markdown-content table {
@@ -583,7 +583,7 @@
   border-bottom: 1px solid #ece3d6;
   padding: 8px;
   color: #8a7d70;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: left;
 }
 
@@ -591,20 +591,20 @@
   border-bottom: 1px solid #f0e9de;
   padding: 10px 8px;
   color: #6a7482;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .markdown-content th:not(:first-child),
 .markdown-content td:not(:first-child) {
   color: var(--navy);
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: right;
 }
 
 .markdown-content tbody tr:last-child td {
   background: #fbf4ec;
   color: var(--ink);
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .markdown-content ul,
@@ -677,7 +677,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-card header button {
@@ -696,7 +696,7 @@
   margin: 12px 0 0;
   color: #687586;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
 }
 
@@ -713,7 +713,7 @@
   background: #fbf4ec;
   color: #8a7560;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-items {
@@ -743,7 +743,7 @@
 .meal-proposal-item-head strong {
   color: var(--ink);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-item-head label {
@@ -754,7 +754,7 @@
 .meal-proposal-item-head label span {
   color: var(--ink);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-item-head input {
@@ -766,7 +766,7 @@
   padding: 0 10px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   outline: none;
 }
 
@@ -797,7 +797,7 @@
 .meal-candidate-list strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-candidate-list span,
@@ -806,7 +806,7 @@
 .meal-candidate-status {
   color: #7f8b9b;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .meal-candidate-status {
@@ -837,7 +837,7 @@
   background: #fff1ef;
   color: #ae4d42;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-card footer {
@@ -875,7 +875,7 @@
 .exercise-proposal-fields label span {
   color: var(--ink);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .exercise-proposal-fields input {
@@ -887,7 +887,7 @@
   padding: 0 10px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   outline: none;
 }
 
@@ -906,7 +906,7 @@
   border-radius: 10px;
   padding: 0 16px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-proposal-cancel {
@@ -931,7 +931,7 @@
   background: #fffaf3;
   color: #8a7560;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
 }
 
@@ -989,7 +989,7 @@
   margin: 0;
   color: #a4aab3;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .chat-composer {
@@ -1027,7 +1027,7 @@
   color: #d97745;
   content: "사진을 놓으면 첨부돼요";
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   box-shadow: 0 10px 24px rgb(47 74 60 / 10%);
   pointer-events: none;
 }
@@ -1088,7 +1088,7 @@
   overflow: hidden;
   color: #7a8491;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1117,7 +1117,7 @@
   background: #fff1ef;
   color: #ae4d42;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .daily-goal-setup-card {
@@ -1133,14 +1133,14 @@
   margin: 12px 0 6px;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .daily-goal-setup-card > p {
   margin: 0 0 16px;
   color: #6f7b8a;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
 }
 
@@ -1160,7 +1160,7 @@
   background: #fff;
   color: #6f7784;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-setup-options button.active {
@@ -1198,13 +1198,13 @@
 .goal-slider-field b {
   color: #6f7784;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-slider-field strong {
   color: var(--navy);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-slider-field input[type="range"] {
@@ -1285,7 +1285,7 @@
   transform: translateX(-50%);
   color: #9a8e82;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   white-space: nowrap;
 }
 
@@ -1319,7 +1319,7 @@
   padding: 0 12px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   outline: none;
 }
 
@@ -1346,7 +1346,7 @@
   border-radius: 8px;
   padding: 9px 10px;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.5;
 }
 
@@ -1369,7 +1369,7 @@
   background: var(--navy);
   color: #fff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .daily-goal-save-button:disabled {
@@ -1438,7 +1438,7 @@
   margin: 0 0 10px;
   color: #9da5ae;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   text-align: center;
 }
 
@@ -1457,7 +1457,7 @@
 .today-head span {
   color: #96a0ad;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calorie-card {
@@ -1486,14 +1486,14 @@
 .api-needed-panel strong {
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .api-needed-panel p {
   margin-top: 8px;
   color: #8a7560;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
 }
 
@@ -1509,7 +1509,7 @@
 .calorie-card p {
   color: rgb(255 255 255 / 68%);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .calorie-card strong {
@@ -1540,7 +1540,7 @@
 .exercise-goal-card p {
   color: #8a7560;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .exercise-goal-card strong {
@@ -1732,7 +1732,7 @@
 .macro-grid span {
   color: #9a8e82;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .macro-grid strong {
@@ -1746,7 +1746,7 @@
   margin-left: 4px;
   color: #8a7560;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .macro-grid i {
@@ -1775,7 +1775,7 @@
   color: #9a8e82;
   font-size: 9px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .today-log {
@@ -1786,7 +1786,7 @@
   margin: 0 0 16px;
   color: #758190;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .today-log article {
@@ -1801,7 +1801,7 @@
 .today-log time {
   color: #9ca5b0;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .dot {
@@ -1871,7 +1871,7 @@
   margin: 3px 8px 0 0;
   color: var(--ink);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-title-row button {
@@ -1892,7 +1892,7 @@
   gap: 18px;
   color: #718092;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-legend span {
@@ -1952,7 +1952,7 @@
   border-radius: 10px;
   padding: 12px 16px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-error {
@@ -1978,7 +1978,7 @@
   padding: 0 10px;
   color: #7d8a9a;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-weekdays span.sunday {
@@ -2039,7 +2039,7 @@
 .calendar-cell-head strong {
   color: var(--ink);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-cell-head span {
@@ -2051,14 +2051,14 @@
   background: var(--orange);
   color: #fff;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-kcal {
   margin: auto 0 6px;
   color: #667386;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-weight-value {
@@ -2069,7 +2069,7 @@
   background: #edf5ef;
   color: var(--navy);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .calendar-dots {
@@ -2106,7 +2106,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 16px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-content {
@@ -2121,7 +2121,7 @@
   border-radius: 10px;
   padding: 12px 16px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-error {
@@ -2168,14 +2168,14 @@
 .record-summary-card small {
   color: rgb(255 255 255 / 68%);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .record-summary-card strong {
   display: block;
   margin-top: 5px;
   font-size: 28px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   line-height: 1;
 }
 
@@ -2205,7 +2205,7 @@
   padding-top: 13px;
   color: #8d98a7;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: right;
 }
 
@@ -2337,7 +2337,7 @@
   background: #fff;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   box-shadow: 0 6px 14px rgb(47 74 60 / 4%);
 }
 
@@ -2382,7 +2382,7 @@
 .record-card-head strong {
   color: var(--ink);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-card-head span {
@@ -2393,14 +2393,14 @@
   background: #fffaf3;
   color: #6f7b8a;
   font-size: 9px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-card-head em {
   color: var(--navy);
   font-size: 12px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-edit-cue {
@@ -2439,12 +2439,12 @@
   background: #fbf4ec;
   color: #6f7784;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .record-food-list b {
   color: var(--navy);
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-exercise-list {
@@ -2489,21 +2489,21 @@
 .record-exercise-list strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-exercise-list span {
   margin-top: 3px;
   color: #6f7b8a;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .record-exercise-list em {
   color: #2f7a5b;
   font-size: 11px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   white-space: nowrap;
 }
 
@@ -2526,13 +2526,13 @@
 .record-empty-card strong {
   color: var(--ink);
   font-size: 14px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .record-empty-card span {
   color: #8a95a3;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .exercise-selected-activity {
@@ -2555,13 +2555,13 @@
 .exercise-selected-activity strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .exercise-selected-activity span {
   color: #508068;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .exercise-edit-fields {
@@ -2580,7 +2580,7 @@
 .exercise-edit-fields label span {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .exercise-edit-fields input {
@@ -2593,7 +2593,7 @@
   background: #fff;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   outline: none;
 }
 
@@ -2615,7 +2615,7 @@
   background: #fff;
   color: #6f7b8a;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .exercise-intensity-options button.selected {
@@ -2644,7 +2644,7 @@
 .weight-edit-fields label span {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-edit-fields input {
@@ -2654,7 +2654,7 @@
   padding: 0 12px;
   color: var(--ink);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .muted-card {
@@ -2662,7 +2662,7 @@
   background: #fbf6ee;
   color: #9aa3ae;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .meal-edit-backdrop {
@@ -2699,7 +2699,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 20px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-edit-modal header button {
@@ -2732,7 +2732,7 @@
   background: #fffaf3;
   color: #7d8795;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-type-picker button.selected {
@@ -2751,7 +2751,7 @@
 .meal-edit-item label span {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-edit-search input,
@@ -2765,7 +2765,7 @@
   background: #fff;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   outline: none;
 }
 
@@ -2783,7 +2783,7 @@
   background: #fffaf3;
   color: #8a7560;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-search-state.error,
@@ -2821,13 +2821,13 @@
 .food-search-results strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-search-results span {
   color: #7f8b9b;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .meal-edit-items {
@@ -2860,14 +2860,14 @@
 .meal-edit-item strong {
   color: var(--ink);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-edit-item > div > span {
   margin-top: 5px;
   color: #7f8b9b;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   overflow-wrap: anywhere;
 }
 
@@ -2889,7 +2889,7 @@
   border-radius: 10px;
   padding: 12px 14px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-edit-modal footer {
@@ -2912,7 +2912,7 @@
   border-radius: 10px;
   padding: 0 18px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .meal-edit-cancel {
@@ -2966,14 +2966,14 @@
   background: var(--orange);
   color: #fff;
   font-size: 30px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-summary-card h2 {
   margin: 18px 0 8px;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-badge {
@@ -2985,7 +2985,7 @@
   background: #ffe7cb;
   color: var(--orange-deep);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-divider {
@@ -3003,14 +3003,14 @@
 .profile-stat-row strong {
   color: var(--navy);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-stat-row small {
   margin-left: 2px;
   color: #7d8795;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .profile-stat-row span {
@@ -3018,7 +3018,7 @@
   margin-top: 3px;
   color: #9aa3ae;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .profile-progress-box {
@@ -3036,7 +3036,7 @@
 .profile-progress-box span {
   color: var(--navy);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-progress-box span {
@@ -3063,7 +3063,7 @@
   margin: 0;
   color: #9aa3ae;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   text-align: right;
 }
 
@@ -3076,14 +3076,14 @@
   margin: 0;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-edit-title p {
   margin: 7px 0 18px;
   color: #7a8491;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .profile-success,
@@ -3096,7 +3096,7 @@
   border-radius: 8px;
   padding: 0 14px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-success {
@@ -3134,7 +3134,7 @@
 .profile-form-grid legend {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-form-grid input {
@@ -3145,7 +3145,7 @@
   background: #fff;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   outline: none;
 }
 
@@ -3191,13 +3191,13 @@
 .profile-goal-summary span {
   color: #8a7560;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-goal-summary strong {
   color: var(--navy);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-goal-summary button {
@@ -3211,7 +3211,7 @@
   background: #fff;
   color: var(--navy);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-goal-summary button i {
@@ -3232,7 +3232,7 @@
   background: #fff;
   color: #6f7784;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-goal-buttons button.active {
@@ -3255,7 +3255,7 @@
   border-radius: 8px;
   padding: 0 20px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .profile-cancel {
@@ -3286,7 +3286,7 @@
 .profile-weight-header span {
   color: #8a7560;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-transform: uppercase;
 }
 
@@ -3294,7 +3294,7 @@
   margin: 4px 0 0;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-range-tabs {
@@ -3313,7 +3313,7 @@
   padding: 0 12px;
   color: #7d8795;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-range-tabs button.active {
@@ -3346,7 +3346,7 @@
 .weight-record-form span {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-record-form input {
@@ -3357,7 +3357,7 @@
   background: #fff;
   color: var(--ink);
   font-size: 13px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   outline: none;
 }
 
@@ -3371,7 +3371,7 @@
   background: var(--navy);
   color: #fff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-record-form button:disabled {
@@ -3383,7 +3383,7 @@
   margin: 0;
   color: #ae4d42;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-chart-panel {
@@ -3410,14 +3410,14 @@
 .weight-chart-empty strong {
   color: var(--ink);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-chart-empty span {
   margin-top: 6px;
   color: #8a95a3;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .weight-record-list {
@@ -3446,13 +3446,13 @@
 .weight-record-main strong {
   color: var(--navy);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-record-main span {
   color: #8a95a3;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .weight-record-delete {
@@ -3474,7 +3474,7 @@
   padding: 14px;
   color: #8a7560;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: center;
 }
 
@@ -3510,7 +3510,7 @@
 .goal-editor-modal > header span {
   color: #8a7560;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-transform: uppercase;
 }
 
@@ -3518,7 +3518,7 @@
   margin: 4px 0 0;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-editor-modal > header button {
@@ -3554,7 +3554,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 25px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-count-chip {
@@ -3568,7 +3568,7 @@
   background: #fffaf3;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-count-chip i {
@@ -3609,7 +3609,7 @@
   margin-bottom: 10px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-search-input {
@@ -3636,7 +3636,7 @@
   background: transparent;
   color: var(--ink);
   font-size: 14px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .food-search-input input::placeholder {
@@ -3658,7 +3658,7 @@
   background: #fffaf3;
   color: #7a8491;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-query-chips button:hover {
@@ -3678,7 +3678,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-page-mock {
@@ -3687,7 +3687,7 @@
   gap: 8px;
   color: #7a8491;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-page-mock button {
@@ -3732,7 +3732,7 @@
   display: block;
   color: var(--ink);
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-result-card span {
@@ -3740,7 +3740,7 @@
   margin-top: 7px;
   color: #7a8491;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .food-result-card em {
@@ -3754,7 +3754,7 @@
   color: var(--orange);
   font-size: 10px;
   font-style: normal;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-result-card dl {
@@ -3767,14 +3767,14 @@
 .food-result-card dt {
   color: #9aa3ae;
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-result-card dd {
   margin: 5px 0 0;
   color: var(--navy);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-empty-state {
@@ -3801,13 +3801,13 @@
   margin-top: 12px;
   color: var(--ink);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-empty-state span {
   color: #8a95a3;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .food-detail-panel {
@@ -3825,13 +3825,13 @@
   margin: 4px 0 8px;
   color: var(--ink);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-detail-panel > span {
   color: #7a8491;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .food-serving-switcher {
@@ -3843,14 +3843,14 @@
 .food-serving-switcher > strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-serving-switcher > p {
   margin: -4px 0 2px;
   color: #7a8491;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.55;
 }
 
@@ -3885,14 +3885,14 @@
 
 .food-serving-switcher button span {
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-serving-switcher button b {
   flex: 0 0 auto;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-calorie-preview {
@@ -3908,14 +3908,14 @@
   display: block;
   color: rgb(255 255 255 / 62%);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-calorie-preview strong {
   display: block;
   margin-top: 8px;
   font-size: 42px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-calorie-preview em {
@@ -3939,13 +3939,13 @@
 .food-macro-preview span {
   color: #7a8491;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-macro-preview strong {
   color: var(--navy);
   font-size: 18px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-macro-preview i {
@@ -3968,14 +3968,14 @@
 .food-meal-record-panel > strong {
   color: var(--navy);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-meal-record-panel > p {
   margin: -4px 0 2px;
   color: #7a8491;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.55;
 }
 
@@ -3987,7 +3987,7 @@
 .food-meal-record-panel label span {
   color: var(--ink);
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-meal-record-panel select,
@@ -4000,7 +4000,7 @@
   background: #fff;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   outline: 0;
 }
 
@@ -4020,7 +4020,7 @@
   background: var(--navy);
   color: #fff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   box-shadow: 0 8px 16px rgb(32 63 102 / 12%);
 }
 
@@ -4034,7 +4034,7 @@
   border-radius: 10px;
   padding: 10px 12px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-meal-record-success {
@@ -4058,14 +4058,14 @@
 .food-detail-note strong {
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .food-detail-note p {
   margin: 7px 0 0;
   color: #7a8491;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.6;
 }
 
@@ -4087,7 +4087,7 @@
   margin: 3px 0 0;
   color: var(--ink);
   font-size: 25px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   font-family: inherit;
   line-height: 1.15;
   letter-spacing: 0;
@@ -4097,7 +4097,7 @@
   margin: 0;
   color: var(--orange);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   line-height: 1.2;
   letter-spacing: 0.26em;
   text-transform: uppercase;
@@ -4108,7 +4108,7 @@
   margin-top: 7px;
   color: #7a8491;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .admin-refresh-button {
@@ -4122,7 +4122,7 @@
   background: #fffaf3;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .admin-refresh-button:disabled {
@@ -4143,7 +4143,7 @@
   background: #fffaf3;
   color: #8a7560;
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .admin-error {
@@ -4173,13 +4173,13 @@
 .admin-user-card small {
   color: #7a8491;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .admin-user-card strong {
   color: var(--navy);
   font-size: 38px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .error-page {
@@ -4237,7 +4237,7 @@
   margin-bottom: 22px;
   color: var(--navy);
   font-size: clamp(86px, 11vw, 132px);
-  font-weight: 900;
+  font-weight: var(--font-bold);
   line-height: 0.86;
 }
 
@@ -4265,7 +4265,7 @@
   margin: 8px 0 10px;
   color: var(--ink);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .error-description {
@@ -4273,7 +4273,7 @@
   margin: 0;
   color: #7a8491;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.8;
 }
 
@@ -4293,7 +4293,7 @@
   border-radius: 8px;
   padding: 0 18px;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .error-primary {
@@ -4312,7 +4312,7 @@
   margin: 22px 0 0;
   color: #8f98a4;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .error-links a {

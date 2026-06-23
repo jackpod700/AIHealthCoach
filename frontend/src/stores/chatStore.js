@@ -1,6 +1,14 @@
 import { defineStore } from "pinia";
-import { confirmMealProposal, fetchChatMessages, postChatImageMessage, postChatMessage } from "../api/chatApi";
+import {
+  confirmMealProposal,
+  fetchChatMessages,
+  postChatImageMessage,
+  postChatMessageStream,
+} from "../api/chatApi";
 import { useAuthStore } from "./authStore";
+
+const STREAM_REVEAL_CHARS_PER_TICK = 12;
+const STREAM_REVEAL_INTERVAL_MS = 16;
 
 export const useChatStore = defineStore("chat", {
   state: () => ({
@@ -26,6 +34,10 @@ export const useChatStore = defineStore("chat", {
   getters: {
     orderedMessages: (state) => {
       return [...state.messages].sort((a, b) => {
+        if (Number.isFinite(a.clientOrder) && Number.isFinite(b.clientOrder)) {
+          return a.clientOrder - b.clientOrder;
+        }
+
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
       });
     },
@@ -82,8 +94,10 @@ export const useChatStore = defineStore("chat", {
 
       const requestedAt = new Date();
       const requestId = `pending-${requestedAt.getTime()}`;
+      const requestOrder = requestedAt.getTime() * 2;
       const pendingUserMessage = {
         clientId: `${requestId}-user`,
+        clientOrder: requestOrder,
         role: "USER",
         content: trimmedContent,
         createdAt: requestedAt.toISOString(),
@@ -91,8 +105,9 @@ export const useChatStore = defineStore("chat", {
       };
       const pendingAssistantMessage = {
         clientId: `${requestId}-assistant`,
+        clientOrder: requestOrder + 1,
         role: "ASSISTANT",
-        content: "AI 코치가 답변을 준비하고 있어요...",
+        content: "",
         createdAt: new Date(requestedAt.getTime() + 1).toISOString(),
         pending: true,
       };
@@ -100,15 +115,34 @@ export const useChatStore = defineStore("chat", {
       this.messages.push(pendingUserMessage, pendingAssistantMessage);
       this.refreshSummary();
 
+      let savedAssistantMessage = null;
+      let pendingToolResult = null;
+      const deltaRevealer = createDeltaRevealer((content) => {
+        this.appendAssistantDelta(requestId, content);
+      });
+
       try {
-        const response = await postChatMessage(authStore.accessToken, authStore.userId, trimmedContent);
-        const newMessages = Array.isArray(response) ? response : response?.messages || [];
-        this.replacePendingMessages(requestId, newMessages);
-        this.mealProposal = response?.mealProposal?.items?.length ? response.mealProposal : null;
-        this.exerciseProposal = response?.exerciseProposal?.activityKeyword ? response.exerciseProposal : null;
-        this.weightProposal = response?.weightProposal?.weightKg ? response.weightProposal : null;
+        await postChatMessageStream(authStore.accessToken, trimmedContent, {
+          delta: (event) => {
+            deltaRevealer.enqueue(event?.content || "");
+          },
+          assistant_done: (event) => {
+            savedAssistantMessage = event?.message || null;
+            this.markStreamingUserSaved(requestId);
+          },
+          tool_result: (event) => {
+            pendingToolResult = event;
+          },
+          error: (event) => {
+            throw new Error(event?.message || "답변 생성에 실패했습니다.");
+          },
+        });
+        await deltaRevealer.flush();
+        this.completeStreamingMessages(requestId, savedAssistantMessage);
+        this.applyToolResult(pendingToolResult);
         this.refreshSummary();
       } catch (error) {
+        await deltaRevealer.flush();
         if (authStore.handleAuthFailure(error)) {
           this.clearMessages();
           return;
@@ -259,11 +293,71 @@ export const useChatStore = defineStore("chat", {
       this.messages = this.messages.filter((message) => !message.clientId?.startsWith(requestId));
       this.messages.push(...newMessages);
     },
+    markStreamingUserSaved(requestId) {
+      this.messages = this.messages.map((message) => {
+        if (message.clientId !== `${requestId}-user`) {
+          return message;
+        }
+
+        return {
+          ...message,
+          pending: false,
+        };
+      });
+    },
+    appendAssistantDelta(requestId, content) {
+      const pendingAssistantMessage = this.messages.find((message) => message.clientId === `${requestId}-assistant`);
+
+      if (pendingAssistantMessage) {
+        pendingAssistantMessage.content += content;
+      }
+    },
+    completeStreamingMessages(requestId, assistantMessage) {
+      this.messages = this.messages.map((message) => {
+        if (message.clientId === `${requestId}-user`) {
+          return {
+            ...message,
+            pending: false,
+          };
+        }
+
+        if (message.clientId === `${requestId}-assistant`) {
+          if (!assistantMessage) {
+            return {
+              ...message,
+              pending: false,
+            };
+          }
+
+          return {
+            ...assistantMessage,
+            clientId: message.clientId,
+            clientOrder: message.clientOrder,
+            content: message.content || assistantMessage.content,
+            createdAt: message.createdAt,
+            pending: false,
+          };
+        }
+
+        return message;
+      });
+    },
+    applyToolResult(toolResult) {
+      if (!toolResult || toolResult.status !== "SUCCESS") {
+        return;
+      }
+
+      this.mealProposal = toolResult.mealProposal?.items?.length ? toolResult.mealProposal : null;
+      this.exerciseProposal = toolResult.exerciseProposal?.activityKeyword ? toolResult.exerciseProposal : null;
+      this.weightProposal = toolResult.weightProposal?.weightKg ? toolResult.weightProposal : null;
+    },
     markPendingMessageFailed(requestId) {
       const pendingAssistantMessage = this.messages.find((message) => message.clientId === `${requestId}-assistant`);
 
       if (pendingAssistantMessage) {
-        pendingAssistantMessage.content = "답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+        if (!pendingAssistantMessage.content?.trim()) {
+          pendingAssistantMessage.content = "답변 생성에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+        }
         pendingAssistantMessage.failed = true;
         pendingAssistantMessage.pending = false;
       }
@@ -283,3 +377,71 @@ export const useChatStore = defineStore("chat", {
     },
   },
 });
+
+function createDeltaRevealer(onReveal) {
+  let queue = "";
+  let timerId = null;
+  let stopped = false;
+  let idleResolvers = [];
+
+  function enqueue(content) {
+    if (!content || stopped) {
+      return;
+    }
+
+    queue += content;
+
+    if (!timerId) {
+      revealNext();
+    }
+  }
+
+  function revealNext() {
+    if (stopped) {
+      return;
+    }
+
+    const nextContent = queue.slice(0, STREAM_REVEAL_CHARS_PER_TICK);
+    queue = queue.slice(STREAM_REVEAL_CHARS_PER_TICK);
+
+    if (nextContent) {
+      onReveal(nextContent);
+    }
+
+    if (queue) {
+      timerId = window.setTimeout(revealNext, STREAM_REVEAL_INTERVAL_MS);
+      return;
+    }
+
+    timerId = null;
+    idleResolvers.splice(0).forEach((resolve) => resolve());
+  }
+
+  function flush() {
+    if (!queue && !timerId) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve) => {
+      idleResolvers.push(resolve);
+    });
+  }
+
+  function stop() {
+    stopped = true;
+    queue = "";
+
+    if (timerId) {
+      window.clearTimeout(timerId);
+      timerId = null;
+    }
+
+    idleResolvers.splice(0).forEach((resolve) => resolve());
+  }
+
+  return {
+    enqueue,
+    flush,
+    stop,
+  };
+}
