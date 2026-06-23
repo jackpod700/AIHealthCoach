@@ -114,4 +114,34 @@ class PromptBuilderImplTest {
                 - 2026-06-07: 섭취 목표에 가까웠고 걷기 운동을 했다.
                 </recent_daily_summaries>""");
     }
+
+    @Test
+    void buildAssistantStreamUsesContextButToolJsonDoesNotUseUserContext() {
+        UserChatContext context = new UserChatContext(
+                null,
+                null,
+                null,
+                List.of(),
+                List.of(),
+                List.of(new ChatMessageResponse("USER", "이전 대화", null)),
+                List.of(new UserMemoryResponse(1L, "유제품은 피하고 싶어", true, null, null))
+        );
+
+        LlmRequest assistantRequest = promptBuilder.buildAssistantStream(
+                LocalDate.of(2026, 6, 8),
+                "점심 기록해줘",
+                context
+        );
+        LlmRequest toolRequest = promptBuilder.buildToolJson(
+                LocalDate.of(2026, 6, 8),
+                "점심 기록해줘"
+        );
+
+        assertThat(assistantRequest.stableSystemPrompt()).contains("Return only the plain assistant message text.");
+        assertThat(assistantRequest.dynamicContextPrompt()).contains("user_memories");
+        assertThat(toolRequest.stableSystemPrompt()).contains("Return only JSON");
+        assertThat(toolRequest.dynamicContextPrompt()).contains("<reference_date>\n2026-06-08");
+        assertThat(toolRequest.dynamicContextPrompt()).doesNotContain("user_memories");
+        assertThat(toolRequest.dynamicContextPrompt()).doesNotContain("recent_chat_turns");
+    }
 }
