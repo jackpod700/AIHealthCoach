@@ -40,4 +40,24 @@ public class MealException extends BusinessException {
     public static MealException foodSubmissionAlreadyReviewed() {
         return new MealException(MealErrorCode.FOOD_SUBMISSION_ALREADY_REVIEWED);
     }
+
+    public static MealException invalidFoodSearchMiss() {
+        return new MealException(MealErrorCode.INVALID_FOOD_SEARCH_MISS);
+    }
+
+    public static MealException foodSearchMissNotFound() {
+        return new MealException(MealErrorCode.FOOD_SEARCH_MISS_NOT_FOUND);
+    }
+
+    public static MealException foodImportCandidateNotFound() {
+        return new MealException(MealErrorCode.FOOD_IMPORT_CANDIDATE_NOT_FOUND);
+    }
+
+    public static MealException foodImportCandidateAlreadyReviewed() {
+        return new MealException(MealErrorCode.FOOD_IMPORT_CANDIDATE_ALREADY_REVIEWED);
+    }
+
+    public static MealException invalidFoodImportCandidate() {
+        return new MealException(MealErrorCode.INVALID_FOOD_IMPORT_CANDIDATE);
+    }
 }

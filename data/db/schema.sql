@@ -140,6 +140,120 @@ CREATE INDEX IF NOT EXISTS idx_food_submission_requests_submitter
 CREATE INDEX IF NOT EXISTS idx_food_submission_requests_status
     ON food_submission_requests(status, submitted_at DESC);
 
+CREATE TABLE IF NOT EXISTS food_search_misses (
+    id BIGSERIAL PRIMARY KEY,
+    query VARCHAR(255) NOT NULL,
+    normalized_query VARCHAR(255) NOT NULL UNIQUE,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    miss_count INTEGER NOT NULL DEFAULT 1,
+    first_user_id BIGINT,
+    last_user_id BIGINT,
+    last_requested_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    processing_started_at TIMESTAMPTZ,
+    processed_at TIMESTAMPTZ,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    last_failure_reason TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_food_search_misses_status
+        CHECK (status IN ('PENDING', 'PROCESSING', 'PENDING_REVIEW', 'APPROVED', 'REJECTED', 'NO_RESULT', 'FAILED')),
+    CONSTRAINT chk_food_search_misses_query_not_blank
+        CHECK (length(trim(query)) > 0),
+    CONSTRAINT chk_food_search_misses_normalized_query_not_blank
+        CHECK (length(trim(normalized_query)) > 0),
+    CONSTRAINT chk_food_search_misses_miss_count_positive
+        CHECK (miss_count > 0),
+    CONSTRAINT chk_food_search_misses_retry_count_non_negative
+        CHECK (retry_count >= 0),
+    CONSTRAINT fk_food_search_misses_first_user
+        FOREIGN KEY (first_user_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT fk_food_search_misses_last_user
+        FOREIGN KEY (last_user_id) REFERENCES users(id) ON DELETE SET NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_food_search_misses_status
+    ON food_search_misses(status, last_requested_at);
+
+CREATE TABLE IF NOT EXISTS food_import_runs (
+    id BIGSERIAL PRIMARY KEY,
+    status VARCHAR(20) NOT NULL DEFAULT 'RUNNING',
+    picked_count INTEGER NOT NULL DEFAULT 0,
+    candidate_count INTEGER NOT NULL DEFAULT 0,
+    failure_count INTEGER NOT NULL DEFAULT 0,
+    failure_reason TEXT,
+    started_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    finished_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_food_import_runs_status
+        CHECK (status IN ('RUNNING', 'SUCCESS', 'PARTIAL_FAILED', 'FAILED')),
+    CONSTRAINT chk_food_import_runs_counts_non_negative
+        CHECK (picked_count >= 0 AND candidate_count >= 0 AND failure_count >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS food_import_candidates (
+    id BIGSERIAL PRIMARY KEY,
+    search_miss_id BIGINT NOT NULL,
+    import_run_id BIGINT,
+    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    source_provider VARCHAR(30) NOT NULL DEFAULT 'FATSECRET',
+    source_key VARCHAR(40) NOT NULL,
+    source_url TEXT,
+    source_food_type VARCHAR(50),
+    name VARCHAR(255) NOT NULL,
+    brand VARCHAR(255),
+    food_description TEXT,
+    serving_description VARCHAR(100),
+    serving_size NUMERIC(8,2),
+    serving_unit VARCHAR(20),
+    calories NUMERIC(8,2),
+    fat NUMERIC(8,2),
+    carbohydrate NUMERIC(8,2),
+    protein NUMERIC(8,2),
+    content_hash VARCHAR(64) NOT NULL,
+    duplicate_food_id BIGINT,
+    approved_food_id BIGINT,
+    rejection_reason TEXT,
+    reviewed_by_admin_id BIGINT,
+    reviewed_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_food_import_candidates_status
+        CHECK (status IN ('PENDING', 'DUPLICATE', 'APPROVED', 'REJECTED')),
+    CONSTRAINT chk_food_import_candidates_name_not_blank
+        CHECK (length(trim(name)) > 0),
+    CONSTRAINT chk_food_import_candidates_nutrients_non_negative
+        CHECK (
+            (calories IS NULL OR calories >= 0)
+            AND (fat IS NULL OR fat >= 0)
+            AND (carbohydrate IS NULL OR carbohydrate >= 0)
+            AND (protein IS NULL OR protein >= 0)
+        ),
+    CONSTRAINT fk_food_import_candidates_search_miss
+        FOREIGN KEY (search_miss_id) REFERENCES food_search_misses(id) ON DELETE CASCADE,
+    CONSTRAINT fk_food_import_candidates_import_run
+        FOREIGN KEY (import_run_id) REFERENCES food_import_runs(id) ON DELETE SET NULL,
+    CONSTRAINT fk_food_import_candidates_duplicate_food
+        FOREIGN KEY (duplicate_food_id) REFERENCES foods(id) ON DELETE SET NULL,
+    CONSTRAINT fk_food_import_candidates_approved_food
+        FOREIGN KEY (approved_food_id) REFERENCES foods(id) ON DELETE SET NULL,
+    CONSTRAINT fk_food_import_candidates_reviewer
+        FOREIGN KEY (reviewed_by_admin_id) REFERENCES users(id) ON DELETE SET NULL,
+    CONSTRAINT uq_food_import_candidates_source
+        UNIQUE (search_miss_id, source_provider, source_key),
+    CONSTRAINT uq_food_import_candidates_hash
+        UNIQUE (search_miss_id, content_hash)
+);
+
+CREATE INDEX IF NOT EXISTS idx_food_import_candidates_search_miss
+    ON food_import_candidates(search_miss_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_food_import_candidates_status
+    ON food_import_candidates(status, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS meals (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,

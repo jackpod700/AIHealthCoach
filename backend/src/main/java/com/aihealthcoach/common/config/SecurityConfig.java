@@ -29,15 +29,15 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final JwtAuthenticationEntryPoint jwtAuthenticationEntryPoint;
     private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
-    private final OAuth2LoginSuccessHandler oAuth2LoginSuccessHandler;
-    private final OAuth2LoginFailureHandler oAuth2LoginFailureHandler;
+    private final ObjectProvider<OAuth2LoginSuccessHandler> oAuth2LoginSuccessHandlerProvider;
+    private final ObjectProvider<OAuth2LoginFailureHandler> oAuth2LoginFailureHandlerProvider;
 
     @Bean
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             ActiveUserMetricsFilter activeUserMetricsFilter
     ) throws Exception {
-        return http
+        http
                 .csrf(AbstractHttpConfigurer::disable)
                 .exceptionHandling(exception -> exception
                         .authenticationEntryPoint(jwtAuthenticationEntryPoint)
@@ -59,11 +59,18 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PATCH, "/api/user/profile").authenticated()
                         .requestMatchers(SecurityPaths.PUBLIC_PATHS).permitAll()
                         .anyRequest().authenticated()
-                )
-                .oauth2Login(oauth -> oauth
-                        .successHandler(oAuth2LoginSuccessHandler)
-                        .failureHandler(oAuth2LoginFailureHandler)
-                )
+                );
+
+        OAuth2LoginSuccessHandler successHandler = oAuth2LoginSuccessHandlerProvider.getIfAvailable();
+        OAuth2LoginFailureHandler failureHandler = oAuth2LoginFailureHandlerProvider.getIfAvailable();
+        if (successHandler != null && failureHandler != null) {
+            http.oauth2Login(oauth -> oauth
+                    .successHandler(successHandler)
+                    .failureHandler(failureHandler)
+            );
+        }
+
+        return http
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(activeUserMetricsFilter, JwtAuthenticationFilter.class)
                 .build();
