@@ -6,11 +6,14 @@ import { useMealStore } from "../../stores/mealStore";
 
 const foodStore = useFoodStore();
 const mealStore = useMealStore();
+const FOOD_SEARCH_DEBOUNCE_MS = 300;
+const SEARCH_MISS_RECORD_DELAY_MS = 700;
 
 const foodQuery = ref("");
 const selectedSourceKey = ref("");
 const selectedServingId = ref(null);
 const debounceTimer = ref(null);
+const missRecordTimer = ref(null);
 const mealType = ref(defaultMealType());
 const quantity = ref(1);
 const saveMessage = ref("");
@@ -94,13 +97,20 @@ watch(foods, (newFoods) => {
 
 watch(foodQuery, (query) => {
   clearDebounceTimer();
-  debounceTimer.value = setTimeout(() => {
-    foodStore.loadFoodGroups({
-      query: query.trim(),
+  clearMissRecordTimer();
+
+  debounceTimer.value = window.setTimeout(async () => {
+    const trimmedQuery = query.trim();
+    await foodStore.loadFoodGroups({
+      query: trimmedQuery,
       page: 1,
       size: foodStore.size,
     });
-  }, 300);
+
+    if (foodQuery.value.trim() === trimmedQuery) {
+      scheduleSearchMissRecord(trimmedQuery);
+    }
+  }, FOOD_SEARCH_DEBOUNCE_MS);
 });
 
 watch([selectedFood, selectedServing], () => {
@@ -114,6 +124,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   clearDebounceTimer();
+  clearMissRecordTimer();
 });
 
 function representativeServing(food) {
@@ -300,10 +311,44 @@ function numberOrNull(value) {
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
 }
 
+function scheduleSearchMissRecord(query) {
+  clearMissRecordTimer();
+
+  if (!shouldRecordSearchMiss(query) || foodStore.error || foods.value.length) {
+    return;
+  }
+
+  missRecordTimer.value = window.setTimeout(() => {
+    if (
+      foodQuery.value.trim() !== query
+      || foodStore.isLoading
+      || foodStore.error
+      || foods.value.length
+    ) {
+      return;
+    }
+
+    foodStore.recordSearchMiss(query);
+  }, SEARCH_MISS_RECORD_DELAY_MS);
+}
+
+function shouldRecordSearchMiss(query) {
+  const normalizedQuery = String(query || "").trim();
+  const compactQuery = normalizedQuery.replace(/\s+/g, "");
+  return compactQuery.length >= 2 && /[\p{L}\p{N}]/u.test(normalizedQuery);
+}
+
 function clearDebounceTimer() {
   if (debounceTimer.value) {
-    clearTimeout(debounceTimer.value);
+    window.clearTimeout(debounceTimer.value);
     debounceTimer.value = null;
+  }
+}
+
+function clearMissRecordTimer() {
+  if (missRecordTimer.value) {
+    window.clearTimeout(missRecordTimer.value);
+    missRecordTimer.value = null;
   }
 }
 </script>

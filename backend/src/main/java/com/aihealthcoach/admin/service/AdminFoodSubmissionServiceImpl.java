@@ -19,6 +19,7 @@ import com.aihealthcoach.meal.entity.FoodSubmissionRequest;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.FoodSubmissionMapper;
 import com.aihealthcoach.meal.service.FoodSubmissionServiceImpl;
+import com.aihealthcoach.meal.util.FoodContentHashGenerator;
 
 import lombok.RequiredArgsConstructor;
 
@@ -98,7 +99,14 @@ public class AdminFoodSubmissionServiceImpl implements AdminFoodSubmissionServic
                     request.carbohydrate(),
                     request.protein(),
                     request.fat(),
-                    contentHash(name, brand, servingDescription, servingSize, servingUnit, request)
+                    FoodContentHashGenerator.generate(
+                            name,
+                            brand,
+                            request.calories(),
+                            request.fat(),
+                            request.carbohydrate(),
+                            request.protein()
+                    )
             );
         }
 
@@ -190,35 +198,9 @@ public class AdminFoodSubmissionServiceImpl implements AdminFoodSubmissionServic
         return digest("SHA-1", "USER_SUBMISSION|" + canonical(name) + "|" + canonical(brand));
     }
 
-    private String contentHash(
-            String name,
-            String brand,
-            String servingDescription,
-            BigDecimal servingSize,
-            String servingUnit,
-            FoodSubmissionReviewRequest request
-    ) {
-        String raw = String.join("|",
-                canonical(name),
-                canonical(brand),
-                canonical(servingDescription),
-                decimal(servingSize),
-                canonical(servingUnit),
-                decimal(request.calories()),
-                decimal(request.carbohydrate()),
-                decimal(request.protein()),
-                decimal(request.fat())
-        );
-        return digest("SHA-256", raw);
-    }
-
     private String canonical(String value) {
         String normalized = FoodSubmissionServiceImpl.optional(value);
         return normalized == null ? "" : normalized.toLowerCase(Locale.ROOT);
-    }
-
-    private String decimal(BigDecimal value) {
-        return value == null ? "" : value.stripTrailingZeros().toPlainString();
     }
 
     private String digest(String algorithm, String raw) {

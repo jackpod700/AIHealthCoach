@@ -1,0 +1,430 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.meal.mapper.FoodImportMapper">
+    <resultMap id="foodSearchMiss" type="com.aihealthcoach.meal.entity.FoodSearchMiss">
+        <id column="id" property="id"/>
+        <result column="query" property="query"/>
+        <result column="normalized_query" property="normalizedQuery"/>
+        <result column="status" property="status"/>
+        <result column="miss_count" property="missCount"/>
+        <result column="first_user_id" property="firstUserId"/>
+        <result column="last_user_id" property="lastUserId"/>
+        <result column="last_requested_at" property="lastRequestedAt"/>
+        <result column="processing_started_at" property="processingStartedAt"/>
+        <result column="processed_at" property="processedAt"/>
+        <result column="retry_count" property="retryCount"/>
+        <result column="last_failure_reason" property="lastFailureReason"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <resultMap id="foodImportCandidate" type="com.aihealthcoach.meal.entity.FoodImportCandidate">
+        <id column="id" property="id"/>
+        <result column="search_miss_id" property="searchMissId"/>
+        <result column="import_run_id" property="importRunId"/>
+        <result column="search_query" property="searchQuery"/>
+        <result column="normalized_query" property="normalizedQuery"/>
+        <result column="status" property="status"/>
+        <result column="source_provider" property="sourceProvider"/>
+        <result column="source_key" property="sourceKey"/>
+        <result column="source_url" property="sourceUrl"/>
+        <result column="source_food_type" property="sourceFoodType"/>
+        <result column="name" property="name"/>
+        <result column="brand" property="brand"/>
+        <result column="food_description" property="foodDescription"/>
+        <result column="serving_description" property="servingDescription"/>
+        <result column="serving_size" property="servingSize"/>
+        <result column="serving_unit" property="servingUnit"/>
+        <result column="calories" property="calories"/>
+        <result column="fat" property="fat"/>
+        <result column="carbohydrate" property="carbohydrate"/>
+        <result column="protein" property="protein"/>
+        <result column="content_hash" property="contentHash"/>
+        <result column="duplicate_food_id" property="duplicateFoodId"/>
+        <result column="approved_food_id" property="approvedFoodId"/>
+        <result column="rejection_reason" property="rejectionReason"/>
+        <result column="reviewed_by_admin_id" property="reviewedByAdminId"/>
+        <result column="reviewed_at" property="reviewedAt"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <sql id="foodSearchMissColumns">
+        id,
+        query,
+        normalized_query,
+        status,
+        miss_count,
+        first_user_id,
+        last_user_id,
+        last_requested_at,
+        processing_started_at,
+        processed_at,
+        retry_count,
+        last_failure_reason,
+        created_at,
+        updated_at
+    </sql>
+
+    <sql id="foodImportCandidateColumns">
+        fic.id,
+        fic.search_miss_id,
+        fic.import_run_id,
+        fsm.query AS search_query,
+        fsm.normalized_query,
+        fic.status,
+        fic.source_provider,
+        fic.source_key,
+        fic.source_url,
+        fic.source_food_type,
+        fic.name,
+        fic.brand,
+        fic.food_description,
+        fic.serving_description,
+        fic.serving_size,
+        fic.serving_unit,
+        fic.calories,
+        fic.fat,
+        fic.carbohydrate,
+        fic.protein,
+        fic.content_hash,
+        fic.duplicate_food_id,
+        fic.approved_food_id,
+        fic.rejection_reason,
+        fic.reviewed_by_admin_id,
+        fic.reviewed_at,
+        fic.created_at,
+        fic.updated_at
+    </sql>
+
+    <select id="upsertFoodSearchMiss" resultType="long">
+        INSERT INTO food_search_misses (
+            query,
+            normalized_query,
+            first_user_id,
+            last_user_id
+        )
+        VALUES (
+            #{query},
+            #{normalizedQuery},
+            #{userId},
+            #{userId}
+        )
+        ON CONFLICT (normalized_query)
+        DO UPDATE SET
+            query = EXCLUDED.query,
+            miss_count = food_search_misses.miss_count + 1,
+            last_user_id = EXCLUDED.last_user_id,
+            last_requested_at = CURRENT_TIMESTAMP,
+            status = CASE
+                WHEN food_search_misses.status IN ('FAILED', 'NO_RESULT', 'REJECTED') THEN 'PENDING'
+                ELSE food_search_misses.status
+            END,
+            last_failure_reason = CASE
+                WHEN food_search_misses.status IN ('FAILED', 'NO_RESULT', 'REJECTED') THEN NULL
+                ELSE food_search_misses.last_failure_reason
+            END,
+            updated_at = CURRENT_TIMESTAMP
+        RETURNING id
+    </select>
+
+    <select id="findFoodSearchMissById" resultMap="foodSearchMiss">
+        SELECT
+            <include refid="foodSearchMissColumns"/>
+        FROM food_search_misses
+        WHERE id = #{searchMissId}
+    </select>
+
+    <select id="findFoodSearchMissByIdForUpdate" resultMap="foodSearchMiss">
+        SELECT
+            <include refid="foodSearchMissColumns"/>
+        FROM food_search_misses
+        WHERE id = #{searchMissId}
+        FOR UPDATE
+    </select>
+
+    <select id="pickPendingFoodSearchMisses" resultMap="foodSearchMiss">
+        SELECT
+            <include refid="foodSearchMissColumns"/>
+        FROM food_search_misses
+        WHERE status = 'PENDING'
+           OR (status = 'FAILED' AND retry_count &lt; #{maxRetries})
+        ORDER BY
+            miss_count DESC,
+            last_requested_at ASC,
+            id ASC
+        LIMIT #{limit}
+        FOR UPDATE SKIP LOCKED
+    </select>
+
+    <update id="markFoodSearchMissProcessing">
+        UPDATE food_search_misses
+        SET
+            status = 'PROCESSING',
+            processing_started_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+          AND (status = 'PENDING' OR status = 'FAILED')
+    </update>
+
+    <update id="markFoodSearchMissPendingReview">
+        UPDATE food_search_misses
+        SET
+            status = 'PENDING_REVIEW',
+            processed_at = CURRENT_TIMESTAMP,
+            last_failure_reason = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+    </update>
+
+    <update id="markFoodSearchMissNoResult">
+        UPDATE food_search_misses
+        SET
+            status = 'NO_RESULT',
+            processed_at = CURRENT_TIMESTAMP,
+            last_failure_reason = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+    </update>
+
+    <update id="markFoodSearchMissFailed">
+        UPDATE food_search_misses
+        SET
+            status = 'FAILED',
+            retry_count = retry_count + 1,
+            last_failure_reason = #{failureReason},
+            processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+    </update>
+
+    <update id="markFoodSearchMissApproved">
+        UPDATE food_search_misses
+        SET
+            status = 'APPROVED',
+            processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+    </update>
+
+    <update id="markFoodSearchMissRejected">
+        UPDATE food_search_misses
+        SET
+            status = 'REJECTED',
+            processed_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{searchMissId}
+    </update>
+
+    <select id="insertFoodImportRun" resultType="long">
+        INSERT INTO food_import_runs DEFAULT VALUES
+        RETURNING id
+    </select>
+
+    <update id="completeFoodImportRun">
+        UPDATE food_import_runs
+        SET
+            status = #{status},
+            picked_count = #{pickedCount},
+            candidate_count = #{candidateCount},
+            failure_count = #{failureCount},
+            failure_reason = #{failureReason},
+            finished_at = CURRENT_TIMESTAMP,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{runId}
+    </update>
+
+    <insert id="insertFoodImportCandidate">
+        INSERT INTO food_import_candidates (
+            search_miss_id,
+            import_run_id,
+            status,
+            source_provider,
+            source_key,
+            source_url,
+            source_food_type,
+            name,
+            brand,
+            food_description,
+            serving_description,
+            serving_size,
+            serving_unit,
+            calories,
+            fat,
+            carbohydrate,
+            protein,
+            content_hash,
+            duplicate_food_id
+        )
+        VALUES (
+            #{candidate.searchMissId},
+            #{candidate.importRunId},
+            #{candidate.status},
+            #{candidate.sourceProvider},
+            #{candidate.sourceKey},
+            #{candidate.sourceUrl},
+            #{candidate.sourceFoodType},
+            #{candidate.name},
+            #{candidate.brand},
+            #{candidate.foodDescription},
+            #{candidate.servingDescription},
+            #{candidate.servingSize},
+            #{candidate.servingUnit},
+            #{candidate.calories},
+            #{candidate.fat},
+            #{candidate.carbohydrate},
+            #{candidate.protein},
+            #{candidate.contentHash},
+            #{candidate.duplicateFoodId}
+        )
+        ON CONFLICT DO NOTHING
+    </insert>
+
+    <select id="findFoodIdByContentHash" resultType="long">
+        SELECT id
+        FROM foods
+        WHERE content_hash = #{contentHash}
+        ORDER BY id
+        LIMIT 1
+    </select>
+
+    <select id="findFoodIdBySourceKeyServing" resultType="long">
+        SELECT id
+        FROM foods
+        WHERE source_key = #{sourceKey}
+          AND serving_key = COALESCE(#{servingDescription}, '')
+        ORDER BY id
+        LIMIT 1
+    </select>
+
+    <select id="insertApprovedFood" resultType="long">
+        INSERT INTO foods (
+            source_key,
+            source_url,
+            name,
+            brand,
+            serving_description,
+            serving_size,
+            serving_unit,
+            calories,
+            fat,
+            carbohydrate,
+            protein,
+            content_hash
+        )
+        VALUES (
+            #{sourceKey},
+            #{sourceUrl},
+            #{name},
+            #{brand},
+            #{servingDescription},
+            #{servingSize},
+            #{servingUnit},
+            #{calories},
+            #{fat},
+            #{carbohydrate},
+            #{protein},
+            #{contentHash}
+        )
+        RETURNING id
+    </select>
+
+    <select id="countFoodSearchMissesByStatus" resultType="long">
+        SELECT COUNT(*)
+        FROM food_search_misses
+        WHERE status = #{status}
+    </select>
+
+    <select id="findFoodSearchMissesByStatus" resultMap="foodSearchMiss">
+        SELECT
+            <include refid="foodSearchMissColumns"/>
+        FROM food_search_misses
+        WHERE status = #{status}
+        ORDER BY last_requested_at DESC, id DESC
+        LIMIT #{limit}
+        OFFSET #{offset}
+    </select>
+
+    <select id="findFoodImportCandidatesBySearchMissIds" resultMap="foodImportCandidate">
+        SELECT
+            <include refid="foodImportCandidateColumns"/>
+        FROM food_import_candidates fic
+        JOIN food_search_misses fsm
+            ON fsm.id = fic.search_miss_id
+        WHERE fic.search_miss_id IN
+        <foreach collection="searchMissIds" item="searchMissId" open="(" separator="," close=")">
+            #{searchMissId}
+        </foreach>
+        ORDER BY
+            fic.search_miss_id,
+            CASE fic.status
+                WHEN 'PENDING' THEN 0
+                WHEN 'DUPLICATE' THEN 1
+                WHEN 'APPROVED' THEN 2
+                ELSE 3
+            END,
+            fic.id
+    </select>
+
+    <select id="findSearchMissIdByFoodImportCandidateId" resultType="long">
+        SELECT search_miss_id
+        FROM food_import_candidates
+        WHERE id = #{candidateId}
+    </select>
+
+    <select id="findFoodImportCandidatesByIdsForUpdate" resultMap="foodImportCandidate">
+        SELECT
+            <include refid="foodImportCandidateColumns"/>
+        FROM food_import_candidates fic
+        JOIN food_search_misses fsm
+            ON fsm.id = fic.search_miss_id
+        WHERE fic.id IN
+        <foreach collection="candidateIds" item="candidateId" open="(" separator="," close=")">
+            #{candidateId}
+        </foreach>
+        ORDER BY fic.id
+        FOR UPDATE OF fic
+    </select>
+
+    <update id="approveFoodImportCandidate">
+        UPDATE food_import_candidates
+        SET
+            status = 'APPROVED',
+            approved_food_id = #{foodId},
+            reviewed_by_admin_id = #{adminId},
+            reviewed_at = CURRENT_TIMESTAMP,
+            rejection_reason = NULL,
+            updated_at = CURRENT_TIMESTAMP
+        WHERE id = #{candidateId}
+          AND status IN ('PENDING', 'DUPLICATE')
+    </update>
+
+    <update id="rejectUnselectedFoodImportCandidates">
+        UPDATE food_import_candidates
+        SET
+            status = 'REJECTED',
+            reviewed_by_admin_id = #{adminId},
+            reviewed_at = CURRENT_TIMESTAMP,
+            rejection_reason = 'Other candidates were approved.',
+            updated_at = CURRENT_TIMESTAMP
+        WHERE search_miss_id = #{searchMissId}
+          AND id NOT IN
+          <foreach collection="approvedCandidateIds" item="approvedCandidateId" open="(" separator="," close=")">
+            #{approvedCandidateId}
+          </foreach>
+          AND status IN ('PENDING', 'DUPLICATE')
+    </update>
+
+    <update id="rejectFoodImportCandidatesBySearchMiss">
+        UPDATE food_import_candidates
+        SET
+            status = 'REJECTED',
+            reviewed_by_admin_id = #{adminId},
+            reviewed_at = CURRENT_TIMESTAMP,
+            rejection_reason = #{rejectionReason},
+            updated_at = CURRENT_TIMESTAMP
+        WHERE search_miss_id = #{searchMissId}
+          AND status IN ('PENDING', 'DUPLICATE')
+    </update>
+</mapper>

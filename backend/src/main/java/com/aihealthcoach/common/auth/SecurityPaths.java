@@ -10,6 +10,7 @@ public final class SecurityPaths {
             "/api/user/signup",
             "/api/user/login",
             "/api/user/token/refresh",
+            "/api/fatsecret/test/**",
             "/actuator/health",
             "/v3/api-docs/**",
             "/swagger-ui/**",
