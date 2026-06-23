@@ -2,9 +2,11 @@
 .env.*
 .idea/
 __pycache__/
+
 data/foods/build/
 data/foods/cache/
 data/nutrition-importer/input/*
+data/chat-stream-latency/results/
 !data/nutrition-importer/input/.gitkeep
 
 data/exercise/build/

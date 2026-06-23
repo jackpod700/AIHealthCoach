@@ -1,0 +1,20 @@
+{"id":"general_001","category":"general_coaching","expectedTool":"none","requiresContext":true,"message":"오늘 컨디션이 별로인데 무리하지 않고 건강하게 하루를 마무리하려면 어떻게 하면 좋을까?"}
+{"id":"general_002","category":"general_coaching","expectedTool":"none","requiresContext":true,"message":"요즘 식단이랑 운동이 잘 이어지고 있는지 전체적으로 피드백해줘."}
+{"id":"context_001","category":"history_question","expectedTool":"none","requiresContext":true,"message":"내가 최근에 자주 먹은 음식 기준으로 오늘 저녁은 뭘 조심하면 좋을까?"}
+{"id":"context_002","category":"history_question","expectedTool":"none","requiresContext":true,"message":"지난 며칠간 기록을 봤을 때 내가 놓치고 있는 건강 습관이 있어?"}
+{"id":"meal_001","category":"meal_record","expectedTool":"meal","requiresContext":true,"message":"점심으로 현미밥 한 공기, 닭가슴살 120g, 샐러드 먹었어."}
+{"id":"meal_002","category":"meal_record","expectedTool":"meal","requiresContext":true,"message":"아침에 바나나 하나랑 그릭요거트, 아메리카노 마셨어."}
+{"id":"meal_003","category":"meal_record_with_context","expectedTool":"meal","requiresContext":true,"message":"방금 라면이랑 김밥 먹었는데 오늘 남은 식사는 어떻게 조절하면 좋을까?"}
+{"id":"exercise_001","category":"exercise_record","expectedTool":"exercise","requiresContext":true,"message":"오늘 40분 정도 빠르게 걸었어. 운동 기록해줘."}
+{"id":"exercise_002","category":"exercise_record","expectedTool":"exercise","requiresContext":true,"message":"헬스장에서 스쿼트 5세트랑 벤치프레스 4세트 했어."}
+{"id":"exercise_003","category":"exercise_advice_with_context","expectedTool":"exercise","requiresContext":true,"message":"오늘 컨디션 기준으로 저녁에 유산소를 더 해도 괜찮을까? 아까 30분 걸었어."}
+{"id":"weight_001","category":"weight_record","expectedTool":"weight","requiresContext":true,"message":"오늘 아침 공복 체중은 72.4kg이야."}
+{"id":"weight_002","category":"weight_context","expectedTool":"weight","requiresContext":true,"message":"체중이 72.4kg으로 내려왔는데 최근 흐름상 괜찮게 빠지고 있는 거야?"}
+{"id":"memory_001","category":"memory_save","expectedTool":"memory","requiresContext":true,"message":"나는 저녁 늦게 먹으면 속이 불편한 편이라는 걸 기억해줘."}
+{"id":"memory_002","category":"memory_save","expectedTool":"memory","requiresContext":true,"message":"앞으로 운동 추천할 때 무릎에 부담이 적은 방식으로 추천해줘. 이걸 기억해줘."}
+{"id":"mixed_001","category":"mixed_record","expectedTool":"meal_exercise","requiresContext":true,"message":"점심은 비빔밥 먹었고 퇴근 후에 자전거 45분 탔어. 둘 다 기록해줘."}
+{"id":"mixed_002","category":"mixed_record","expectedTool":"meal_weight","requiresContext":true,"message":"오늘 아침 체중은 71.8kg이고 아침으로 삶은 계란 두 개랑 토스트 먹었어."}
+{"id":"ambiguous_001","category":"ambiguous_context","expectedTool":"none","requiresContext":true,"message":"오늘은 뭔가 많이 먹은 것 같은데 괜찮을까?"}
+{"id":"ambiguous_002","category":"ambiguous_context","expectedTool":"none","requiresContext":true,"message":"요즘 내가 너무 무리하고 있는지 봐줄 수 있어?"}
+{"id":"long_001","category":"long_user_message","expectedTool":"meal_exercise_memory","requiresContext":true,"message":"오늘은 아침에 오트밀이랑 우유를 먹고 점심에는 회사 식당에서 제육볶음이랑 밥을 먹었어. 저녁에는 친구랑 약속이 있어서 조금 많이 먹을 수도 있어. 그리고 요즘 밤에 야식 먹으면 다음 날 속이 안 좋아서 그 부분도 기억해줬으면 좋겠어."}
+{"id":"long_002","category":"long_user_message","expectedTool":"exercise_weight","requiresContext":true,"message":"이번 주는 운동을 다시 시작하려고 해. 오늘은 가볍게 러닝머신 20분이랑 상체 근력운동을 했고, 아침 체중은 73.1kg이었어. 무릎이 약간 불편해서 너무 강한 운동은 피하고 싶어."}

@@ -32,6 +32,7 @@ This document routes agents to the right project context before they change code
 | Daily goal feature | `backend/docs/daily-goal-tracking-plan.md` | `backend/src/main/java/com/aihealthcoach/dailygoal/` |
 | Food data/import | `backend/docs/food-csv-import-plan.md`, `data/foods/README.md` | `backend/src/main/java/com/aihealthcoach/meal/`, `data/foods/`, `data/scripts/` |
 | Frontend UI/API integration | `PROJECT_PROFILE.md`, relevant backend plan | `frontend/src/api/`, `frontend/src/views/`, `frontend/src/components/`, `frontend/src/stores/`, `frontend/src/router/` |
+| Experiment results | `docs/experiments/README.md`, relevant implementation and schema | `docs/experiments/`, `data/db/schema.sql`, target mapper/service |
 | Tests/verification | `PROJECT_PROFILE.md`, `AGENTS.md` | `scripts/check`, `frontend/harness/scripts/`, `backend/harness/scripts/`, `backend/src/test/` |
 | Data generation/benchmarks | `PROJECT_PROFILE.md`, relevant `data/*/README.md` or backend plan | `data/`, `data/exercise/`, `data/foods/`, `data/db/benchmark/` |
 
@@ -53,6 +54,7 @@ This document routes agents to the right project context before they change code
 | Weight-based exercise calorie optimization | `backend/docs/weight-based-exercise-calorie-optimization.md` |
 | Daily goal tracking | `backend/docs/daily-goal-tracking-plan.md` |
 | Refresh token, Redis, logout | `backend/docs/refresh-token-redis-logout-plan.md` |
+| Experiment results | `docs/experiments/README.md` |
 | Meal data | `data/meals/README.md` |
 | Food data | `data/foods/README.md` |
 
