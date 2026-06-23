@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from "vue";
-import { useRouter } from "vue-router";
+import { useRoute, useRouter } from "vue-router";
 import AppSidebar from "../../components/app/AppSidebar.vue";
 import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import WeightTrendChart from "../../components/profile/WeightTrendChart.vue";
@@ -608,8 +608,10 @@ function toDateKey(date) {
                   남성
                 </button>
               </div>
-              <legend>목표 유형</legend>
+            </label>
 
+            <fieldset>
+              <legend>목표 유형</legend>
               <div class="profile-goal-buttons">
                 <button
                   v-for="goal in goalOptions"
@@ -621,7 +623,8 @@ function toDateKey(date) {
                   {{ goal.title }}
                 </button>
               </div>
-            </label>
+            </fieldset>
+
             <label>
               <span>나이</span>
               <input

@@ -46,7 +46,7 @@
   margin: 0;
   color: #fff;
   font-size: 15px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   line-height: 1;
 }
 
@@ -54,7 +54,7 @@
   margin: 5px 0 0;
   color: rgb(255 255 255 / 58%);
   font-size: 8px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   letter-spacing: 0.16em;
   text-transform: uppercase;
 }
@@ -69,7 +69,7 @@
   margin: 0;
   color: var(--orange);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   letter-spacing: 0.26em;
   text-transform: uppercase;
 }
@@ -78,7 +78,7 @@
   margin: 14px 0 18px;
   color: #fff;
   font-size: 37px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   line-height: 1.18;
   letter-spacing: 0;
 }
@@ -87,7 +87,7 @@
   margin: 0;
   color: rgb(255 255 255 / 70%);
   font-size: 13px;
-  font-weight: 500;
+  font-weight: var(--font-medium);
   line-height: 1.95;
 }
 
@@ -118,7 +118,7 @@
   background: #f7ddbd;
   color: var(--navy);
   font-size: 13px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .login-quote strong,
@@ -129,7 +129,7 @@
 .login-quote strong {
   color: #fff;
   font-size: 11px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.55;
 }
 
@@ -137,7 +137,7 @@
   margin-top: 5px;
   color: rgb(255 255 255 / 58%);
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .login-panel {
@@ -157,7 +157,7 @@
   margin: 9px 0 5px;
   color: var(--ink);
   font-size: 24px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   letter-spacing: 0;
 }
 
@@ -165,7 +165,7 @@
   margin: 0 0 30px;
   color: var(--muted);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-medium);
   line-height: 1.6;
 }
 
@@ -184,7 +184,7 @@
 .signup-fields label > span {
   color: var(--ink);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .field-shell {
@@ -223,7 +223,7 @@
   background: transparent;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: var(--font-medium);
   outline: none;
 }
 
@@ -238,7 +238,7 @@
   margin-top: -4px;
   color: #6f7b8a;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
 }
 
 .remember-check {
@@ -259,7 +259,7 @@
   background: transparent;
   color: var(--navy);
   font-size: inherit;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .login-error {
@@ -269,7 +269,7 @@
   background: #fff1ef;
   color: #ae4d42;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
   line-height: 1.5;
 }
 
@@ -287,7 +287,7 @@
   background: var(--navy);
   color: #fff;
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   box-shadow: 0 6px 12px rgb(47 74 60 / 8%);
 }
 
@@ -299,7 +299,7 @@
   margin: 26px 0 22px;
   color: #9a8f83;
   font-size: 10px;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .login-divider span {
@@ -320,7 +320,7 @@
   background: #fff;
   color: #243448;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .login-foot,
@@ -328,7 +328,7 @@
   margin: 24px 0 0;
   color: #9a8f83;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   text-align: center;
 }
 
@@ -347,7 +347,7 @@
   background: transparent;
   color: var(--navy);
   font-size: inherit;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .signup-screen {
@@ -371,7 +371,7 @@
   margin-bottom: 34px;
   color: var(--navy);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .signup-brand .brand-mark {
@@ -401,7 +401,7 @@
   gap: 8px;
   color: var(--ink);
   font-size: 10px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   white-space: nowrap;
 }
 
@@ -448,14 +448,14 @@
   margin: 9px 0 8px;
   color: var(--ink);
   font-size: 22px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .signup-lead {
   margin: 0 0 24px;
   color: #6f7b8a;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: var(--font-medium);
   line-height: 1.7;
 }
 
@@ -490,7 +490,7 @@
   color: var(--ink);
   background: transparent;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   outline: none;
   appearance: textfield;
   -moz-appearance: textfield;
@@ -507,7 +507,7 @@
   color: #8b96a5;
   font-size: 10px;
   font-style: normal;
-  font-weight: 800;
+  font-weight: var(--font-semibold);
 }
 
 .segmented-field {
@@ -526,7 +526,7 @@
   background: transparent;
   color: #6f7784;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .segmented-field button.active {
@@ -570,7 +570,7 @@
 .period-stepper strong {
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
   text-align: center;
 }
 
@@ -667,14 +667,14 @@
   margin-top: 16px;
   color: var(--ink);
   font-size: 12px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .goal-card small {
   margin-top: 5px;
   color: #6f7b8a;
   font-size: 9px;
-  font-weight: 700;
+  font-weight: var(--font-semibold);
   line-height: 1.5;
 }
 
@@ -690,7 +690,7 @@
   height: 42px;
   border-radius: 8px;
   font-size: 11px;
-  font-weight: 900;
+  font-weight: var(--font-bold);
 }
 
 .secondary-action {
