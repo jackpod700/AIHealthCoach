@@ -1,8 +1,11 @@
 import { defineStore } from "pinia";
 import {
+  approveAdminFoodImportCandidates,
   approveAdminFoodRequest,
   fetchAdminDashboard,
+  fetchAdminFoodImportCandidates,
   fetchAdminFoodRequests,
+  rejectAdminFoodImportSearchMiss,
   rejectAdminFoodRequest,
 } from "../api/adminApi";
 import { useAuthStore } from "./authStore";
@@ -22,6 +25,17 @@ export const useAdminStore = defineStore("admin", {
     isLoadingFoodRequests: false,
     foodRequestError: "",
     foodRequestMessage: "",
+    importCandidatePage: {
+      items: [],
+      page: 1,
+      size: 20,
+      totalItems: 0,
+      totalPages: 0,
+    },
+    importCandidateStatus: "PENDING_REVIEW",
+    isLoadingImportCandidates: false,
+    importCandidateError: "",
+    importCandidateMessage: "",
   }),
   actions: {
     async loadDashboard() {
@@ -84,6 +98,56 @@ export const useAdminStore = defineStore("admin", {
       } catch (error) {
         if (!authStore.handleAuthFailure(error)) {
           this.foodRequestError = error.message;
+        }
+        return null;
+      }
+    },
+    async loadImportCandidates({ status = this.importCandidateStatus, page = 1, size = 20 } = {}) {
+      const authStore = useAuthStore();
+      this.isLoadingImportCandidates = true;
+      this.importCandidateError = "";
+      this.importCandidateStatus = status;
+
+      try {
+        this.importCandidatePage = await fetchAdminFoodImportCandidates(authStore.accessToken, { status, page, size });
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.importCandidateError = error.message;
+        }
+      } finally {
+        this.isLoadingImportCandidates = false;
+      }
+    },
+    async approveImportCandidates(searchMissId, candidateIds) {
+      const authStore = useAuthStore();
+      this.importCandidateError = "";
+      this.importCandidateMessage = "";
+
+      try {
+        const response = await approveAdminFoodImportCandidates(authStore.accessToken, searchMissId, { candidateIds });
+        this.importCandidateMessage = "FatSecret 후보를 승인했습니다.";
+        await this.loadImportCandidates();
+        return response;
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.importCandidateError = error.message;
+        }
+        return null;
+      }
+    },
+    async rejectImportSearchMiss(searchMissId, rejectionReason) {
+      const authStore = useAuthStore();
+      this.importCandidateError = "";
+      this.importCandidateMessage = "";
+
+      try {
+        const response = await rejectAdminFoodImportSearchMiss(authStore.accessToken, searchMissId, { rejectionReason });
+        this.importCandidateMessage = "검색어 후보를 전체 거절했습니다.";
+        await this.loadImportCandidates();
+        return response;
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.importCandidateError = error.message;
         }
         return null;
       }

@@ -25,6 +25,17 @@ export function createFoodSubmissionRequest(accessToken, payload) {
   });
 }
 
+export function createFoodSearchMiss(accessToken, query) {
+  return apiRequest("/api/foods/search-misses", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query }),
+  });
+}
+
 export function fetchMyFoodSubmissionRequests(accessToken, { page = 1, size = 20 } = {}) {
   const searchParams = new URLSearchParams({
     page: String(page),
