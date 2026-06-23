@@ -17,7 +17,6 @@ import com.aihealthcoach.common.auth.JwtAuthenticationEntryPoint;
 import com.aihealthcoach.common.auth.JwtTokenProvider;
 import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
-import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordUpdateRequest;
 import com.aihealthcoach.exercise.service.ExerciseService;
