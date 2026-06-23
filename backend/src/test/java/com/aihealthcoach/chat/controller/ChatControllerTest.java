@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
@@ -22,6 +23,7 @@ import com.aihealthcoach.chat.service.AiChatService;
 import com.aihealthcoach.chat.service.AiExerciseProposalService;
 import com.aihealthcoach.chat.service.ChatMealProposalService;
 import com.aihealthcoach.chat.service.ChatService;
+import com.aihealthcoach.chat.service.ChatStreamingService;
 import com.aihealthcoach.exercise.dto.AiExerciseDto.ExtractedExerciseResult;
 import com.aihealthcoach.meal.dto.AiMealDto.ExtractedMealResult;
 import com.aihealthcoach.meal.service.AiMealProposalService;
@@ -49,6 +51,9 @@ class ChatControllerTest {
     private ChatMealProposalService chatMealProposalService;
 
     @Mock
+    private ChatStreamingService chatStreamingService;
+
+    @Mock
     private Authentication authentication;
 
     @Test
@@ -70,7 +75,8 @@ class ChatControllerTest {
                 aiChatService,
                 aiMealProposalService,
                 aiExerciseProposalService,
-                chatMealProposalService
+                chatMealProposalService,
+                chatStreamingService
         );
 
         ResponseEntity<ChatMessageSendResponse> response = controller.insertMessage(request, authentication);
@@ -81,6 +87,26 @@ class ChatControllerTest {
         inOrder.verify(aiChatService).generate(USER_ID, request);
         inOrder.verify(chatService).insert(USER_ID, request);
         inOrder.verify(chatService).insert(org.mockito.ArgumentMatchers.any());
+    }
+
+    @Test
+    void streamMessageDelegatesToStreamingService() {
+        ChatMessageRequest request = new ChatMessageRequest("오늘 점심 먹었어");
+        SseEmitter emitter = new SseEmitter();
+        when(authentication.getPrincipal()).thenReturn(USER_ID);
+        when(chatStreamingService.stream(USER_ID, request)).thenReturn(emitter);
+        ChatController controller = new ChatController(
+                chatService,
+                aiChatService,
+                aiMealProposalService,
+                aiExerciseProposalService,
+                chatMealProposalService,
+                chatStreamingService
+        );
+
+        SseEmitter response = controller.streamMessage(request, authentication);
+
+        assertThat(response).isSameAs(emitter);
     }
 
     private ChatMessageResponse message(String role, String content) {
