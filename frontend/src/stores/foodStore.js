@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
 import {
+  createFoodSearchMiss,
   createFoodSubmissionRequest,
   fetchFoodGroups,
   fetchMyFoodSubmissionRequests,
@@ -30,6 +31,9 @@ export const useFoodStore = defineStore("food", {
     isSubmittingFood: false,
     submissionError: "",
     submissionMessage: "",
+    recordedMissQueries: [],
+    isRecordingSearchMiss: false,
+    searchMissError: "",
   }),
   getters: {
     foods: (state) => state.foodPage?.items || [],
@@ -92,6 +96,37 @@ export const useFoodStore = defineStore("food", {
         this.isSubmittingFood = false;
       }
     },
+    async recordSearchMiss(query) {
+      const authStore = useAuthStore();
+      const normalizedQuery = normalizeMissQuery(query);
+
+      if (!authStore.isAuthenticated || !shouldRecordMiss(normalizedQuery)) {
+        return null;
+      }
+
+      if (this.recordedMissQueries.includes(normalizedQuery)) {
+        return null;
+      }
+
+      this.isRecordingSearchMiss = true;
+      this.searchMissError = "";
+
+      try {
+        const response = await createFoodSearchMiss(authStore.accessToken, normalizedQuery);
+        const storedQuery = normalizeMissQuery(response?.normalizedQuery || normalizedQuery);
+        if (!this.recordedMissQueries.includes(storedQuery)) {
+          this.recordedMissQueries.push(storedQuery);
+        }
+        return response;
+      } catch (error) {
+        if (!authStore.handleAuthFailure(error)) {
+          this.searchMissError = error.message;
+        }
+        return null;
+      } finally {
+        this.isRecordingSearchMiss = false;
+      }
+    },
     async loadMyFoodSubmissions({ page = 1, size = 20 } = {}) {
       const authStore = useAuthStore();
 
@@ -119,3 +154,12 @@ export const useFoodStore = defineStore("food", {
     },
   },
 });
+
+function normalizeMissQuery(query) {
+  return String(query || "").trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function shouldRecordMiss(query) {
+  const compactQuery = query.replace(/\s+/g, "");
+  return compactQuery.length >= 2 && /[\p{L}\p{N}]/u.test(query);
+}
