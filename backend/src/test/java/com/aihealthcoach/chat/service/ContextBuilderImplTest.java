@@ -11,8 +11,14 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -61,10 +67,12 @@ class ContextBuilderImplTest {
     @Mock
     private DailySummaryContextCache dailySummaryContextCache;
 
+    private ExecutorService executor;
     private ContextBuilderImpl contextBuilder;
 
     @BeforeEach
     void setUp() {
+        executor = Executors.newFixedThreadPool(7);
         contextBuilder = new ContextBuilderImpl(
                 userService,
                 dailyGoalService,
@@ -74,8 +82,14 @@ class ContextBuilderImplTest {
                 userMemoryService,
                 dailyChatSummaryService,
                 dailyChatSummaryMapper,
-                dailySummaryContextCache
+                dailySummaryContextCache,
+                executor
         );
+    }
+
+    @AfterEach
+    void tearDown() {
+        executor.shutdownNow();
     }
 
     @Test
@@ -180,6 +194,66 @@ class ContextBuilderImplTest {
         verify(dailyChatSummaryService).refreshForUser(USER_ID);
     }
 
+    @Test
+    void buildLoadsIndependentContextSectionsInParallelAfterSummaryRefresh() throws Exception {
+        CountDownLatch ready = new CountDownLatch(7);
+        CountDownLatch release = new CountDownLatch(1);
+        AtomicReference<Throwable> buildFailure = new AtomicReference<>();
+
+        when(userService.findProfileIfExists(USER_ID)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return null;
+        });
+        when(dailyGoalService.findCurrentGoalIfExists(USER_ID)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return null;
+        });
+        when(mealService.findDailyMeals(USER_ID, CONTEXT_DATE)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return emptyDailyMeals();
+        });
+        when(exerciseService.findExerciseRecordsByDate(USER_ID, CONTEXT_DATE)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return List.of();
+        });
+        stubSummaryCacheWithLoader();
+        when(dailyChatSummaryMapper.findFreshSummariesBetween(
+                USER_ID,
+                LocalDate.of(2026, 6, 2),
+                LocalDate.of(2026, 6, 7)
+        )).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return List.of();
+        });
+        when(chatService.findRecentMessages(USER_ID, 10)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return List.of();
+        });
+        when(userMemoryService.findActiveMemories(USER_ID, 10)).thenAnswer(invocation -> {
+            awaitParallelSection(ready, release);
+            return List.of();
+        });
+
+        Thread buildThread = new Thread(() -> {
+            try {
+                contextBuilder.build(USER_ID, CONTEXT_DATE);
+            } catch (Throwable throwable) {
+                buildFailure.set(throwable);
+            }
+        });
+        buildThread.start();
+
+        assertThat(ready.await(1, TimeUnit.SECONDS)).isTrue();
+        verify(dailyChatSummaryService).refreshForUser(USER_ID);
+        assertThat(buildThread.isAlive()).isTrue();
+
+        release.countDown();
+
+        buildThread.join(1_000);
+        assertThat(buildThread.isAlive()).isFalse();
+        assertThat(buildFailure.get()).isNull();
+    }
+
     @SuppressWarnings("unchecked")
     private void stubSummaryCacheWithLoader() {
         when(dailySummaryContextCache.getOrLoad(
@@ -202,5 +276,10 @@ class ContextBuilderImplTest {
                 BigDecimal.ZERO,
                 BigDecimal.ZERO
         );
+    }
+
+    private void awaitParallelSection(CountDownLatch ready, CountDownLatch release) throws InterruptedException {
+        ready.countDown();
+        assertThat(release.await(1, TimeUnit.SECONDS)).isTrue();
     }
 }

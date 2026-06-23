@@ -2,7 +2,12 @@ package com.aihealthcoach.chat.service;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.Executor;
+import java.util.function.Supplier;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
 
 import com.aihealthcoach.chat.dto.ChatContextDto.UserChatContext;
@@ -22,12 +27,10 @@ import com.aihealthcoach.summary.service.DailyChatSummaryService;
 import com.aihealthcoach.user.dto.UserDto.UserProfileResponse;
 import com.aihealthcoach.user.service.UserService;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class ContextBuilderImpl implements ContextBuilder {
 
     private static final int RECENT_TURN_LIMIT = 10;
@@ -43,27 +46,89 @@ public class ContextBuilderImpl implements ContextBuilder {
     private final DailyChatSummaryService dailyChatSummaryService;
     private final DailyChatSummaryMapper dailyChatSummaryMapper;
     private final DailySummaryContextCache dailySummaryContextCache;
+    private final Executor contextExecutor;
+
+    public ContextBuilderImpl(
+            UserService userService,
+            DailyGoalService dailyGoalService,
+            MealService mealService,
+            ExerciseService exerciseService,
+            ChatService chatService,
+            UserMemoryService userMemoryService,
+            DailyChatSummaryService dailyChatSummaryService,
+            DailyChatSummaryMapper dailyChatSummaryMapper,
+            DailySummaryContextCache dailySummaryContextCache,
+            @Qualifier("chatContextTaskExecutor") Executor contextExecutor
+    ) {
+        this.userService = userService;
+        this.dailyGoalService = dailyGoalService;
+        this.mealService = mealService;
+        this.exerciseService = exerciseService;
+        this.chatService = chatService;
+        this.userMemoryService = userMemoryService;
+        this.dailyChatSummaryService = dailyChatSummaryService;
+        this.dailyChatSummaryMapper = dailyChatSummaryMapper;
+        this.dailySummaryContextCache = dailySummaryContextCache;
+        this.contextExecutor = contextExecutor;
+    }
 
     @Override
     public UserChatContext build(Long userId, LocalDate contextDate) {
-        refreshDailySummaries(userId);
+        long totalStartedAt = System.nanoTime();
 
-        UserProfileResponse profile = userService.findProfileIfExists(userId);
-        DailyGoalResponse dailyGoal = dailyGoalService.findCurrentGoalIfExists(userId);
-        DailyMealResponse dailyMeals = mealService.findDailyMeals(userId, contextDate);
-        List<ExerciseRecordResponse> dailyExercises = exerciseService.findExerciseRecordsByDate(userId, contextDate);
-        List<DailyChatSummaryContextResponse> recentDailySummaries = findRecentDailySummaries(userId, contextDate);
-        List<ChatMessageResponse> recentTurns = chatService.findRecentMessages(userId, RECENT_TURN_LIMIT);
-        List<UserMemoryResponse> activeMemories = userMemoryService.findActiveMemories(userId, ACTIVE_MEMORY_LIMIT);
+        long refreshMs = measure(() -> refreshDailySummaries(userId));
+        CompletableFuture<TimedValue<UserProfileResponse>> profileFuture = measureAsync(
+                () -> userService.findProfileIfExists(userId)
+        );
+        CompletableFuture<TimedValue<DailyGoalResponse>> dailyGoalFuture = measureAsync(
+                () -> dailyGoalService.findCurrentGoalIfExists(userId)
+        );
+        CompletableFuture<TimedValue<DailyMealResponse>> dailyMealsFuture = measureAsync(
+                () -> mealService.findDailyMeals(userId, contextDate)
+        );
+        CompletableFuture<TimedValue<List<ExerciseRecordResponse>>> dailyExercisesFuture = measureAsync(
+                () -> exerciseService.findExerciseRecordsByDate(userId, contextDate)
+        );
+        CompletableFuture<TimedValue<List<DailyChatSummaryContextResponse>>> recentDailySummariesFuture = measureAsync(
+                () -> findRecentDailySummaries(userId, contextDate)
+        );
+        CompletableFuture<TimedValue<List<ChatMessageResponse>>> recentTurnsFuture = measureAsync(
+                () -> chatService.findRecentMessages(userId, RECENT_TURN_LIMIT)
+        );
+        CompletableFuture<TimedValue<List<UserMemoryResponse>>> activeMemoriesFuture = measureAsync(
+                () -> userMemoryService.findActiveMemories(userId, ACTIVE_MEMORY_LIMIT)
+        );
+
+        TimedValue<UserProfileResponse> profile = join(profileFuture);
+        TimedValue<DailyGoalResponse> dailyGoal = join(dailyGoalFuture);
+        TimedValue<DailyMealResponse> dailyMeals = join(dailyMealsFuture);
+        TimedValue<List<ExerciseRecordResponse>> dailyExercises = join(dailyExercisesFuture);
+        TimedValue<List<DailyChatSummaryContextResponse>> recentDailySummaries = join(recentDailySummariesFuture);
+        TimedValue<List<ChatMessageResponse>> recentTurns = join(recentTurnsFuture);
+        TimedValue<List<UserMemoryResponse>> activeMemories = join(activeMemoriesFuture);
+
+        log.info(
+                "chat_context_build_timing user_id={} refresh_ms={} profile_ms={} daily_goal_ms={} daily_meals_ms={} daily_exercises_ms={} daily_summaries_ms={} recent_turns_ms={} active_memories_ms={} total_ms={}",
+                userId,
+                refreshMs,
+                profile.elapsedMs(),
+                dailyGoal.elapsedMs(),
+                dailyMeals.elapsedMs(),
+                dailyExercises.elapsedMs(),
+                recentDailySummaries.elapsedMs(),
+                recentTurns.elapsedMs(),
+                activeMemories.elapsedMs(),
+                elapsedMs(totalStartedAt)
+        );
 
         return new UserChatContext(
-                profile,
-                dailyGoal,
-                dailyMeals,
-                dailyExercises,
-                recentDailySummaries,
-                recentTurns,
-                activeMemories
+                profile.value(),
+                dailyGoal.value(),
+                dailyMeals.value(),
+                dailyExercises.value(),
+                recentDailySummaries.value(),
+                recentTurns.value(),
+                activeMemories.value()
         );
     }
 
@@ -84,5 +149,46 @@ public class ContextBuilderImpl implements ContextBuilder {
                 to,
                 () -> dailyChatSummaryMapper.findFreshSummariesBetween(userId, from, to)
         );
+    }
+
+    private long measure(Runnable operation) {
+        long startedAt = System.nanoTime();
+        operation.run();
+        return elapsedMs(startedAt);
+    }
+
+    private <T> TimedValue<T> measure(Supplier<T> supplier) {
+        long startedAt = System.nanoTime();
+        T value = supplier.get();
+        return new TimedValue<>(value, elapsedMs(startedAt));
+    }
+
+    private <T> CompletableFuture<TimedValue<T>> measureAsync(Supplier<T> supplier) {
+        return CompletableFuture.supplyAsync(() -> measure(supplier), contextExecutor);
+    }
+
+    private <T> T join(CompletableFuture<T> future) {
+        try {
+            return future.join();
+        } catch (CompletionException exception) {
+            Throwable cause = exception.getCause();
+            if (cause instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (cause instanceof Error error) {
+                throw error;
+            }
+            throw exception;
+        }
+    }
+
+    private long elapsedMs(long startedAt) {
+        return (System.nanoTime() - startedAt) / 1_000_000;
+    }
+
+    private record TimedValue<T>(
+            T value,
+            long elapsedMs
+    ) {
     }
 }
