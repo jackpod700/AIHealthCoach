@@ -2893,7 +2893,7 @@
 .record-add-row:hover .record-add-toggle,
 .record-add-row.open .record-add-toggle {
   border-color: var(--orange);
-  background: var(--orange);
+  background: #fad3b2;
 }
 
 .record-add-toggle {
@@ -4403,20 +4403,51 @@
   align-items: center;
 }
 
-.weight-record-layout.has-selected-record {
-  grid-template-columns: 236px minmax(0, calc(100% - 252px));
-}
-
 .weight-record-editor {
+  position: absolute;
+  z-index: 5;
+  top: var(--weight-editor-y);
+  left: clamp(126px, var(--weight-editor-x), calc(100% - 126px));
   display: grid;
   width: 236px;
   align-content: start;
-  align-self: center;
   gap: 12px;
   border: 1px solid #eff0ec;
   border-radius: 16px;
   padding: 14px;
   background: #fff;
+  box-shadow: 0 18px 44px rgb(40 50 40 / 14%);
+}
+
+.weight-record-editor.above {
+  transform: translate(-50%, calc(-100% - 14px));
+}
+
+.weight-record-editor.below {
+  transform: translate(-50%, 14px);
+}
+
+.weight-record-editor::after {
+  position: absolute;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  transform: translateX(-50%) rotate(45deg);
+  border-right: 1px solid #eff0ec;
+  border-bottom: 1px solid #eff0ec;
+  background: #fff;
+  content: "";
+}
+
+.weight-record-editor.above::after {
+  bottom: -8px;
+}
+
+.weight-record-editor.below::after {
+  top: -8px;
+  border: 0;
+  border-top: 1px solid #eff0ec;
+  border-left: 1px solid #eff0ec;
 }
 
 .weight-record-editor-enter-active,
@@ -4429,21 +4460,43 @@
 .weight-record-editor-enter-from,
 .weight-record-editor-leave-to {
   opacity: 0;
-  transform: translateX(-14px);
+  scale: 0.96;
 }
 
 .weight-record-editor-enter-to,
 .weight-record-editor-leave-from {
   opacity: 1;
-  transform: translateX(0);
+  scale: 1;
 }
 
 .weight-record-editor-head {
   display: grid;
   gap: 0;
   justify-items: center;
-  margin-top: 8px;
+  margin-top: 14px;
   text-align: center;
+}
+
+.weight-record-editor-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: inline-flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7e9e3;
+  border-radius: 9px;
+  background: #fff;
+  color: #7b847d;
+  font-size: 12px;
+}
+
+.weight-record-editor-close:hover {
+  border-color: #d9ded6;
+  background: #f7f8f6;
+  color: #2a2e2b;
 }
 
 .weight-record-editor-head span {
@@ -4540,7 +4593,7 @@
   width: 100%;
   min-width: 0;
   min-height: 360px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .weight-chart-frame {

@@ -16,6 +16,11 @@ const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 const isGoalDetailEditing = ref(false);
 const selectedWeightRecordDate = ref("");
+const selectedWeightRecordPoint = reactive({
+  x: 0,
+  y: 0,
+  placement: "above",
+});
 const todayDateKey = toDateKey(new Date());
 
 const profileForm = reactive({
@@ -127,6 +132,11 @@ const selectedWeightTitle = computed(() => {
 
   return weightForm.recordDate === todayDateKey ? "오늘 기록" : "새 기록";
 });
+
+const selectedWeightPopoverStyle = computed(() => ({
+  "--weight-editor-x": `${selectedWeightRecordPoint.x}px`,
+  "--weight-editor-y": `${selectedWeightRecordPoint.y}px`,
+}));
 
 const canSaveWeightRecord = computed(() => {
   const weightKg = Number(weightForm.weightKg);
@@ -491,12 +501,27 @@ function goalStatusColor(status) {
 
 async function changeWeightRange(range) {
   await weightRecordStore.loadRecords(range);
+  selectedWeightRecordDate.value = "";
+  selectedWeightRecordPoint.x = 0;
+  selectedWeightRecordPoint.y = 0;
 }
 
-function selectWeightRecord(record) {
+function selectWeightRecord(record, point = null) {
   selectedWeightRecordDate.value = record.recordDate;
   weightForm.recordDate = record.recordDate;
   weightForm.weightKg = record.weightKg;
+
+  if (point) {
+    selectedWeightRecordPoint.x = point.x;
+    selectedWeightRecordPoint.y = point.y;
+    selectedWeightRecordPoint.placement = point.y < 170 ? "below" : "above";
+  }
+}
+
+function closeWeightRecordEditor() {
+  selectedWeightRecordDate.value = "";
+  selectedWeightRecordPoint.x = 0;
+  selectedWeightRecordPoint.y = 0;
 }
 
 async function saveWeightRecord() {
@@ -533,6 +558,8 @@ async function deleteWeightRecord(recordDate) {
   if (deleted) {
     await profileStore.loadProfile();
     selectedWeightRecordDate.value = "";
+    selectedWeightRecordPoint.x = 0;
+    selectedWeightRecordPoint.y = 0;
     weightForm.recordDate = todayDateKey;
     weightForm.weightKg = profileStore.profile?.currentWeightKg ?? "";
   }
@@ -630,71 +657,7 @@ function scrollToProfileSection(sectionId) {
             {{ weightRecordStore.loadError }}
           </div>
 
-          <div
-            class="weight-record-layout"
-            :class="{ 'has-selected-record': selectedWeightRecord }"
-          >
-            <Transition name="weight-record-editor">
-              <aside
-                v-if="selectedWeightRecord"
-                class="weight-record-editor"
-                aria-live="polite"
-              >
-                <div class="weight-record-editor-head">
-                  <span>{{ selectedWeightTitle }}</span>
-                </div>
-
-                <form class="weight-record-form" @submit.prevent="saveWeightRecord">
-                  <label>
-                    <span>기록 날짜</span>
-                    <strong class="weight-record-date-display">
-                      {{ weightForm.recordDate }}
-                    </strong>
-                  </label>
-
-                  <label>
-                    <span>몸무게 (kg)</span>
-                    <input
-                      v-model="weightForm.weightKg"
-                      inputmode="decimal"
-                      max="500"
-                      min="0.01"
-                      step="0.1"
-                      type="number"
-                    />
-                  </label>
-
-                  <div class="weight-record-actions">
-                    <button
-                      type="submit"
-                      :disabled="
-                        !canSaveWeightRecord || weightRecordStore.isSavingRecord
-                      "
-                    >
-                      <i class="pi pi-check"></i>
-                      수정
-                    </button>
-                    <button
-                      type="button"
-                      class="danger"
-                      :disabled="weightRecordStore.isDeletingRecord"
-                      @click="deleteWeightRecord(selectedWeightRecord.recordDate)"
-                    >
-                      <i class="pi pi-trash"></i>
-                      삭제
-                    </button>
-                  </div>
-
-                  <p v-if="weightRecordStore.saveError">
-                    {{ weightRecordStore.saveError }}
-                  </p>
-                  <p v-if="weightRecordStore.deleteError">
-                    {{ weightRecordStore.deleteError }}
-                  </p>
-                </form>
-              </aside>
-            </Transition>
-
+          <div class="weight-record-layout">
             <div class="weight-chart-panel">
               <div class="weight-range-tabs" aria-label="몸무게 기록 기간">
                 <button
@@ -717,6 +680,77 @@ function scrollToProfileSection(sectionId) {
                 :selected-record-date="selectedWeightRecordDate"
                 @select-record="selectWeightRecord"
               />
+
+              <Transition name="weight-record-editor">
+                <aside
+                  v-if="selectedWeightRecord"
+                  class="weight-record-editor"
+                  :class="selectedWeightRecordPoint.placement"
+                  :style="selectedWeightPopoverStyle"
+                  aria-live="polite"
+                >
+                  <button
+                    class="weight-record-editor-close"
+                    type="button"
+                    aria-label="체중 기록 수정 닫기"
+                    @click="closeWeightRecordEditor"
+                  >
+                    <i class="pi pi-times"></i>
+                  </button>
+                  <div class="weight-record-editor-head">
+                    <span>{{ selectedWeightTitle }}</span>
+                  </div>
+
+                  <form class="weight-record-form" @submit.prevent="saveWeightRecord">
+                    <label>
+                      <span>기록 날짜</span>
+                      <strong class="weight-record-date-display">
+                        {{ weightForm.recordDate }}
+                      </strong>
+                    </label>
+
+                    <label>
+                      <span>몸무게 (kg)</span>
+                      <input
+                        v-model="weightForm.weightKg"
+                        inputmode="decimal"
+                        max="500"
+                        min="0.01"
+                        step="any"
+                        type="number"
+                      />
+                    </label>
+
+                    <div class="weight-record-actions">
+                      <button
+                        type="submit"
+                        :disabled="
+                          !canSaveWeightRecord || weightRecordStore.isSavingRecord
+                        "
+                      >
+                        <i class="pi pi-check"></i>
+                        수정
+                      </button>
+                      <button
+                        type="button"
+                        class="danger"
+                        :disabled="weightRecordStore.isDeletingRecord"
+                        @click="deleteWeightRecord(selectedWeightRecord.recordDate)"
+                      >
+                        <i class="pi pi-trash"></i>
+                        삭제
+                      </button>
+                    </div>
+
+                    <p v-if="weightRecordStore.saveError">
+                      {{ weightRecordStore.saveError }}
+                    </p>
+                    <p v-if="weightRecordStore.deleteError">
+                      {{ weightRecordStore.deleteError }}
+                    </p>
+                  </form>
+                </aside>
+              </Transition>
 
               <div
                 v-if="weightRecordStore.isLoadingRecords"

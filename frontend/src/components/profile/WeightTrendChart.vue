@@ -125,7 +125,10 @@ const chartOptions = computed(() => ({
     const record = sortedRecords.value[point.index];
 
     if (record) {
-      emit("selectRecord", record);
+      emit("selectRecord", record, {
+        x: point.element.x,
+        y: point.element.y,
+      });
     }
   },
   onHover(event, elements) {
