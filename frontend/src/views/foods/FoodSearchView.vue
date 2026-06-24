@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
-import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useFoodStore } from "../../stores/foodStore";
 import { useMealStore } from "../../stores/mealStore";
 
@@ -17,7 +16,9 @@ const missRecordTimer = ref(null);
 const mealType = ref(defaultMealType());
 const quantity = ref(1);
 const saveMessage = ref("");
-const submissionOpen = ref(false);
+const foodAddOpen = ref(false);
+const showNutritionPanel = ref(false);
+const isNutritionPanelClosing = ref(false);
 const submissionForm = reactive({
   name: "",
   brand: "",
@@ -42,7 +43,7 @@ const foods = computed(() => foodStore.foods);
 const myRequests = computed(() => foodStore.submissionPage?.items || []);
 
 const selectedFood = computed(() => {
-  return foods.value.find((food) => food.sourceKey === selectedSourceKey.value) || foods.value[0] || null;
+  return foods.value.find((food) => food.sourceKey === selectedSourceKey.value) || null;
 });
 
 const selectedServing = computed(() => {
@@ -55,14 +56,12 @@ const selectedServing = computed(() => {
     || null;
 });
 
-const macroTotal = computed(() => {
-  if (!selectedServing.value) {
-    return 0;
-  }
+const canShowNutritionPanel = computed(() => {
+  return showNutritionPanel.value && selectedFood.value && selectedServing.value;
+});
 
-  return toNumber(selectedServing.value.carbohydrate)
-    + toNumber(selectedServing.value.protein)
-    + toNumber(selectedServing.value.fat);
+const shouldKeepNutritionLayout = computed(() => {
+  return canShowNutritionPanel.value || isNutritionPanelClosing.value;
 });
 
 const canGoPrevious = computed(() => foodStore.foodPage.page > 1);
@@ -90,8 +89,11 @@ watch(foods, (newFoods) => {
     return;
   }
 
-  if (!newFoods.some((food) => food.sourceKey === selectedSourceKey.value)) {
-    selectFood(newFoods[0]);
+  if (
+    selectedSourceKey.value &&
+    !newFoods.some((food) => food.sourceKey === selectedSourceKey.value)
+  ) {
+    closeNutritionPanel();
   }
 });
 
@@ -132,13 +134,46 @@ function representativeServing(food) {
 }
 
 function applyExampleQuery(query) {
+  foodAddOpen.value = false;
   foodQuery.value = query;
 }
 
+function openFoodAddForm() {
+  foodAddOpen.value = true;
+}
+
+function closeFoodAddForm() {
+  foodAddOpen.value = false;
+}
+
 function selectFood(food) {
+  foodAddOpen.value = false;
   selectedSourceKey.value = food.sourceKey;
   selectedServingId.value = food.servings?.[0]?.foodId || null;
   quantity.value = 1;
+  isNutritionPanelClosing.value = false;
+  showNutritionPanel.value = true;
+}
+
+function closeNutritionPanel() {
+  if (!showNutritionPanel.value) {
+    clearNutritionPanelSelection();
+    return;
+  }
+
+  isNutritionPanelClosing.value = true;
+  showNutritionPanel.value = false;
+}
+
+function clearNutritionPanelSelection() {
+  selectedSourceKey.value = "";
+  selectedServingId.value = null;
+  quantity.value = 1;
+}
+
+function afterNutritionPanelLeave() {
+  clearNutritionPanelSelection();
+  isNutritionPanelClosing.value = false;
 }
 
 function selectServing(serving) {
@@ -269,14 +304,6 @@ function toNumber(value) {
   return Number.isFinite(numberValue) ? numberValue : 0;
 }
 
-function macroPercent(value) {
-  if (!macroTotal.value) {
-    return 0;
-  }
-
-  return Math.max(4, Math.round((toNumber(value) / macroTotal.value) * 100));
-}
-
 function defaultMealType() {
   const hour = new Date().getHours();
 
@@ -354,222 +381,153 @@ function clearMissRecordTimer() {
 </script>
 
 <template>
-  <main class="food-home">
-    <AppSidebar />
-
-    <section class="food-workspace">
-      <header class="food-header">
+      <header class="record-header food-record-header">
         <div>
-          <p class="deco">Food Database</p>
+          <p class="deco">Food Search</p>
           <h1>음식 검색</h1>
         </div>
-        <div class="food-count-chip">
+        <div class="streak-chip">
           <i></i>
           총 {{ formatNumber(foodStore.totalItems) }}개 음식
         </div>
       </header>
 
-      <div class="food-content">
+      <div
+        class="food-content"
+        :class="{
+          'has-nutrition-panel': shouldKeepNutritionLayout,
+        }"
+      >
         <section class="food-main-panel">
-          <div class="food-search-card">
-            <label for="food-search-input">음식명이나 제조사명을 입력하세요</label>
-            <div class="food-search-input">
-              <i class="pi pi-search"></i>
-              <input
-                id="food-search-input"
-                v-model="foodQuery"
-                type="search"
-                placeholder="음식명이나 제조사명을 입력하세요"
-              />
+            <div class="food-search-card">
+              <div class="food-search-input">
+                <i class="pi pi-search"></i>
+                <input
+                  id="food-search-input"
+                  v-model="foodQuery"
+                  type="search"
+                  placeholder="음식명이나 제조사명을 입력하세요"
+                />
+              </div>
+              <div class="food-query-chips" aria-label="예시 검색어">
+                <button v-for="query in exampleQueries" :key="query" type="button" @click="applyExampleQuery(query)">
+                  {{ query }}
+                </button>
+              </div>
             </div>
-            <div class="food-query-chips" aria-label="예시 검색어">
-              <button v-for="query in exampleQueries" :key="query" type="button" @click="applyExampleQuery(query)">
-                {{ query }}
-              </button>
-            </div>
-          </div>
 
-          <div class="food-results-head">
-            <div>
-              <p class="deco">Search Results</p>
-              <h2>
-                <template v-if="foodStore.isLoading">검색 중</template>
-                <template v-else>{{ foods.length }}개 결과</template>
-              </h2>
+            <div class="food-results-head">
+              <div>
+                <h2>
+                  <template v-if="foodStore.isLoading">검색 중</template>
+                  <template v-else>검색 결과 {{ formatNumber(foodStore.totalItems) }}개</template>
+                </h2>
+              </div>
+              <div class="food-results-actions">
+                <div class="food-page-mock">
+                  <button type="button" aria-label="이전 페이지" :disabled="!canGoPrevious" @click="goToPage(foodStore.foodPage.page - 1)">
+                    <i class="pi pi-chevron-left"></i>
+                  </button>
+                  <span>{{ foodStore.foodPage.page }} / {{ foodStore.foodPage.totalPages || 1 }}</span>
+                  <button type="button" aria-label="다음 페이지" :disabled="!canGoNext" @click="goToPage(foodStore.foodPage.page + 1)">
+                    <i class="pi pi-chevron-right"></i>
+                  </button>
+                </div>
+              </div>
             </div>
-            <div class="food-page-mock">
-              <button type="button" aria-label="이전 페이지" :disabled="!canGoPrevious" @click="goToPage(foodStore.foodPage.page - 1)">
-                <i class="pi pi-chevron-left"></i>
-              </button>
-              <span>{{ foodStore.foodPage.page }} / {{ foodStore.foodPage.totalPages || 1 }}</span>
-              <button type="button" aria-label="다음 페이지" :disabled="!canGoNext" @click="goToPage(foodStore.foodPage.page + 1)">
-                <i class="pi pi-chevron-right"></i>
-              </button>
+
+            <div class="food-results-scroll">
+              <div v-if="foodStore.error" class="food-empty-state">
+                <i class="pi pi-exclamation-triangle"></i>
+                <strong>음식 정보를 불러오지 못했어요</strong>
+                <span>{{ foodStore.error }}</span>
+              </div>
+
+              <div v-else-if="foods.length" class="food-result-list">
+                <button
+                  v-for="food in foods"
+                  :key="food.sourceKey"
+                  type="button"
+                  class="food-result-card"
+                  :class="{ selected: selectedFood?.sourceKey === food.sourceKey }"
+                  @click="selectFood(food)"
+                >
+                  <div class="food-result-name">
+                    <strong>{{ food.foodName }}</strong>
+                    <span>{{ food.servings.length }}개 기준</span>
+                  </div>
+                  <small>{{ formatBrand(food.brand) }} · {{ servingLabel(representativeServing(food)) }}</small>
+                  <em>{{ formatNumber(representativeServing(food)?.calories) }} kcal</em>
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+
+              <div v-else class="food-empty-state">
+                <i class="pi pi-search"></i>
+                <strong>검색 결과가 없어요</strong>
+                <span>다른 음식명이나 제조사명으로 다시 검색해보세요.</span>
+              </div>
             </div>
-          </div>
 
-          <div v-if="foodStore.error" class="food-empty-state">
-            <i class="pi pi-exclamation-triangle"></i>
-            <strong>음식 정보를 불러오지 못했어요</strong>
-            <span>{{ foodStore.error }}</span>
-          </div>
-
-          <div v-else-if="foods.length" class="food-result-list">
             <button
-              v-for="food in foods"
-              :key="food.sourceKey"
               type="button"
-              class="food-result-card"
-              :class="{ selected: selectedFood?.sourceKey === food.sourceKey }"
-              @click="selectFood(food)"
+              class="food-add-fab"
+              aria-label="찾는 음식 등록 요청 폼 열기"
+              @click="openFoodAddForm"
             >
-              <div>
-                <strong>{{ food.foodName }}</strong>
-                <span>
-                  {{ formatBrand(food.brand) }} · 대표 기준 {{ servingLabel(representativeServing(food)) }}
-                </span>
-                <em>{{ food.servings.length }}개 기준 선택 가능</em>
-              </div>
-              <dl>
-                <div>
-                  <dt>칼로리</dt>
-                  <dd>{{ formatNumber(representativeServing(food)?.calories) }} kcal</dd>
-                </div>
-                <div>
-                  <dt>탄수화물</dt>
-                  <dd>{{ formatNumber(representativeServing(food)?.carbohydrate) }}g</dd>
-                </div>
-                <div>
-                  <dt>단백질</dt>
-                  <dd>{{ formatNumber(representativeServing(food)?.protein) }}g</dd>
-                </div>
-                <div>
-                  <dt>지방</dt>
-                  <dd>{{ formatNumber(representativeServing(food)?.fat) }}g</dd>
-                </div>
-              </dl>
+              <span>찾는 음식이 없나요?</span>
+              <i class="pi pi-plus" aria-hidden="true"></i>
             </button>
-          </div>
-
-          <div v-else class="food-empty-state">
-            <i class="pi pi-search"></i>
-            <strong>검색 결과가 없어요</strong>
-            <span>다른 음식명이나 제조사명으로 다시 검색해보세요.</span>
-          </div>
-
-          <section class="food-submission-panel">
-            <div class="food-submission-head">
-              <div>
-                <p class="deco">Missing Food</p>
-                <h2>찾는 음식이 없나요?</h2>
-                <span>음식 정보를 입력해 등록 요청을 보내면 관리자가 검토합니다.</span>
-              </div>
-              <button type="button" @click="submissionOpen = !submissionOpen">
-                {{ submissionOpen ? "닫기" : "등록 요청" }}
-              </button>
-            </div>
-
-            <form v-if="submissionOpen" class="food-submission-form" @submit.prevent="submitMissingFood">
-              <label>
-                <span>음식명</span>
-                <input v-model="submissionForm.name" type="text" required />
-              </label>
-              <label>
-                <span>브랜드</span>
-                <input v-model="submissionForm.brand" type="text" />
-              </label>
-              <label>
-                <span>기준 설명</span>
-                <input v-model="submissionForm.servingDescription" type="text" placeholder="예: 100g, 1인분" />
-              </label>
-              <label>
-                <span>기준 수치</span>
-                <input v-model="submissionForm.servingSize" type="number" min="0" step="0.01" />
-              </label>
-              <label>
-                <span>기준 단위</span>
-                <input v-model="submissionForm.servingUnit" type="text" placeholder="g, ml, 인분" />
-              </label>
-              <label>
-                <span>칼로리</span>
-                <input v-model="submissionForm.calories" type="number" min="0" step="0.01" required />
-              </label>
-              <label>
-                <span>탄수화물</span>
-                <input v-model="submissionForm.carbohydrate" type="number" min="0" step="0.01" required />
-              </label>
-              <label>
-                <span>단백질</span>
-                <input v-model="submissionForm.protein" type="number" min="0" step="0.01" required />
-              </label>
-              <label>
-                <span>지방</span>
-                <input v-model="submissionForm.fat" type="number" min="0" step="0.01" required />
-              </label>
-
-              <button type="submit" :disabled="!canSubmitMissingFood || foodStore.isSubmittingFood">
-                {{ foodStore.isSubmittingFood ? "요청 중" : "관리자에게 요청" }}
-              </button>
-            </form>
-
-            <small v-if="foodStore.submissionMessage" class="food-meal-record-success">
-              {{ foodStore.submissionMessage }}
-            </small>
-            <small v-if="foodStore.submissionError" class="food-meal-record-error">
-              {{ foodStore.submissionError }}
-            </small>
-
-            <div v-if="myRequests.length" class="food-submission-history">
-              <strong>내 최근 요청</strong>
-              <span v-for="request in myRequests.slice(0, 3)" :key="request.id">
-                {{ request.name }} · {{ statusLabel(request.status) }}
-              </span>
-            </div>
-          </section>
         </section>
 
-        <aside class="food-detail-panel" v-if="selectedFood && selectedServing">
-          <p class="deco">Nutrition Preview</p>
-          <h2>{{ selectedFood.foodName }}</h2>
-          <span>{{ formatBrand(selectedFood.brand) }}</span>
-
-          <div class="food-serving-switcher">
-            <strong>기준 선택</strong>
-            <p>같은 음식도 제공량 기준에 따라 영양성분이 달라집니다.</p>
+        <Transition name="food-detail-slide" @after-leave="afterNutritionPanelLeave">
+        <aside class="food-detail-panel" v-if="canShowNutritionPanel">
+          <header class="food-detail-head">
             <div>
-              <button
-                v-for="serving in selectedFood.servings"
-                :key="serving.foodId"
-                type="button"
-                :class="{ active: selectedServing.foodId === serving.foodId }"
-                @click="selectServing(serving)"
-              >
-                <span>{{ servingLabel(serving) }}</span>
-                <b>{{ formatNumber(serving.calories) }} kcal</b>
-              </button>
+              <p class="deco">Nutrition</p>
+              <h2>{{ selectedFood.foodName }}</h2>
+              <span>{{ formatBrand(selectedFood.brand) }}</span>
             </div>
-          </div>
+            <button
+              type="button"
+              aria-label="영양 정보 닫기"
+              @click="closeNutritionPanel"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </header>
 
-          <div class="food-calorie-preview">
-            <small>{{ servingLabel(selectedServing) }} 기준 칼로리</small>
-            <strong>{{ formatNumber(selectedServing.calories) }}<em>kcal</em></strong>
-          </div>
+          <div class="food-detail-scroll">
+            <div class="food-serving-switcher">
+              <strong>기준 선택</strong>
+              <p>같은 음식도 제공량 기준에 따라 영양성분이 달라집니다.</p>
+              <div>
+                <button
+                  v-for="serving in selectedFood.servings"
+                  :key="serving.foodId"
+                  type="button"
+                  :class="{ active: selectedServing.foodId === serving.foodId }"
+                  @click="selectServing(serving)"
+                >
+                  <span>{{ servingLabel(serving) }}</span>
+                  <b>{{ formatNumber(serving.calories) }} kcal</b>
+                </button>
+              </div>
+            </div>
 
-          <div class="food-macro-preview">
-            <div>
-              <span>탄수화물</span>
-              <strong>{{ formatNumber(selectedServing.carbohydrate) }}g</strong>
-              <i :style="{ width: `${macroPercent(selectedServing.carbohydrate)}%` }"></i>
-            </div>
-            <div>
-              <span>단백질</span>
-              <strong>{{ formatNumber(selectedServing.protein) }}g</strong>
-              <i :style="{ width: `${macroPercent(selectedServing.protein)}%` }"></i>
-            </div>
-            <div>
-              <span>지방</span>
-              <strong>{{ formatNumber(selectedServing.fat) }}g</strong>
-              <i :style="{ width: `${macroPercent(selectedServing.fat)}%` }"></i>
+            <div class="food-macro-preview">
+              <div>
+                <span>탄수화물</span>
+                <strong>{{ formatNumber(selectedServing.carbohydrate) }}g</strong>
+              </div>
+              <div>
+                <span>단백질</span>
+                <strong>{{ formatNumber(selectedServing.protein) }}g</strong>
+              </div>
+              <div>
+                <span>지방</span>
+                <strong>{{ formatNumber(selectedServing.fat) }}g</strong>
+              </div>
             </div>
           </div>
 
@@ -577,19 +535,21 @@ function clearMissRecordTimer() {
             <strong>오늘 식단으로 기록</strong>
             <p>선택한 기준량을 오늘 식단에 바로 추가합니다. 같은 끼니의 기존 음식은 유지됩니다.</p>
 
-            <label>
-              <span>끼니</span>
-              <select v-model="mealType">
-                <option v-for="option in mealTypeOptions" :key="option.value" :value="option.value">
-                  {{ option.label }}
-                </option>
-              </select>
-            </label>
+            <div class="food-meal-record-fields">
+              <label>
+                <span>끼니</span>
+                <select v-model="mealType">
+                  <option v-for="option in mealTypeOptions" :key="option.value" :value="option.value">
+                    {{ option.label }}
+                  </option>
+                </select>
+              </label>
 
-            <label>
-              <span>배수</span>
-              <input v-model.number="quantity" type="number" min="0.1" step="0.1" />
-            </label>
+              <label>
+                <span>배수</span>
+                <input v-model.number="quantity" type="number" min="0.1" step="0.1" />
+              </label>
+            </div>
 
             <button type="button" :disabled="!canSaveMeal" @click="saveSelectedFoodToToday">
               <i class="pi pi-plus"></i>
@@ -600,7 +560,90 @@ function clearMissRecordTimer() {
             <small v-if="mealStore.saveMealError" class="food-meal-record-error">{{ mealStore.saveMealError }}</small>
           </div>
         </aside>
+        </Transition>
+
+        <Transition name="food-submission-overlay">
+          <div
+            v-if="foodAddOpen"
+            class="food-submission-overlay"
+            @click.self="closeFoodAddForm"
+          >
+            <section class="food-submission-panel food-submission-panel-form">
+              <div class="food-submission-head">
+                <div>
+                  <p class="deco">Missing Food</p>
+                  <h2>찾는 음식이 없나요?</h2>
+                  <span>음식 정보를 입력해 등록 요청을 보내면 관리자가 검토합니다.</span>
+                </div>
+                <button
+                  type="button"
+                  class="food-submission-close"
+                  aria-label="음식 등록 요청 창 닫기"
+                  @click="closeFoodAddForm"
+                >
+                  <i class="pi pi-times" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <form class="food-submission-form" @submit.prevent="submitMissingFood">
+                <label>
+                  <span>음식명</span>
+                  <input v-model="submissionForm.name" type="text" placeholder="예: 닭가슴살" required />
+                </label>
+                <label>
+                  <span>브랜드</span>
+                  <input v-model="submissionForm.brand" type="text" placeholder="제조사 또는 브랜드" />
+                </label>
+                <label>
+                  <span>기준 설명</span>
+                  <input v-model="submissionForm.servingDescription" type="text" placeholder="예: 100g 기준" />
+                </label>
+                <label>
+                  <span>기준 수치</span>
+                  <input v-model="submissionForm.servingSize" type="number" min="0" step="0.01" placeholder="100" />
+                </label>
+                <label>
+                  <span>기준 단위</span>
+                  <input v-model="submissionForm.servingUnit" type="text" placeholder="g" />
+                </label>
+                <label>
+                  <span>칼로리</span>
+                  <input v-model="submissionForm.calories" type="number" min="0" step="0.01" placeholder="kcal" required />
+                </label>
+                <label>
+                  <span>탄수화물</span>
+                  <input v-model="submissionForm.carbohydrate" type="number" min="0" step="0.01" placeholder="g" required />
+                </label>
+                <label>
+                  <span>단백질</span>
+                  <input v-model="submissionForm.protein" type="number" min="0" step="0.01" placeholder="g" required />
+                </label>
+                <label>
+                  <span>지방</span>
+                  <input v-model="submissionForm.fat" type="number" min="0" step="0.01" placeholder="g" required />
+                </label>
+
+                <button type="submit" :disabled="!canSubmitMissingFood || foodStore.isSubmittingFood">
+                  <i class="pi pi-send" aria-hidden="true"></i>
+                  {{ foodStore.isSubmittingFood ? "요청 중" : "관리자에게 요청" }}
+                </button>
+              </form>
+
+              <small v-if="foodStore.submissionMessage" class="food-meal-record-success">
+                {{ foodStore.submissionMessage }}
+              </small>
+              <small v-if="foodStore.submissionError" class="food-meal-record-error">
+                {{ foodStore.submissionError }}
+              </small>
+
+              <div v-if="myRequests.length" class="food-submission-history">
+                <strong>내 최근 요청</strong>
+                <span v-for="request in myRequests.slice(0, 3)" :key="request.id">
+                  {{ request.name }} · {{ statusLabel(request.status) }}
+                </span>
+              </div>
+            </section>
+          </div>
+        </Transition>
       </div>
-    </section>
-  </main>
 </template>

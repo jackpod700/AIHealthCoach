@@ -22,6 +22,8 @@ import com.aihealthcoach.meal.dto.MealDto.MonthlyMealResponse;
 import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -32,6 +34,7 @@ public class MealServiceImpl implements MealService {
     private static final Set<String> MEAL_TYPES = Set.of("BREAKFAST", "LUNCH", "DINNER", "SNACK");
 
     private final MealMapper mealMapper;
+    private final DailyChatSummaryStateService dailyChatSummaryStateService;
 
     @Override
     @Transactional(readOnly = true)
@@ -98,17 +101,26 @@ public class MealServiceImpl implements MealService {
             mealMapper.insertMealItem(mealId, item);
         }
 
+        dailyChatSummaryStateService.markChanged(userId, request.mealDate(), DailyChatSummaryChangeSource.MEAL);
+
         return findDailyMeals(userId, request.mealDate());
     }
 
     @Override
     @Transactional
     public void deleteMeal(Long userId, Long mealId) {
+        LocalDate mealDate = mealMapper.findMealDateById(userId, mealId);
+        if (mealDate == null) {
+            throw MealException.mealNotFound();
+        }
+
         int deletedRows = mealMapper.deleteMeal(userId, mealId);
 
         if (deletedRows == 0) {
             throw MealException.mealNotFound();
         }
+
+        dailyChatSummaryStateService.markChanged(userId, mealDate, DailyChatSummaryChangeSource.MEAL);
     }
 
     private void validateMealType(String mealType) {
@@ -124,9 +136,11 @@ public class MealServiceImpl implements MealService {
             if (!foodIds.add(item.foodId())) {
                 throw MealException.invalidMealItem();
             }
-            if (!mealMapper.existsFoodId(item.foodId())) {
-                throw MealException.foodNotFound();
-            }
+        }
+
+        List<Long> existingFoodIds = mealMapper.findFoodIdsByIds(List.copyOf(foodIds));
+        if (existingFoodIds.size() != foodIds.size()) {
+            throw MealException.foodNotFound();
         }
     }
 

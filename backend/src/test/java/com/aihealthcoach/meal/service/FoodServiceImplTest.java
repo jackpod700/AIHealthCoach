@@ -73,7 +73,40 @@ class FoodServiceImplTest {
         List<FoodCandidateResponse> response = foodService.searchFoods(" ");
 
         assertThat(response).isEmpty();
+        verify(mealMapper, never()).countFoods("", List.of());
         verify(mealMapper, never()).searchFoods("", List.of());
+    }
+
+    @Test
+    void searchFoodsReturnsLimitedCandidateItems() {
+        List<Token> tokens = List.of(new Token("chicken", "chicken"));
+        when(mealMapper.searchFoods("chicken", tokens))
+                .thenReturn(List.of(food(1L, "source-1", "Chicken Breast", "Brand", "100g", "100", "g", "120")));
+
+        List<FoodCandidateResponse> response = foodService.searchFoods(" chicken ");
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).foodId()).isEqualTo(1L);
+        verify(mealMapper, never()).countFoods("chicken", tokens);
+    }
+
+    @Test
+    void countFoodsReturnsCandidateSearchCount() {
+        List<Token> tokens = List.of(new Token("missing", "missing"));
+        when(mealMapper.countFoods("missing", tokens)).thenReturn(42L);
+
+        long totalItems = foodService.countFoods(" missing ");
+
+        assertThat(totalItems).isEqualTo(42);
+        verify(mealMapper, never()).searchFoods("missing", tokens);
+    }
+
+    @Test
+    void countFoodsKeepsBlankQueryZero() {
+        long totalItems = foodService.countFoods(" ");
+
+        assertThat(totalItems).isZero();
+        verify(mealMapper, never()).countFoods("", List.of());
     }
 
     private Food food(

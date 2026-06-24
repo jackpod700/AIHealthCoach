@@ -9,6 +9,8 @@ import com.aihealthcoach.chat.entity.ChatMessage;
 public interface ChatService {
     public List<ChatMessageResponse> findMessagesByUserId(Long userId);
 
+    List<ChatMessageResponse> findRecentMessages(Long userId, int limit);
+
     public ChatMessageResponse insert(Long userId, ChatMessageRequest message);
 
     public ChatMessageResponse insert(ChatMessage message);

@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.summary.mapper.DailyChatSummaryMapper">
+    <resultMap id="dailyChatSummaryContext" type="com.aihealthcoach.summary.dto.DailyChatSummaryDto$DailyChatSummaryContextResponse">
+        <constructor>
+            <arg column="summary_date" javaType="java.time.LocalDate"/>
+            <arg column="content" javaType="java.lang.String"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="dailyChatSummaryContextCacheEntry" type="com.aihealthcoach.summary.dto.DailyChatSummaryDto$DailyChatSummaryContextCacheEntry">
+        <constructor>
+            <arg column="summary_date" javaType="java.time.LocalDate"/>
+            <arg column="content" javaType="java.lang.String"/>
+            <arg column="source_version" javaType="java.lang.Long"/>
+        </constructor>
+    </resultMap>
+
+    <resultMap id="dailyChatSummaryContextVersion" type="com.aihealthcoach.summary.dto.DailyChatSummaryDto$DailyChatSummaryContextVersion">
+        <constructor>
+            <arg column="summary_date" javaType="java.time.LocalDate"/>
+            <arg column="source_version" javaType="java.lang.Long"/>
+        </constructor>
+    </resultMap>
+
+    <insert id="upsert" parameterType="com.aihealthcoach.summary.entity.DailyChatSummary">
+        INSERT INTO daily_chat_summaries (
+            user_id,
+            summary_date,
+            content,
+            source_version,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{userId},
+            #{summaryDate},
+            #{content},
+            #{sourceVersion},
+            NOW(),
+            NOW()
+        )
+        ON CONFLICT (user_id, summary_date)
+        DO UPDATE SET
+            content = EXCLUDED.content,
+            source_version = EXCLUDED.source_version,
+            updated_at = NOW()
+    </insert>
+
+    <select id="findFreshSummariesBetween" resultMap="dailyChatSummaryContext">
+        SELECT summaries.summary_date,
+               summaries.content
+        FROM daily_chat_summaries summaries
+        INNER JOIN daily_chat_summary_states states
+            ON states.user_id = summaries.user_id
+           AND states.summary_date = summaries.summary_date
+           AND states.source_version = summaries.source_version
+           AND states.status = 'FRESH'
+        WHERE summaries.user_id = #{userId}
+          AND summaries.summary_date &gt;= #{from}
+          AND summaries.summary_date &lt;= #{to}
+        ORDER BY summaries.summary_date ASC
+    </select>
+
+    <select id="findFreshSummaryCacheEntriesBetween" resultMap="dailyChatSummaryContextCacheEntry">
+        SELECT summaries.summary_date,
+               summaries.content,
+               summaries.source_version
+        FROM daily_chat_summaries summaries
+        INNER JOIN daily_chat_summary_states states
+            ON states.user_id = summaries.user_id
+           AND states.summary_date = summaries.summary_date
+           AND states.source_version = summaries.source_version
+           AND states.status = 'FRESH'
+        WHERE summaries.user_id = #{userId}
+          AND summaries.summary_date &gt;= #{from}
+          AND summaries.summary_date &lt;= #{to}
+        ORDER BY summaries.summary_date ASC
+    </select>
+
+    <select id="findFreshSummaryVersionsBetween" resultMap="dailyChatSummaryContextVersion">
+        SELECT states.summary_date,
+               states.source_version
+        FROM daily_chat_summary_states states
+        INNER JOIN daily_chat_summaries summaries
+            ON summaries.user_id = states.user_id
+           AND summaries.summary_date = states.summary_date
+           AND summaries.source_version = states.source_version
+        WHERE states.user_id = #{userId}
+          AND states.summary_date &gt;= #{from}
+          AND states.summary_date &lt;= #{to}
+          AND states.status = 'FRESH'
+        ORDER BY states.summary_date ASC
+    </select>
+</mapper>

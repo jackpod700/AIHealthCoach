@@ -1,5 +1,5 @@
 import { defineStore } from "pinia";
-import { deleteMeal, fetchDailyMeals, fetchMonthlyMeals, saveMeal, searchFoods } from "../api/mealApi";
+import { countSearchFoods, deleteMeal, fetchDailyMeals, fetchMonthlyMeals, saveMeal, searchFoods } from "../api/mealApi";
 import { useAuthStore } from "./authStore";
 
 const today = new Date();
@@ -10,6 +10,7 @@ export const useMealStore = defineStore("meal", {
     dailyMeal: null,
     monthlyMeal: null,
     foodSearchResults: [],
+    foodSearchTotalItems: 0,
     selectedDate: todayDateKey,
     selectedYear: today.getFullYear(),
     selectedMonth: today.getMonth() + 1,
@@ -67,6 +68,7 @@ export const useMealStore = defineStore("meal", {
 
       if (!trimmedQuery) {
         this.foodSearchResults = [];
+        this.foodSearchTotalItems = 0;
         return;
       }
 
@@ -77,10 +79,24 @@ export const useMealStore = defineStore("meal", {
       this.isSearchingFoods = true;
 
       try {
-        this.foodSearchResults = await searchFoods(authStore.accessToken, trimmedQuery);
+        const results = await searchFoods(authStore.accessToken, trimmedQuery);
+        this.foodSearchResults = results || [];
+        this.foodSearchTotalItems = results?.length || 0;
+        this.isSearchingFoods = false;
+
+        try {
+          const countResponse = await countSearchFoods(authStore.accessToken, trimmedQuery);
+          this.foodSearchTotalItems = countResponse?.totalItems || 0;
+        } catch (error) {
+          if (authStore.handleAuthFailure(error)) {
+            this.foodSearchResults = [];
+            this.foodSearchTotalItems = 0;
+          }
+        }
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
           this.foodSearchResults = [];
+          this.foodSearchTotalItems = 0;
           return;
         }
 
@@ -144,6 +160,7 @@ export const useMealStore = defineStore("meal", {
     },
     clearFoodSearch() {
       this.foodSearchResults = [];
+      this.foodSearchTotalItems = 0;
       this.foodSearchError = "";
     },
     setCalendarMonth(year, month) {
@@ -178,6 +195,7 @@ export const useMealStore = defineStore("meal", {
       this.dailyMeal = null;
       this.monthlyMeal = null;
       this.foodSearchResults = [];
+      this.foodSearchTotalItems = 0;
       this.dailyError = "";
       this.monthlyError = "";
       this.foodSearchError = "";

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.aihealthcoach.dailygoal.mapper.DailyGoalMapper">
+    <resultMap id="dailyGoal" type="com.aihealthcoach.dailygoal.entity.DailyGoal">
+        <id column="id" property="id"/>
+        <result column="user_id" property="userId"/>
+        <result column="goal_type" property="goalType"/>
+        <result column="calorie_intake_goal" property="calorieIntakeGoal"/>
+        <result column="exercise_calorie_goal" property="exerciseCalorieGoal"/>
+        <result column="created_at" property="createdAt"/>
+        <result column="updated_at" property="updatedAt"/>
+    </resultMap>
+
+    <select id="findByUserId" parameterType="Long" resultMap="dailyGoal">
+        SELECT id, user_id, goal_type, calorie_intake_goal, exercise_calorie_goal, created_at, updated_at
+        FROM daily_goals
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="upsert"
+        parameterType="com.aihealthcoach.dailygoal.entity.DailyGoal"
+        resultMap="dailyGoal">
+        INSERT INTO daily_goals (
+            user_id,
+            goal_type,
+            calorie_intake_goal,
+            exercise_calorie_goal,
+            created_at,
+            updated_at
+        )
+        VALUES (
+            #{userId},
+            #{goalType},
+            #{calorieIntakeGoal},
+            #{exerciseCalorieGoal},
+            NOW(),
+            NOW()
+        )
+        ON CONFLICT (user_id)
+        DO UPDATE SET
+            goal_type = EXCLUDED.goal_type,
+            calorie_intake_goal = EXCLUDED.calorie_intake_goal,
+            exercise_calorie_goal = EXCLUDED.exercise_calorie_goal,
+            updated_at = NOW()
+        RETURNING id, user_id, goal_type, calorie_intake_goal, exercise_calorie_goal, created_at, updated_at
+    </select>
+</mapper>

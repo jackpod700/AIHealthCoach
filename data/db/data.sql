@@ -7,12 +7,32 @@ VALUES
 
 ON CONFLICT (id) DO NOTHING;
 
-INSERT INTO user_profiles (id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, updated_at)
+INSERT INTO user_profiles (id, user_id, height_cm, current_weight_kg, target_weight_kg, goal_type, gender, age, updated_at)
 VALUES
-    (1, 1, 172.50, 68.40, 65.00, 'MAINTAIN', NOW()),
-    (2, 2, 178.20, 82.10, 76.00, 'MUSCLE_GAIN', NOW()),
-    (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', NOW())
+    (1, 1, 172.50, 68.40, 65.00, 'MAINTENANCE', 'MALE', 32, NOW()),
+    (2, 2, 178.20, 82.10, 76.00, 'MUSCLE_GAIN', 'MALE', 29, NOW()),
+    (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', 'FEMALE', 27, NOW())
 ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO daily_goals (id, user_id, goal_type, calorie_intake_goal, exercise_calorie_goal, created_at, updated_at)
+VALUES
+    (1, 1, 'MAINTENANCE', 2100, 250, NOW(), NOW()),
+    (2, 2, 'MUSCLE_GAIN', 2800, 300, NOW(), NOW()),
+    (3, 3, 'WEIGHT_LOSS', 1600, 300, NOW(), NOW())
+ON CONFLICT (user_id) DO NOTHING;
+
+INSERT INTO weight_records (user_id, record_date, weight_kg, created_at, updated_at)
+VALUES
+    (1, (CURRENT_DATE - INTERVAL '28 days')::date, 69.20, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '24 days')::date, 69.00, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '21 days')::date, 68.90, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '17 days')::date, 68.70, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '14 days')::date, 68.80, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '10 days')::date, 68.60, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '7 days')::date, 68.50, NOW(), NOW()),
+    (1, (CURRENT_DATE - INTERVAL '3 days')::date, 68.45, NOW(), NOW()),
+    (1, CURRENT_DATE, 68.40, NOW(), NOW())
+ON CONFLICT (user_id, record_date) DO NOTHING;
 
 INSERT INTO chat_messages (id, user_id, role, content, created_at)
 SELECT row_number() OVER () AS id, user_id, role, content, created_at
@@ -40,4 +60,6 @@ ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', COALESCE((SELECT MAX(id) FROM users), 1));
 SELECT setval('user_profiles_id_seq', COALESCE((SELECT MAX(id) FROM user_profiles), 1));
+SELECT setval('daily_goals_id_seq', COALESCE((SELECT MAX(id) FROM daily_goals), 1));
+SELECT setval('weight_records_id_seq', COALESCE((SELECT MAX(id) FROM weight_records), 1));
 SELECT setval('chat_messages_id_seq', COALESCE((SELECT MAX(id) FROM chat_messages), 1));

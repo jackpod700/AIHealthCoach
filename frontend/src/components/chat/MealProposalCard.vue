@@ -199,40 +199,42 @@ function confirm() {
 </script>
 
 <template>
-  <article class="meal-proposal-card">
-    <header>
+  <article class="proposal-card meal-proposal-card">
+    <header class="proposal-head">
       <div>
-        <p class="deco">Meal Proposal</p>
-        <h2>{{ mealLabel }} 식단으로 기록할까요?</h2>
+        <p class="proposal-eyebrow">Meal Proposal</p>
+        <h2 class="proposal-title">{{ mealLabel }} 식단으로 기록할까요?</h2>
       </div>
-      <button type="button" aria-label="후보 닫기" @click="emit('dismiss')">
+      <button class="proposal-close" type="button" aria-label="후보 닫기" @click="emit('dismiss')">
         <i class="pi pi-times"></i>
       </button>
     </header>
 
-    <p class="meal-proposal-meta">
+    <p class="proposal-desc">
       {{ proposal.mealDate }} · 음식 후보를 확인하고 실제로 먹은 배수를 조정해 주세요.
     </p>
 
-    <div v-if="proposal.defaultsApplied?.length" class="meal-proposal-defaults">
+    <div v-if="proposal.defaultsApplied?.length" class="proposal-badges">
       <span v-for="defaultText in proposal.defaultsApplied" :key="defaultText">{{ defaultText }}</span>
     </div>
 
-    <div class="meal-proposal-items">
+    <div class="proposal-items">
       <section v-for="(item, index) in proposal.items" :key="`${item.extractedName}-${index}`">
-        <div class="meal-proposal-item-head">
-          <label class="meal-proposal-name-field">
-            <span>AI가 추출한 음식명</span>
+        <div class="proposal-fields meal-proposal-fields">
+          <label class="proposal-field">
+            <span class="proposal-label">음식명</span>
             <input
+              class="proposal-input"
               :value="itemStates[index]?.editableName"
               type="text"
               placeholder="음식명을 입력하세요"
               @input="updateEditableName(index, $event.target.value)"
             />
           </label>
-          <label>
-            <span>배수</span>
+          <label class="proposal-field proposal-field--narrow">
+            <span class="proposal-label">배수</span>
             <input
+              class="proposal-input"
               :value="itemStates[index]?.quantity"
               type="number"
               min="0.1"
@@ -242,21 +244,21 @@ function confirm() {
           </label>
         </div>
 
-        <p v-if="itemStates[index]?.isSearching" class="meal-candidate-status">검색 중...</p>
-        <p v-else-if="itemStates[index]?.searchError" class="meal-candidate-empty">
+        <p v-if="itemStates[index]?.isSearching" class="proposal-status">검색 중...</p>
+        <p v-else-if="itemStates[index]?.searchError" class="proposal-empty">
           {{ itemStates[index].searchError }}
         </p>
 
-        <div v-if="itemStates[index]?.candidates?.length" class="meal-candidate-list">
+        <div v-if="itemStates[index]?.candidates?.length" class="proposal-options meal-candidate-list">
           <button
             v-for="candidate in itemStates[index].candidates"
             :key="candidate.foodId"
             type="button"
-            :class="{ selected: itemStates[index]?.foodId === candidate.foodId }"
+            :class="{ 'is-selected': itemStates[index]?.foodId === candidate.foodId }"
             @click="selectCandidate(index, candidate.foodId)"
           >
-            <strong>{{ candidate.foodName }}</strong>
-            <span>
+            <span class="proposal-option-name">{{ candidate.foodName }}</span>
+            <span class="proposal-option-meta">
               {{ candidate.brand || "제조사 정보 없음" }} · {{ servingLabel(candidate) }} ·
               {{ formatNumber(candidate.calories) }} kcal
             </span>
@@ -265,22 +267,22 @@ function confirm() {
 
         <div
           v-else-if="!itemStates[index]?.isSearching && !itemStates[index]?.searchError"
-          class="meal-candidate-empty"
+          class="proposal-empty"
         >
           매칭되는 음식 후보가 없어요. 이름을 다시 입력해주세요.
         </div>
 
-        <p v-if="selectedCandidate(index)" class="meal-selected-summary">
+        <p v-if="selectedCandidate(index)" class="proposal-selected-summary">
           선택됨: {{ selectedCandidate(index).foodName }}
         </p>
       </section>
     </div>
 
-    <p v-if="error" class="meal-proposal-error">{{ error }}</p>
+    <p v-if="error" class="proposal-error">{{ error }}</p>
 
-    <footer>
-      <button class="meal-proposal-cancel" type="button" @click="emit('dismiss')">나중에</button>
-      <button class="meal-proposal-confirm" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
+    <footer class="proposal-actions">
+      <button class="proposal-btn proposal-btn--ghost" type="button" @click="emit('dismiss')">나중에</button>
+      <button class="proposal-btn proposal-btn--primary" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
         {{ isConfirming ? "기록 중..." : "식단 기록하기" }}
       </button>
     </footer>

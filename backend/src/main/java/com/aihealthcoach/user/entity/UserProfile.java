@@ -19,5 +19,7 @@ public class UserProfile {
     private BigDecimal currentWeightKg;
     private BigDecimal targetWeightKg;
     private String goalType;
+    private String gender;
+    private Integer age;
     private LocalDateTime updatedAt;
 }

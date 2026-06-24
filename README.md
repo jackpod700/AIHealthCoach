@@ -275,6 +275,18 @@ mvn test
 ./scripts/check
 ```
 
+실행 권한 오류가 발생하면 스크립트에 실행 권한을 부여한 뒤 다시 실행합니다.
+
+```bash
+chmod +x ./scripts/check ./scripts/check-wsl
+```
+
+WSL에서 전체 하네스가 Windows `cmd.exe` 경로로 빠지며 `UtilBindVsockAnyPort` 오류가 발생하면, WSL native 실행 파일을 사용합니다.
+
+```bash
+./scripts/check-wsl
+```
+
 Windows PowerShell:
 
 ```powershell

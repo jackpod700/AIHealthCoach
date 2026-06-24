@@ -20,7 +20,20 @@ public interface ExerciseMapper {
 
     ExerciseRecord updateExerciseRecord(ExerciseRecord exerciseRecord);
 
+    LocalDate findExerciseDateById(
+            @Param("userId") Long userId,
+            @Param("recordId") Long recordId
+    );
+
+    int deleteExerciseRecord(
+            @Param("userId") Long userId,
+            @Param("recordId") Long recordId);
+
     List<ExerciseRecord> findExerciseRecordsByDate(
+        @Param("userId") Long userId,
+        @Param("exerciseDate") LocalDate exerciseDate);
+
+    Integer sumDailyCaloriesBurned(
         @Param("userId") Long userId,
         @Param("exerciseDate") LocalDate exerciseDate);
 

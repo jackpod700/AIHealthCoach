@@ -7,6 +7,7 @@ import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import com.aihealthcoach.common.error.GlobalExceptionHandler;
 
@@ -49,7 +50,11 @@ public class ApiResponseAdvice implements ResponseBodyAdvice<Object> {
 
         // 빈 응답, 이미 감싼 응답, 문자열 응답은 그대로 둔다.
         // 문자열 응답은 StringHttpMessageConverter를 사용하므로 여기서 객체로 바꾸면 실패할 수 있다.
-        if (body == null || body instanceof ApiResponse<?> || body instanceof String || body instanceof byte[]) {
+        if (body == null
+                || body instanceof ApiResponse<?>
+                || body instanceof String
+                || body instanceof byte[]
+                || body instanceof SseEmitter) {
             return body;
         }
 

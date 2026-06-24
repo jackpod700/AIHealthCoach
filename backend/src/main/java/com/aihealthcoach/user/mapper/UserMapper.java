@@ -4,6 +4,7 @@ import com.aihealthcoach.user.dto.UserDto.UserProfileUpdateRequest;
 import com.aihealthcoach.user.entity.OAuthAccount;
 import com.aihealthcoach.user.entity.User;
 import com.aihealthcoach.user.entity.UserProfile;
+import java.math.BigDecimal;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -20,7 +21,17 @@ public interface UserMapper {
 
     void insertUserProfile(UserProfile userProfile);
 
-    UserProfile findUserProfileByUserId(Long id);
+    UserProfile findUserProfileByUserId(@Param("userId") Long userId);
+
+    void updateUserProfileGoalType(
+            @Param("userId") Long userId,
+            @Param("goalType") String goalType
+    );
+
+    void updateUserProfileCurrentWeight(
+            @Param("userId") Long userId,
+            @Param("currentWeightKg") BigDecimal currentWeightKg
+    );
 
     void updateUserProfile(
             @Param("userId") Long userId,

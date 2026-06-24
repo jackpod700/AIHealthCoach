@@ -15,6 +15,8 @@ import com.aihealthcoach.meal.util.FoodSearchQuery.Token;
 public interface MealMapper {
     List<MealFood> findDailyMeals(@Param("userId") Long userId, @Param("date") LocalDate date);
 
+    MealFood sumDailyNutrition(@Param("userId") Long userId, @Param("date") LocalDate date);
+
     List<MealFood> findMealsBetween(
             @Param("userId") Long userId,
             @Param("startDate") LocalDate startDate,
@@ -35,11 +37,16 @@ public interface MealMapper {
 
     void deleteMealItems(@Param("mealId") Long mealId);
 
+    LocalDate findMealDateById(
+            @Param("userId") Long userId,
+            @Param("mealId") Long mealId
+    );
+
     int deleteMeal(@Param("userId") Long userId, @Param("mealId") Long mealId);
 
     void insertMealItem(@Param("mealId") Long mealId, @Param("item") MealItemRequest item);
 
-    boolean existsFoodId(@Param("foodId") Long foodId);
+    List<Long> findFoodIdsByIds(@Param("foodIds") List<Long> foodIds);
 
     long countFoodGroups(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
@@ -51,6 +58,8 @@ public interface MealMapper {
     );
 
     List<Food> findFoodsBySourceKeys(@Param("sourceKeys") List<String> sourceKeys);
+
+    long countFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
     List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 

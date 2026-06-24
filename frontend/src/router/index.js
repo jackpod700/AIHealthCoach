@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from "vue-router";
 import { useAuthStore } from "../stores/authStore";
 
+import LandingView from "../views/auth/LandingView.vue";
 import LoginView from "../views/auth/LoginView.vue";
 import SignupView from "../views/auth/SignupView.vue";
 import OAuthSuccessView from "../views/auth/OAuthSuccessView.vue";
@@ -12,15 +13,44 @@ import ProfileView from "../views/profile/ProfileView.vue";
 import DailyRecordView from "../views/records/DailyRecordView.vue";
 import NotFoundView from "../views/error/NotFoundView.vue";
 
+const appShell = {
+  chat: {
+    homeClass: "chat-home",
+    workspaceClass: "chat-workspace",
+    showTodayPanel: true,
+  },
+  calendar: {
+    homeClass: "calendar-home",
+    workspaceClass: "calendar-workspace",
+    showTodayPanel: true,
+  },
+  records: {
+    homeClass: "record-home",
+    workspaceClass: "record-workspace",
+    showTodayPanel: true,
+  },
+  foods: {
+    homeClass: "food-home",
+    workspaceClass: "food-workspace",
+  },
+  profile: {
+    homeClass: "profile-home",
+    workspaceClass: "profile-workspace",
+    showTodayPanel: true,
+  },
+  admin: {
+    homeClass: "admin-home",
+    workspaceClass: "admin-workspace",
+  },
+};
+
 const router = createRouter({
   history: createWebHistory(),
   routes: [
     {
       path: "/",
-      redirect: () => {
-        const authStore = useAuthStore();
-        return authStore.isAuthenticated ? "/chat" : "/login";
-      },
+      name: "landing",
+      component: LandingView,
     },
     {
       path: "/login",
@@ -43,6 +73,7 @@ const router = createRouter({
       component: ChatView,
       meta: {
         requiresAuth: true,
+        shell: appShell.chat,
       },
     },
     {
@@ -51,6 +82,7 @@ const router = createRouter({
       component: CalendarView,
       meta: {
         requiresAuth: true,
+        shell: appShell.calendar,
       },
     },
     {
@@ -59,6 +91,7 @@ const router = createRouter({
       component: DailyRecordView,
       meta: {
         requiresAuth: true,
+        shell: appShell.records,
       },
     },
     {
@@ -67,6 +100,7 @@ const router = createRouter({
       component: FoodSearchView,
       meta: {
         requiresAuth: true,
+        shell: appShell.foods,
       },
     },
     {
@@ -75,6 +109,7 @@ const router = createRouter({
       component: ProfileView,
       meta: {
         requiresAuth: true,
+        shell: appShell.profile,
       },
     },
     {
@@ -84,6 +119,7 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         requiresAdmin: true,
+        shell: appShell.admin,
       },
     },
     {

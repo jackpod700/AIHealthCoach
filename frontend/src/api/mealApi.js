@@ -44,6 +44,18 @@ export function searchFoods(accessToken, query) {
   });
 }
 
+export function countSearchFoods(accessToken, query) {
+  const searchParams = new URLSearchParams({
+    query,
+  });
+
+  return apiRequest(`/api/foods/search/count?${searchParams.toString()}`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
 export function fetchMonthlyMeals(accessToken, year, month) {
   const searchParams = new URLSearchParams({
     year: String(year),

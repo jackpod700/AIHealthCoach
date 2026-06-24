@@ -63,6 +63,16 @@ public class ExerciseDto {
     }
 
     @Builder
+    public record ExerciseRecordUpdateRequest(
+        @NotNull(message = "exerciseActivityOptionId는 필수입니다.") Long exerciseActivityOptionId,
+        @NotNull(message = "intensityLevel은 필수입니다.")
+        @Pattern(regexp = "LOW|MEDIUM|HIGH", message = "intensityLevel은 LOW, MEDIUM, HIGH 중 하나여야 합니다.")
+        String intensityLevel,
+        @NotNull(message = "durationMinutes는 필수입니다.") @Positive(message = "durationMinutes는 1 이상이어야 합니다.") Integer durationMinutes,
+        String memo) {
+    }
+
+    @Builder
     public record ExerciseRecordResponse(
         Long id,
         Long exerciseActivityOptionId,

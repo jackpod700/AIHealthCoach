@@ -8,6 +8,8 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import lombok.Builder;
 
 public class UserDto {
@@ -55,6 +57,17 @@ public class UserDto {
     }
 
     @Builder
+    public record UserProfileResponse (
+        Long userId,
+        BigDecimal heightCm,
+        BigDecimal currentWeightKg,
+        BigDecimal targetWeightKg,
+        String goalType,
+        String gender,
+        Integer age,
+        LocalDateTime updatedAt) {
+    }
+
     public record SignupRequest(
             @NotBlank(message = "이메일은 필수입니다.")
             @Email(message = "이메일 형식이 올바르지 않습니다.")
@@ -78,17 +91,6 @@ public class UserDto {
     }
 
     @Builder
-    public record UserProfileResponse(
-            Long userId,
-            BigDecimal heightCm,
-            BigDecimal currentWeightKg,
-            BigDecimal targetWeightKg,
-            String goalType,
-            LocalDateTime updatedAt
-    ) {
-    }
-
-    @Builder
     public record UserProfileUpdateRequest(
             @DecimalMin(value = "50.00", message = "키는 50cm 이상이어야 합니다.")
             @DecimalMax(value = "300.00", message = "키는 300cm 이하여야 합니다.")
@@ -97,17 +99,21 @@ public class UserDto {
 
             @DecimalMin(value = "1.00", message = "현재 몸무게는 1kg 이상이어야 합니다.")
             @DecimalMax(value = "999.99", message = "현재 몸무게는 999.99kg 이하여야 합니다.")
-            @Digits(integer = 3, fraction = 2, message = "현재 몸무게는 최대 999.99 형식이어야 합니다.")
             BigDecimal currentWeightKg,
 
             @DecimalMin(value = "1.00", message = "목표 몸무게는 1kg 이상이어야 합니다.")
             @DecimalMax(value = "999.99", message = "목표 몸무게는 999.99kg 이하여야 합니다.")
-            @Digits(integer = 3, fraction = 2, message = "목표 몸무게는 최대 999.99 형식이어야 합니다.")
             BigDecimal targetWeightKg,
 
-            String goalType
-    ) {
-    }
+            String goalType,
+
+            @Pattern(regexp = "MALE|FEMALE", message = "gender는 MALE 또는 FEMALE이어야 합니다.")
+            String gender,
+
+            @Positive(message = "age는 1 이상이어야 합니다.")
+            Integer age
+        ) {
+        }
 
     public record UserNicknameUpdateRequest(
             @NotBlank(message = "닉네임은 필수입니다.")

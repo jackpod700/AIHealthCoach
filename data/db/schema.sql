@@ -34,14 +34,49 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     current_weight_kg DECIMAL(5,2),
     target_weight_kg DECIMAL(5,2),
     goal_type VARCHAR(20),
+    gender VARCHAR(20),
+    age INTEGER,
 
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT chk_user_profiles_gender
+        CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE')),
+
+    CONSTRAINT chk_user_profiles_age_positive
+        CHECK (age IS NULL OR age > 0),
 
     CONSTRAINT fk_user_profiles_user
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS gender VARCHAR(20),
+    ADD COLUMN IF NOT EXISTS age INTEGER;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_user_profiles_gender'
+    ) THEN
+        ALTER TABLE user_profiles
+            ADD CONSTRAINT chk_user_profiles_gender
+            CHECK (gender IS NULL OR gender IN ('MALE', 'FEMALE'));
+    END IF;
+
+    IF NOT EXISTS (
+        SELECT 1
+        FROM pg_constraint
+        WHERE conname = 'chk_user_profiles_age_positive'
+    ) THEN
+        ALTER TABLE user_profiles
+            ADD CONSTRAINT chk_user_profiles_age_positive
+            CHECK (age IS NULL OR age > 0);
+    END IF;
+END $$;
 
 CREATE TABLE IF NOT EXISTS chat_messages (
     id BIGSERIAL PRIMARY KEY,
@@ -56,6 +91,30 @@ CREATE TABLE IF NOT EXISTS chat_messages (
     CONSTRAINT fk_chat_message_users
         FOREIGN KEY (user_id) REFERENCES users(id)
 );
+
+CREATE TABLE IF NOT EXISTS user_memories (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    content TEXT NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_user_memories_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_user_memories_content_not_blank
+        CHECK (length(trim(content)) > 0),
+
+    CONSTRAINT chk_user_memories_content_length
+        CHECK (char_length(content) <= 500)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_memories_active
+    ON user_memories(user_id, updated_at DESC)
+    WHERE is_active = TRUE;
 
 CREATE TABLE IF NOT EXISTS foods (
     id BIGSERIAL PRIMARY KEY,
@@ -139,6 +198,14 @@ CREATE INDEX IF NOT EXISTS idx_food_submission_requests_submitter
 
 CREATE INDEX IF NOT EXISTS idx_food_submission_requests_status
     ON food_submission_requests(status, submitted_at DESC);
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE INDEX IF NOT EXISTS idx_foods_compact_search_trgm
+    ON foods USING GIN ((
+        REGEXP_REPLACE(name, '\s+', '', 'g')
+        || '|'
+        || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+    ) gin_trgm_ops);
 
 CREATE TABLE IF NOT EXISTS food_search_misses (
     id BIGSERIAL PRIMARY KEY,
@@ -409,6 +476,56 @@ CREATE INDEX IF NOT EXISTS idx_exercise_records_user_date
 CREATE INDEX IF NOT EXISTS idx_exercise_records_activity_option
     ON exercise_records(exercise_activity_option_id);
 
+CREATE TABLE IF NOT EXISTS daily_goals (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE,
+    goal_type VARCHAR(20) NOT NULL,
+    calorie_intake_goal INTEGER NOT NULL,
+    exercise_calorie_goal INTEGER NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_daily_goals_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT chk_daily_goals_goal_type
+        CHECK (goal_type IN ('WEIGHT_LOSS', 'MAINTENANCE', 'MUSCLE_GAIN')),
+
+    CONSTRAINT chk_daily_goals_calorie_intake_positive
+        CHECK (calorie_intake_goal > 0),
+
+    CONSTRAINT chk_daily_goals_exercise_calorie_non_negative
+        CHECK (exercise_calorie_goal >= 0)
+);
+
+CREATE TABLE IF NOT EXISTS weight_records (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    record_date DATE NOT NULL,
+    weight_kg NUMERIC(5, 2) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_weight_records_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT uq_weight_records_user_date
+        UNIQUE (user_id, record_date),
+
+    CONSTRAINT chk_weight_records_weight_positive
+        CHECK (weight_kg > 0),
+
+    CONSTRAINT chk_weight_records_weight_max
+        CHECK (weight_kg <= 500)
+);
+
+CREATE INDEX IF NOT EXISTS idx_weight_records_user_date
+    ON weight_records(user_id, record_date);
+
 CREATE TABLE IF NOT EXISTS oauth_accounts (
     id BIGSERIAL NOT NULL,
     user_id BIGINT NOT NULL,
@@ -427,3 +544,55 @@ CREATE TABLE IF NOT EXISTS oauth_accounts (
 );
 ALTER TABLE users
 ALTER COLUMN password DROP NOT NULL;
+
+CREATE TABLE IF NOT EXISTS daily_chat_summaries (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    summary_date DATE NOT NULL,
+    content TEXT NOT NULL,
+    source_version BIGINT NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uq_daily_chat_summaries_user_date
+        UNIQUE (user_id, summary_date),
+    CONSTRAINT fk_daily_chat_summaries_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summaries_date
+    ON daily_chat_summaries(summary_date, user_id);
+
+CREATE TABLE IF NOT EXISTS daily_chat_summary_states (
+    user_id BIGINT NOT NULL,
+    summary_date DATE NOT NULL,
+    source_version BIGINT NOT NULL DEFAULT 1,
+    source_updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) NOT NULL DEFAULT 'STALE',
+    claim_token VARCHAR(64),
+    claimed_at TIMESTAMP,
+    retry_count INTEGER NOT NULL DEFAULT 0,
+    next_retry_at TIMESTAMP,
+    failure_code VARCHAR(80),
+    changed_sources TEXT NOT NULL DEFAULT '',
+    daily_goal_snapshot_payload TEXT,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT pk_daily_chat_summary_states
+        PRIMARY KEY (user_id, summary_date),
+    CONSTRAINT ck_daily_chat_summary_states_status
+        CHECK (status IN ('STALE', 'CLAIMED', 'FRESH', 'FAILED')),
+    CONSTRAINT fk_daily_chat_summary_states_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summary_states_date
+    ON daily_chat_summary_states(summary_date, user_id);
+
+CREATE INDEX IF NOT EXISTS idx_daily_chat_summary_states_claim
+    ON daily_chat_summary_states(status, next_retry_at, claimed_at, summary_date);

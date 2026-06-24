@@ -34,6 +34,15 @@ export function updateExerciseRecord(accessToken, recordId, record) {
   });
 }
 
+export function deleteExerciseRecord(accessToken, recordId) {
+  return apiRequest(`/api/exercise/records/${recordId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+}
+
 export function fetchDailyExerciseRecords(accessToken, date) {
   const searchParams = new URLSearchParams({
     date,

@@ -174,17 +174,30 @@ public class UserServiceImpl implements UserService {
             throw UserException.profileNotFound();
         }
 
+        return toProfileResponse(userProfile);
+    }
+
+    @Override
+    public UserProfileResponse findProfileIfExists(Long userId) {
+        UserProfile userProfile = userDao.findUserProfileByUserId(userId);
+        return userProfile == null ? null : toProfileResponse(userProfile);
+    }
+
+    private UserProfileResponse toProfileResponse(UserProfile userProfile) {
         return UserProfileResponse.builder()
                 .userId(userProfile.getUserId())
                 .heightCm(userProfile.getHeightCm())
                 .currentWeightKg(userProfile.getCurrentWeightKg())
                 .targetWeightKg(userProfile.getTargetWeightKg())
                 .goalType(userProfile.getGoalType())
+                .gender(userProfile.getGender())
+                .age(userProfile.getAge())
                 .updatedAt(userProfile.getUpdatedAt())
                 .build();
     }
 
     @Override
+    @Transactional
     public UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request) {
         UserProfile userProfile = userDao.findUserProfileByUserId(userId);
 
@@ -194,16 +207,7 @@ public class UserServiceImpl implements UserService {
 
         userDao.updateUserProfile(userId, request);
 
-        UserProfile updatedProfile = userDao.findUserProfileByUserId(userId);
-
-        return UserProfileResponse.builder()
-                .userId(updatedProfile.getUserId())
-                .heightCm(updatedProfile.getHeightCm())
-                .currentWeightKg(updatedProfile.getCurrentWeightKg())
-                .targetWeightKg(updatedProfile.getTargetWeightKg())
-                .goalType(updatedProfile.getGoalType())
-                .updatedAt(updatedProfile.getUpdatedAt())
-                .build();
+        return toProfileResponse(userDao.findUserProfileByUserId(userId));
     }
 
     @Override

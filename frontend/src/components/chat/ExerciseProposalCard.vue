@@ -112,51 +112,51 @@ function confirm() {
 </script>
 
 <template>
-  <article class="meal-proposal-card exercise-proposal-card">
-    <header>
+  <article class="proposal-card exercise-proposal-card">
+    <header class="proposal-head">
       <div>
-        <p class="deco">Exercise Proposal</p>
-        <h2>운동 기록으로 저장할까요?</h2>
+        <p class="proposal-eyebrow">Exercise Proposal</p>
+        <h2 class="proposal-title">운동 기록으로 저장할까요?</h2>
       </div>
-      <button type="button" aria-label="후보 닫기" @click="emit('dismiss')">
+      <button class="proposal-close" type="button" aria-label="후보 닫기" @click="emit('dismiss')">
         <i class="pi pi-times"></i>
       </button>
     </header>
 
-    <p class="meal-proposal-meta">
+    <p class="proposal-desc">
       {{ proposal.activityKeyword }} · 후보 운동과 강도, 시간을 확인해 주세요.
     </p>
 
-    <div v-if="proposal.missingFields?.length" class="meal-proposal-defaults">
+    <div v-if="proposal.missingFields?.length" class="proposal-badges">
       <span v-for="field in proposal.missingFields" :key="field">{{ missingFieldText(field) }} 확인 필요</span>
     </div>
 
-    <div v-if="proposal.candidates?.length" class="meal-candidate-list exercise-candidate-list">
+    <div v-if="proposal.candidates?.length" class="proposal-options exercise-candidate-list">
       <button
         v-for="candidate in proposal.candidates"
         :key="candidate.id"
         type="button"
-        :class="{ selected: form.exerciseActivityOptionId === candidate.id }"
+        :class="{ 'is-selected': form.exerciseActivityOptionId === candidate.id }"
         @click="selectCandidate(candidate.id)"
       >
-        <strong>{{ candidate.activityNameKo }}</strong>
-        <span>{{ candidateMeta(candidate) }}</span>
+        <span class="proposal-option-name">{{ candidate.activityNameKo }}</span>
+        <span class="proposal-option-meta">{{ candidateMeta(candidate) }}</span>
       </button>
     </div>
 
-    <div v-else class="meal-candidate-empty">
+    <div v-else class="proposal-empty">
       매칭된 운동 후보가 없어서 기록할 수 없어요.
     </div>
 
-    <div class="exercise-proposal-fields">
-      <label>
-        <span>강도</span>
-        <div class="exercise-intensity-options">
+    <div class="proposal-fields exercise-proposal-fields">
+      <label class="proposal-field proposal-field--intensity">
+        <span class="proposal-label">강도</span>
+        <div class="proposal-intensity-options">
           <button
             v-for="level in ['LOW', 'MEDIUM', 'HIGH']"
             :key="level"
             type="button"
-            :class="{ selected: form.intensityLevel === level }"
+            :class="{ 'is-selected': form.intensityLevel === level }"
             @click="selectIntensity(level)"
           >
             {{ intensityLabel(level) }}
@@ -164,31 +164,31 @@ function confirm() {
         </div>
       </label>
 
-      <label>
-        <span>운동 날짜</span>
-        <input v-model="form.exerciseDate" type="date" />
+      <label class="proposal-field">
+        <span class="proposal-label">운동 날짜</span>
+        <input class="proposal-input" v-model="form.exerciseDate" type="date" />
       </label>
 
-      <label>
-        <span>운동 시간</span>
-        <input v-model="form.durationMinutes" type="number" min="1" step="1" />
+      <label class="proposal-field proposal-field--narrow">
+        <span class="proposal-label">운동 시간</span>
+        <input class="proposal-input" v-model="form.durationMinutes" type="number" min="1" step="1" />
       </label>
 
-      <label class="exercise-proposal-memo">
-        <span>메모</span>
-        <input v-model="form.memo" placeholder="메모를 입력하세요" />
+      <label class="proposal-field exercise-proposal-memo">
+        <span class="proposal-label">메모</span>
+        <input class="proposal-input" v-model="form.memo" placeholder="메모를 입력하세요" />
       </label>
     </div>
 
-    <p v-if="selectedCandidate()" class="meal-selected-summary">
+    <p v-if="selectedCandidate()" class="proposal-selected-summary">
       선택됨: {{ selectedCandidate().activityNameKo }} · {{ intensityLabel(form.intensityLevel) }} · {{ metLabel(selectedCandidate(), form.intensityLevel) }}
     </p>
 
-    <p v-if="error" class="meal-proposal-error">{{ error }}</p>
+    <p v-if="error" class="proposal-error">{{ error }}</p>
 
-    <footer>
-      <button class="meal-proposal-cancel" type="button" @click="emit('dismiss')">나중에</button>
-      <button class="meal-proposal-confirm" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
+    <footer class="proposal-actions">
+      <button class="proposal-btn proposal-btn--ghost" type="button" @click="emit('dismiss')">나중에</button>
+      <button class="proposal-btn proposal-btn--primary" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
         {{ isConfirming ? "기록 중..." : "운동 기록하기" }}
       </button>
     </footer>

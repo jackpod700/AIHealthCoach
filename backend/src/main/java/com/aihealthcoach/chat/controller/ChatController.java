@@ -1,7 +1,7 @@
 package com.aihealthcoach.chat.controller;
 
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import java.util.ArrayList;
+import java.util.List;
 
 import com.aihealthcoach.chat.dto.ChatDto.AiChatResult;
 import com.aihealthcoach.chat.dto.ChatDto.ChatMessageRequest;
@@ -12,25 +12,26 @@ import com.aihealthcoach.chat.service.AiChatService;
 import com.aihealthcoach.chat.service.AiExerciseProposalService;
 import com.aihealthcoach.chat.service.ChatMealProposalService;
 import com.aihealthcoach.chat.service.ChatService;
+import com.aihealthcoach.chat.service.ChatStreamingService;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalRequest;
 import com.aihealthcoach.meal.dto.AiMealDto.ConfirmMealProposalResponse;
 import com.aihealthcoach.meal.service.AiMealProposalService;
+import com.aihealthcoach.weight.dto.AiWeightDto.WeightProposalResponse;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.springframework.security.core.Authentication;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-
-
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -42,19 +43,23 @@ public class ChatController {
     private final AiMealProposalService aiMealProposalService;
     private final AiExerciseProposalService aiExerciseProposalService;
     private final ChatMealProposalService chatMealProposalService;
+    private final ChatStreamingService chatStreamingService;
 
     @GetMapping("/messages")
     public ResponseEntity<List<ChatMessageResponse>> getMessage(Authentication authentication) {
-        Long userId = (Long)authentication.getPrincipal();
+        Long userId = (Long) authentication.getPrincipal();
         return ResponseEntity.ok(chatService.findMessagesByUserId(userId));
     }
 
     @PostMapping("/messages")
-    public ResponseEntity<ChatMessageSendResponse> insertMessage(@RequestBody ChatMessageRequest message, Authentication authentication){
+    public ResponseEntity<ChatMessageSendResponse> insertMessage(
+            @RequestBody ChatMessageRequest message,
+            Authentication authentication
+    ) {
         List<ChatMessageResponse> messages = new ArrayList<>();
-        Long userId = (Long)authentication.getPrincipal();
-        messages.add(chatService.insert(userId, message));
+        Long userId = (Long) authentication.getPrincipal();
         AiChatResult aiResult = aiChatService.generate(userId, message);
+        messages.add(chatService.insert(userId, message));
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")
@@ -63,8 +68,15 @@ public class ChatController {
         return ResponseEntity.ok(new ChatMessageSendResponse(
                 messages,
                 aiMealProposalService.createProposal(aiResult.mealExtraction()),
-                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction())
+                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction()),
+                WeightProposalResponse.fromExtraction(aiResult.weightExtraction())
         ));
+    }
+
+    @PostMapping(value = "/messages/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
+    public SseEmitter streamMessage(@RequestBody ChatMessageRequest message, Authentication authentication) {
+        Long userId = (Long) authentication.getPrincipal();
+        return chatStreamingService.stream(userId, message);
     }
 
     @PostMapping("/messages/images")
@@ -76,6 +88,7 @@ public class ChatController {
         List<ChatMessageResponse> messages = new ArrayList<>();
         Long userId = (Long) authentication.getPrincipal();
         String userMessageSummary = imageMessageSummary(content, images);
+        AiChatResult aiResult = aiChatService.generateWithImages(userId, content, images);
 
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
@@ -83,7 +96,6 @@ public class ChatController {
                 .content(userMessageSummary)
                 .build()));
 
-        AiChatResult aiResult = aiChatService.generateWithImages(userId, content, images);
         messages.add(chatService.insert(ChatMessage.builder()
                 .userId(userId)
                 .role("ASSISTANT")
@@ -93,7 +105,8 @@ public class ChatController {
         return ResponseEntity.ok(new ChatMessageSendResponse(
                 messages,
                 aiMealProposalService.createProposal(aiResult.mealExtraction()),
-                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction())
+                aiExerciseProposalService.createProposal(aiResult.exerciseExtraction()),
+                WeightProposalResponse.fromExtraction(aiResult.weightExtraction())
         ));
     }
 

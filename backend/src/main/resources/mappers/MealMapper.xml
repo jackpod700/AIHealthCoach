@@ -53,7 +53,7 @@
         LEFT JOIN foods f
             ON f.id = mi.food_id
         WHERE m.user_id = #{userId}
-          AND m.meal_date = #{date}
+            AND m.meal_date = #{date}
         ORDER BY
             CASE m.meal_type
                 WHEN 'BREAKFAST' THEN 1
@@ -63,6 +63,21 @@
                 ELSE 5
             END,
             f.name
+    </select>
+
+    <select id="sumDailyNutrition" resultType="com.aihealthcoach.meal.entity.MealFood">
+        SELECT
+            COALESCE(SUM(COALESCE(f.calories, 0) * mi.quantity), 0) AS calories,
+            COALESCE(SUM(COALESCE(f.carbohydrate, 0) * mi.quantity), 0) AS carbohydrate,
+            COALESCE(SUM(COALESCE(f.protein, 0) * mi.quantity), 0) AS protein,
+            COALESCE(SUM(COALESCE(f.fat, 0) * mi.quantity), 0) AS fat
+        FROM meals m
+        JOIN meal_items mi
+            ON mi.meal_id = m.id
+        JOIN foods f
+            ON f.id = mi.food_id
+        WHERE m.user_id = #{userId}
+            AND m.meal_date = #{date}
     </select>
 
     <select id="findMealsBetween" resultMap="mealFood">
@@ -119,6 +134,13 @@
         WHERE meal_id = #{mealId}
     </delete>
 
+    <select id="findMealDateById" resultType="java.time.LocalDate">
+        SELECT meal_date
+        FROM meals
+        WHERE id = #{mealId}
+          AND user_id = #{userId}
+    </select>
+
     <delete id="deleteMeal">
         DELETE FROM meals
         WHERE id = #{mealId}
@@ -130,12 +152,13 @@
         VALUES (#{mealId}, #{item.foodId}, #{item.quantity})
     </insert>
 
-    <select id="existsFoodId" resultType="boolean">
-        SELECT EXISTS (
-            SELECT 1
-            FROM foods
-            WHERE id = #{foodId}
-        )
+    <select id="findFoodIdsByIds" resultType="long">
+        SELECT id
+        FROM foods
+        WHERE id IN
+        <foreach collection="foodIds" item="foodId" open="(" separator="," close=")">
+            #{foodId}
+        </foreach>
     </select>
 
     <!--
@@ -149,11 +172,10 @@
             <if test="tokens != null and tokens.size() > 0">
                 <foreach collection="tokens" item="token" separator=" AND ">
                     (
-                        name ILIKE CONCAT('%', #{token.value}, '%')
-                        OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
-                        OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                        OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                    )
+                        REGEXP_REPLACE(name, '\s+', '', 'g')
+                        || '|'
+                        || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+                    ) ILIKE CONCAT('%', #{token.compactValue}, '%')
                 </foreach>
             </if>
         </where>
@@ -236,6 +258,28 @@
     </select>
 
     <!--
+        row 단위 음식 후보 검색 조건.
+        저장 가능한 foodId 후보를 찾는 /api/foods/search 전용이며, 빈 token 검색은 서비스에서 차단한다.
+    -->
+    <sql id="foodCandidateSearchCondition">
+        <where>
+            <foreach collection="tokens" item="token" separator=" AND ">
+                (
+                    REGEXP_REPLACE(name, '\s+', '', 'g')
+                    || '|'
+                    || REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g')
+                ) ILIKE CONCAT('%', #{token.compactValue}, '%')
+            </foreach>
+        </where>
+    </sql>
+
+    <select id="countFoods" resultType="long">
+        SELECT COUNT(*)
+        FROM foods
+        <include refid="foodCandidateSearchCondition"/>
+    </select>
+
+    <!--
         row 단위 음식 후보 검색.
         수동 식단 작성/수정과 AI 식단 후보에서 실제 저장 가능한 foodId 후보를 그대로 반환한다.
     -->
@@ -253,15 +297,7 @@
             protein,
             fat
         FROM foods
-        WHERE
-        <foreach collection="tokens" item="token" separator=" AND ">
-            (
-                name ILIKE CONCAT('%', #{token.value}, '%')
-                OR COALESCE(brand, '') ILIKE CONCAT('%', #{token.value}, '%')
-                OR REGEXP_REPLACE(name, '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-                OR REGEXP_REPLACE(COALESCE(brand, ''), '\s+', '', 'g') ILIKE CONCAT('%', #{token.compactValue}, '%')
-            )
-        </foreach>
+        <include refid="foodCandidateSearchCondition"/>
         ORDER BY
             CASE
                 WHEN name = #{query} THEN 0
@@ -278,6 +314,6 @@
             LENGTH(name),
             name,
             brand
+        LIMIT 20
     </select>
 </mapper>
-

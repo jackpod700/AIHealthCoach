@@ -1,5 +1,7 @@
 package com.aihealthcoach.common.config;
 
+import jakarta.servlet.DispatcherType;
+
 import com.aihealthcoach.admin.filter.ActiveUserMetricsFilter;
 import com.aihealthcoach.admin.service.ActiveUserMetricsService;
 import com.aihealthcoach.common.auth.JwtAccessDeniedHandler;
@@ -44,6 +46,8 @@ public class SecurityConfig {
                         .accessDeniedHandler(jwtAccessDeniedHandler)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/error").permitAll()
                         .requestMatchers("/actuator/health", "/actuator/prometheus").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/user/*/profile").authenticated()

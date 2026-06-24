@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.aihealthcoach.meal.dto.AiMealDto.FoodCandidateResponse;
+import com.aihealthcoach.meal.dto.FoodDto.FoodCandidateCountResponse;
 import com.aihealthcoach.meal.dto.FoodDto.FoodSearchPageResponse;
 import com.aihealthcoach.meal.service.FoodService;
 
@@ -35,5 +36,12 @@ public class FoodController {
             @RequestParam String query
     ) {
         return ResponseEntity.ok(foodService.searchFoods(query));
+    }
+
+    @GetMapping("/search/count")
+    public ResponseEntity<FoodCandidateCountResponse> countFoods(
+            @RequestParam String query
+    ) {
+        return ResponseEntity.ok(new FoodCandidateCountResponse(foodService.countFoods(query)));
     }
 }

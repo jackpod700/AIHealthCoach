@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
-import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAdminStore } from "../../stores/adminStore";
 
 const adminStore = useAdminStore();
@@ -329,10 +328,6 @@ function lastUpdatedLabel() {
 </script>
 
 <template>
-  <div class="admin-home">
-    <AppSidebar />
-
-    <main class="admin-workspace">
       <header class="admin-header">
         <div>
           <p class="section-eyebrow">ADMIN DASHBOARD</p>
@@ -639,6 +634,4 @@ function lastUpdatedLabel() {
           </aside>
         </section>
       </section>
-    </main>
-  </div>
 </template>

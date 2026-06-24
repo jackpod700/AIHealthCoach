@@ -1,17 +1,20 @@
 <script setup>
-import { computed, onMounted } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
-import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
+const monthMotionClass = ref("");
+let monthMotionTimer = null;
 
 const weekdays = ["일", "월", "화", "수", "목", "금", "토"];
 
@@ -39,6 +42,7 @@ const calendarCells = computed(() => {
     const dateKey = toDateKey(cellDate);
     const summary = mealStore.monthlyDaysByDate[dateKey];
     const hasExerciseRecord = Boolean(exerciseStore.monthlyDatesByDate[dateKey]);
+    const weightRecord = weightRecordStore.calendarRecordsByDate[dateKey];
 
     cells.push({
       dateKey,
@@ -46,6 +50,7 @@ const calendarCells = computed(() => {
       isCurrentMonth: cellDate.getMonth() === monthIndex,
       isToday: dateKey === todayDateKey.value,
       hasExerciseRecord,
+      weightRecord,
       summary,
     });
   }
@@ -53,11 +58,18 @@ const calendarCells = computed(() => {
   return cells;
 });
 
+const calendarWeekCount = computed(() => Math.max(calendarCells.value.length / 7, 1));
+
+const calendarGridStyle = computed(() => ({
+  "--calendar-week-count": calendarWeekCount.value,
+}));
+
 onMounted(async () => {
   await Promise.all([
     exerciseStore.loadMonthlyExerciseDates(mealStore.selectedYear, mealStore.selectedMonth),
     mealStore.loadMonthlyMeals(),
     profileStore.loadProfile(),
+    weightRecordStore.loadCalendarRecords(mealStore.selectedYear, mealStore.selectedMonth),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -65,7 +77,12 @@ onMounted(async () => {
   }
 });
 
+onBeforeUnmount(() => {
+  clearMonthMotion();
+});
+
 async function moveMonth(offset) {
+  startMonthMotion(offset);
   const nextDate = new Date(mealStore.selectedYear, mealStore.selectedMonth - 1 + offset, 1);
   const year = nextDate.getFullYear();
   const month = nextDate.getMonth() + 1;
@@ -73,11 +90,56 @@ async function moveMonth(offset) {
   await Promise.all([
     exerciseStore.loadMonthlyExerciseDates(year, month),
     mealStore.loadMonthlyMeals(year, month),
+    weightRecordStore.loadCalendarRecords(year, month),
   ]);
 
   if (!authStore.isAuthenticated) {
     router.replace("/login");
   }
+}
+
+async function goToday() {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth() + 1;
+  const currentDate = new Date(mealStore.selectedYear, mealStore.selectedMonth - 1, 1);
+  const todayMonth = new Date(year, month - 1, 1);
+  const monthOffset = todayMonth > currentDate ? 1 : todayMonth < currentDate ? -1 : 0;
+
+  startMonthMotion(monthOffset);
+
+  await Promise.all([
+    exerciseStore.loadMonthlyExerciseDates(year, month),
+    mealStore.loadMonthlyMeals(year, month),
+    weightRecordStore.loadCalendarRecords(year, month),
+  ]);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+  }
+}
+
+function startMonthMotion(offset) {
+  clearMonthMotion();
+
+  if (!offset) {
+    return;
+  }
+
+  monthMotionClass.value = offset > 0 ? "moving-next" : "moving-prev";
+  monthMotionTimer = window.setTimeout(() => {
+    monthMotionClass.value = "";
+    monthMotionTimer = null;
+  }, 260);
+}
+
+function clearMonthMotion() {
+  if (monthMotionTimer) {
+    window.clearTimeout(monthMotionTimer);
+    monthMotionTimer = null;
+  }
+
+  monthMotionClass.value = "";
 }
 
 function openDailyRecord(dateKey) {
@@ -108,33 +170,27 @@ function calendarDotLabel(cell) {
     labels.push("운동");
   }
 
+  if (cell.weightRecord) {
+    labels.push("몸무게");
+  }
+
   return labels.length ? `${labels.join(", ")} 기록` : "기록 없음";
 }
 
-function formatCalories(value) {
-  const numberValue = Number(value);
-
-  if (!Number.isFinite(numberValue)) {
-    return "";
-  }
-
-  return `${Math.round(numberValue).toLocaleString("ko-KR")} kcal`;
-}
 </script>
 
 <template>
-  <main class="calendar-home">
-    <AppSidebar />
-
-    <section class="calendar-workspace">
+  <div class="calendar-page">
       <header class="calendar-header">
         <div class="calendar-title-block">
-          <p class="deco">Your Records</p>
           <div class="calendar-title-row">
-            <h1>{{ monthTitle }}</h1>
+            <button type="button" class="calendar-today-button" @click="goToday">
+              오늘
+            </button>
             <button type="button" aria-label="이전 달" @click="moveMonth(-1)">
               <i class="pi pi-chevron-left"></i>
             </button>
+            <h1>{{ monthTitle }}</h1>
             <button type="button" aria-label="다음 달" @click="moveMonth(1)">
               <i class="pi pi-chevron-right"></i>
             </button>
@@ -142,13 +198,17 @@ function formatCalories(value) {
         </div>
 
         <div class="calendar-legend" aria-label="기록 유형">
-          <span v-for="meta in mealTypeMeta" :key="meta.label">
-            <i :class="meta.className"></i>
-            {{ meta.label }}
+          <span>
+            <i class="meal"></i>
+            식사 기록
           </span>
           <span class="needs-api">
             <i class="exercise"></i>
-            운동
+            운동 기록
+          </span>
+          <span>
+            <i class="weight"></i>
+            체중 기록
           </span>
         </div>
       </header>
@@ -162,50 +222,57 @@ function formatCalories(value) {
           {{ exerciseStore.monthlyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingMonthly || exerciseStore.isLoadingMonthly" class="calendar-loading">
-          월별 기록을 불러오는 중입니다...
+        <div v-if="weightRecordStore.calendarError" class="calendar-error">
+          {{ weightRecordStore.calendarError }}
         </div>
 
-        <div class="calendar-weekdays">
-          <span v-for="weekday in weekdays" :key="weekday" :class="{ sunday: weekday === '일', saturday: weekday === '토' }">
-            {{ weekday }}
-          </span>
-        </div>
-
-        <div class="calendar-grid">
-          <button
-            v-for="cell in calendarCells"
-            :key="cell.dateKey"
-            type="button"
-            class="calendar-cell"
-            :class="{
-              muted: !cell.isCurrentMonth,
-              recorded: cell.summary || cell.hasExerciseRecord,
-              today: cell.isToday,
-            }"
-            @click="openDailyRecord(cell.dateKey)"
+        <div class="calendar-board" :class="monthMotionClass">
+          <div
+            v-if="mealStore.isLoadingMonthly || exerciseStore.isLoadingMonthly || weightRecordStore.isLoadingCalendarRecords"
+            class="calendar-loading"
           >
-            <div class="calendar-cell-head">
-              <strong>{{ cell.day }}</strong>
-              <span v-if="cell.isToday">오늘</span>
-            </div>
+            월별 기록을 불러오는 중입니다...
+          </div>
 
-            <p v-if="cell.summary" class="calendar-kcal">
-              {{ formatCalories(cell.summary.totalCalories) }}
-            </p>
+          <div class="calendar-weekdays">
+            <span v-for="weekday in weekdays" :key="weekday" :class="{ sunday: weekday === '일', saturday: weekday === '토' }">
+              {{ weekday }}
+            </span>
+          </div>
 
-            <div class="calendar-dots" :aria-label="calendarDotLabel(cell)">
-              <i
-                v-for="mealType in visibleMealTypes(cell.summary)"
-                :key="mealType"
-                :class="mealTypeMeta[mealType].className"
-                :title="mealTypeMeta[mealType].label"
-              ></i>
-              <i v-if="cell.hasExerciseRecord" class="exercise" title="운동"></i>
+          <div class="calendar-grid" :style="calendarGridStyle">
+            <div
+              v-for="cell in calendarCells"
+              :key="cell.dateKey"
+              role="button"
+              tabindex="0"
+              class="calendar-cell"
+              :class="{
+                muted: !cell.isCurrentMonth,
+                recorded: cell.summary || cell.hasExerciseRecord || cell.weightRecord,
+                today: cell.isToday,
+              }"
+              @click="openDailyRecord(cell.dateKey)"
+              @keydown.enter="openDailyRecord(cell.dateKey)"
+              @keydown.space.prevent="openDailyRecord(cell.dateKey)"
+            >
+              <div class="calendar-cell-head">
+                <strong>{{ cell.day }}</strong>
+              </div>
+
+              <div class="calendar-dots" :aria-label="calendarDotLabel(cell)">
+                <i
+                  v-for="mealType in visibleMealTypes(cell.summary)"
+                  :key="mealType"
+                  :class="mealTypeMeta[mealType].className"
+                  :title="mealTypeMeta[mealType].label"
+                ></i>
+                <i v-if="cell.hasExerciseRecord" class="exercise" title="운동"></i>
+                <i v-if="cell.weightRecord" class="weight" title="몸무게"></i>
+              </div>
             </div>
-          </button>
+          </div>
         </div>
       </section>
-    </section>
-  </main>
+  </div>
 </template>

@@ -1,6 +1,7 @@
 package com.aihealthcoach.exercise.service;
 
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordRequest;
+import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordUpdateRequest;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseRecordResponse;
 import com.aihealthcoach.exercise.dto.ExerciseDto.ExerciseActivityOptionResponse;
 import java.time.LocalDate;
@@ -11,7 +12,9 @@ public interface ExerciseService {
 
     public ExerciseRecordResponse insertExerciseRecord(Long userId, ExerciseRecordRequest request);
 
-    public ExerciseRecordResponse updateExerciseRecord(Long userId, Long recordId, ExerciseRecordRequest request);
+    public ExerciseRecordResponse updateExerciseRecord(Long userId, Long recordId, ExerciseRecordUpdateRequest request);
+
+    public void deleteExerciseRecord(Long userId, Long recordId);
 
     public List<ExerciseRecordResponse> findExerciseRecordsByDate(Long userId, LocalDate exerciseDate);
 

@@ -25,6 +25,8 @@ import com.aihealthcoach.meal.entity.MealFood;
 import com.aihealthcoach.meal.exception.MealErrorCode;
 import com.aihealthcoach.meal.exception.MealException;
 import com.aihealthcoach.meal.mapper.MealMapper;
+import com.aihealthcoach.summary.entity.DailyChatSummaryChangeSource;
+import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 
 @ExtendWith(MockitoExtension.class)
 class MealServiceImplTest {
@@ -36,6 +38,8 @@ class MealServiceImplTest {
 
     @Mock
     private MealMapper mealMapper;
+    @Mock
+    private DailyChatSummaryStateService dailyChatSummaryStateService;
 
     @InjectMocks
     private MealServiceImpl mealService;
@@ -44,7 +48,7 @@ class MealServiceImplTest {
     void createMealInsertsNewMealAndItems() {
         CreateMealRequest request = request("BREAKFAST", item(FOOD_CODE, "1.5"));
 
-        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
+        when(mealMapper.findFoodIdsByIds(List.of(FOOD_CODE))).thenReturn(List.of(FOOD_CODE));
         when(mealMapper.findMealIdByUserTypeDate(USER_ID, "BREAKFAST", MEAL_DATE)).thenReturn(null);
         when(mealMapper.insertMeal(USER_ID, "BREAKFAST", MEAL_DATE)).thenReturn(MEAL_ID);
         when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of());
@@ -54,13 +58,14 @@ class MealServiceImplTest {
         verify(mealMapper).insertMeal(USER_ID, "BREAKFAST", MEAL_DATE);
         verify(mealMapper).insertMealItem(MEAL_ID, request.items().get(0));
         verify(mealMapper, never()).deleteMealItems(any());
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE, DailyChatSummaryChangeSource.MEAL);
     }
 
     @Test
     void createMealOverwritesExistingMealItems() {
         CreateMealRequest request = request("LUNCH", item(FOOD_CODE, "2"));
 
-        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
+        when(mealMapper.findFoodIdsByIds(List.of(FOOD_CODE))).thenReturn(List.of(FOOD_CODE));
         when(mealMapper.findMealIdByUserTypeDate(USER_ID, "LUNCH", MEAL_DATE)).thenReturn(MEAL_ID);
         when(mealMapper.findDailyMeals(USER_ID, MEAL_DATE)).thenReturn(List.of());
 
@@ -87,7 +92,7 @@ class MealServiceImplTest {
     void createMealRejectsUnknownFood() {
         CreateMealRequest request = request("DINNER", item(FOOD_CODE, "1"));
 
-        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(false);
+        when(mealMapper.findFoodIdsByIds(List.of(FOOD_CODE))).thenReturn(List.of());
 
         assertThatThrownBy(() -> mealService.createMeal(USER_ID, request))
                 .isInstanceOf(MealException.class)
@@ -104,8 +109,6 @@ class MealServiceImplTest {
                 item(FOOD_CODE, "1"),
                 item(FOOD_CODE, "2")
         );
-
-        when(mealMapper.existsFoodId(FOOD_CODE)).thenReturn(true);
 
         assertThatThrownBy(() -> mealService.createMeal(USER_ID, request))
                 .isInstanceOf(MealException.class)
@@ -177,21 +180,25 @@ class MealServiceImplTest {
 
     @Test
     void deleteMealDeletesOwnedMeal() {
+        when(mealMapper.findMealDateById(USER_ID, MEAL_ID)).thenReturn(MEAL_DATE);
         when(mealMapper.deleteMeal(USER_ID, MEAL_ID)).thenReturn(1);
 
         mealService.deleteMeal(USER_ID, MEAL_ID);
 
         verify(mealMapper).deleteMeal(USER_ID, MEAL_ID);
+        verify(dailyChatSummaryStateService).markChanged(USER_ID, MEAL_DATE, DailyChatSummaryChangeSource.MEAL);
     }
 
     @Test
     void deleteMealRejectsMissingOrUnownedMeal() {
-        when(mealMapper.deleteMeal(USER_ID, MEAL_ID)).thenReturn(0);
+        when(mealMapper.findMealDateById(USER_ID, MEAL_ID)).thenReturn(null);
 
         assertThatThrownBy(() -> mealService.deleteMeal(USER_ID, MEAL_ID))
                 .isInstanceOf(MealException.class)
                 .extracting("errorCode")
                 .isEqualTo(MealErrorCode.MEAL_NOT_FOUND);
+
+        verify(mealMapper, never()).deleteMeal(USER_ID, MEAL_ID);
     }
 
     private CreateMealRequest request(String mealType, MealItemRequest... items) {

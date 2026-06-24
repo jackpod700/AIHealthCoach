@@ -6,7 +6,7 @@ defineProps({
   },
   subtitle: {
     type: String,
-    default: "AI Health Coach",
+    default: "BabStroy",
   },
 });
 </script>
@@ -17,9 +17,9 @@ defineProps({
       <i class="pi pi-briefcase"></i>
     </div>
     <div v-if="!compact">
-      <h1>헬스 코치</h1>
+      <h1>BabStroy</h1>
       <p>{{ subtitle }}</p>
     </div>
-    <strong v-else>헬스 코치 시작하기</strong>
+    <strong v-else>BabStroy 시작하기</strong>
   </div>
 </template>

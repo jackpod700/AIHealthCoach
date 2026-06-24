@@ -23,7 +23,8 @@ import com.aihealthcoach.common.auth.TokenRedisRepository;
 import com.aihealthcoach.common.config.SecurityConfig;
 
 @WebMvcTest(AdminController.class)
-@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtAuthenticationEntryPoint.class, JwtAccessDeniedHandler.class,
+        com.aihealthcoach.common.config.OAuthWebMvcTestConfig.class})
 class AdminControllerTest {
 
     @Autowired

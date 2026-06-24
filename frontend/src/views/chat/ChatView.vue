@@ -1,47 +1,51 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
-import AppSidebar from "../../components/app/AppSidebar.vue";
+import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
+import WeightProposalCard from "../../components/chat/WeightProposalCard.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
+import { useDailyGoalStore } from "../../stores/dailyGoalStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
 import { useProfileStore } from "../../stores/profileStore";
+import { useWeightRecordStore } from "../../stores/weightRecordStore";
 
 const authStore = useAuthStore();
 const chatStore = useChatStore();
+const dailyGoalStore = useDailyGoalStore();
 const exerciseStore = useExerciseStore();
 const mealStore = useMealStore();
 const profileStore = useProfileStore();
+const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
+const mealProposalRef = ref(null);
+const exerciseProposalRef = ref(null);
+const weightProposalRef = ref(null);
 const fileInputRef = ref(null);
 const attachedImages = ref([]);
 const imageAttachmentError = ref("");
 const isDraggingImage = ref(false);
+const isInitialScrollReady = ref(false);
+const isCoachAvatarUnavailable = ref(false);
 const GMS_IMAGE_TARGET_BYTES = 7 * 1024;
 const GMS_IMAGE_MAX_DIMENSION = 512;
-
-const mealTypeMeta = {
-  BREAKFAST: { label: "아침", dot: "yellow" },
-  LUNCH: { label: "점심", dot: "orange" },
-  DINNER: { label: "저녁", dot: "navy" },
-  SNACK: { label: "간식", dot: "yellow" },
-};
+const COACH_NAME = "얌냠이";
+const COACH_AVATAR_SRC = "/images/coach-yamnyami.png";
 
 const todayDateKey = computed(() => toDateKey(new Date()));
-
-const todayLabel = computed(() => {
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date());
-});
 
 const displayMessages = computed(() => {
   return chatStore.orderedMessages;
@@ -51,21 +55,36 @@ const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
 
-const todayMeals = computed(() => {
-  return mealStore.dailyMeal?.meals || [];
+const activeProposalType = computed(() => {
+  if (chatStore.mealProposal) {
+    return "meal";
+  }
+
+  if (chatStore.exerciseProposal) {
+    return "exercise";
+  }
+
+  if (chatStore.weightProposal) {
+    return "weight";
+  }
+
+  return "";
 });
 
-const hasTodayMeals = computed(() => todayMeals.value.length > 0);
+watch(
+  () =>
+    displayMessages.value.map((chatMessage) => chatMessage.content).join("\n"),
+  () => {
+    if (chatStore.isSending) {
+      void scrollToBottom();
+    }
+  },
+);
 
-const todayTotals = computed(() => {
-  const dailyMeal = mealStore.dailyMeal;
-
-  return {
-    calories: toNumber(dailyMeal?.dailyTotalCalories),
-    carbohydrate: toNumber(dailyMeal?.dailyTotalCarbohydrate),
-    protein: toNumber(dailyMeal?.dailyTotalProtein),
-    fat: toNumber(dailyMeal?.dailyTotalFat),
-  };
+watch(activeProposalType, (proposalType) => {
+  if (proposalType) {
+    void scrollToActiveProposal();
+  }
 });
 
 marked.setOptions({
@@ -74,12 +93,14 @@ marked.setOptions({
 });
 
 onMounted(async () => {
+  isInitialScrollReady.value = false;
   window.addEventListener("paste", handlePaste);
 
   await Promise.all([
     chatStore.loadMessages(),
     mealStore.loadDailyMeal(todayDateKey.value),
     profileStore.loadProfile(),
+    dailyGoalStore.loadProgress(todayDateKey.value),
   ]);
 
   if (!authStore.isAuthenticated) {
@@ -87,7 +108,14 @@ onMounted(async () => {
     return;
   }
 
+  if (dailyGoalStore.needsGoalSetup) {
+    await dailyGoalStore.loadRecommendations(
+      profileStore.profile?.goalType || "WEIGHT_LOSS",
+    );
+  }
+
   await scrollToBottom();
+  isInitialScrollReady.value = true;
 });
 
 onBeforeUnmount(() => {
@@ -111,13 +139,21 @@ async function sendMessage() {
     await chatStore.sendMessage(content);
   }
 
+  const hasProposal = Boolean(
+    chatStore.mealProposal ||
+    chatStore.exerciseProposal ||
+    chatStore.weightProposal,
+  );
+
   if (!authStore.isAuthenticated) {
     router.replace("/login");
     return;
   }
 
   await mealStore.loadDailyMeal(todayDateKey.value);
-  await scrollToBottom();
+  await dailyGoalStore.loadProgress(todayDateKey.value);
+
+  await (hasProposal ? scrollToActiveProposal() : scrollToBottom());
 }
 
 function openImagePicker() {
@@ -130,7 +166,9 @@ async function handleImageInput(event) {
 }
 
 function handlePaste(event) {
-  const files = Array.from(event.clipboardData?.files || []).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(event.clipboardData?.files || []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
 
   if (files.length) {
     void addImageFiles(files);
@@ -157,7 +195,9 @@ function handleDragLeave(event) {
 
 function handleDrop(event) {
   isDraggingImage.value = false;
-  const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith("image/"));
+  const files = Array.from(event.dataTransfer?.files || []).filter((file) =>
+    file.type.startsWith("image/"),
+  );
 
   if (files.length) {
     void addImageFiles(files);
@@ -165,7 +205,9 @@ function handleDrop(event) {
 }
 
 function hasImageFiles(dataTransfer) {
-  return Array.from(dataTransfer?.items || []).some((item) => item.kind === "file" && item.type.startsWith("image/"));
+  return Array.from(dataTransfer?.items || []).some(
+    (item) => item.kind === "file" && item.type.startsWith("image/"),
+  );
 }
 
 async function addImageFiles(files = []) {
@@ -192,13 +234,17 @@ async function addImageFiles(files = []) {
     }
   }
 
-  const totalSize = attachedImages.value.reduce((sum, image) => sum + image.file.size, 0);
+  const totalSize = attachedImages.value.reduce(
+    (sum, image) => sum + image.file.size,
+    0,
+  );
   if (totalSize > 50 * 1024) {
     const removedImage = attachedImages.value.pop();
     if (removedImage) {
       URL.revokeObjectURL(removedImage.previewUrl);
     }
-    imageAttachmentError.value = "분석용 이미지는 한 번에 최대 50KB까지만 보낼 수 있어요.";
+    imageAttachmentError.value =
+      "분석용 이미지는 한 번에 최대 50KB까지만 보낼 수 있어요.";
   }
 }
 
@@ -226,14 +272,20 @@ async function compressImageForGms(file) {
   const context = canvas.getContext("2d");
 
   if (!context) {
-    throw new Error("이미지 압축을 준비하지 못했어요. 다른 사진으로 다시 시도해주세요.");
+    throw new Error(
+      "이미지 압축을 준비하지 못했어요. 다른 사진으로 다시 시도해주세요.",
+    );
   }
 
   const maxDimensions = [GMS_IMAGE_MAX_DIMENSION, 384, 256, 192, 160];
   const qualities = [0.72, 0.6, 0.5, 0.42, 0.34, 0.28, 0.22];
 
   for (const maxDimension of maxDimensions) {
-    const { width, height } = fitImageSize(image.width, image.height, maxDimension);
+    const { width, height } = fitImageSize(
+      image.width,
+      image.height,
+      maxDimension,
+    );
     canvas.width = width;
     canvas.height = height;
     context.clearRect(0, 0, width, height);
@@ -250,7 +302,9 @@ async function compressImageForGms(file) {
     }
   }
 
-  throw new Error("이미지가 너무 커서 실패했어요. 더 단순하거나 작은 사진으로 다시 시도해주세요.");
+  throw new Error(
+    "이미지가 너무 커서 실패했어요. 더 단순하거나 작은 사진으로 다시 시도해주세요.",
+  );
 }
 
 function loadImage(file) {
@@ -264,7 +318,9 @@ function loadImage(file) {
     };
     image.onerror = () => {
       URL.revokeObjectURL(objectUrl);
-      reject(new Error("이미지를 읽지 못했어요. 다른 사진으로 다시 시도해주세요."));
+      reject(
+        new Error("이미지를 읽지 못했어요. 다른 사진으로 다시 시도해주세요."),
+      );
     };
     image.src = objectUrl;
   });
@@ -288,10 +344,14 @@ function canvasToBlob(canvas, quality) {
           return;
         }
 
-        reject(new Error("이미지를 압축하지 못했어요. 다른 사진으로 다시 시도해주세요."));
+        reject(
+          new Error(
+            "이미지를 압축하지 못했어요. 다른 사진으로 다시 시도해주세요.",
+          ),
+        );
       },
       "image/jpeg",
-      quality
+      quality,
     );
   });
 }
@@ -309,12 +369,16 @@ function formatBytes(bytes) {
 }
 
 function removeAttachedImage(imageId) {
-  const targetImage = attachedImages.value.find((image) => image.id === imageId);
+  const targetImage = attachedImages.value.find(
+    (image) => image.id === imageId,
+  );
   if (targetImage) {
     URL.revokeObjectURL(targetImage.previewUrl);
   }
 
-  attachedImages.value = attachedImages.value.filter((image) => image.id !== imageId);
+  attachedImages.value = attachedImages.value.filter(
+    (image) => image.id !== imageId,
+  );
   imageAttachmentError.value = "";
 }
 
@@ -325,7 +389,9 @@ function clearAttachedImages() {
 }
 
 function revokeAttachedImageUrls() {
-  attachedImages.value.forEach((image) => URL.revokeObjectURL(image.previewUrl));
+  attachedImages.value.forEach((image) =>
+    URL.revokeObjectURL(image.previewUrl),
+  );
 }
 
 async function confirmMealProposal(payload) {
@@ -342,6 +408,7 @@ async function confirmMealProposal(payload) {
     await mealStore.loadDailyMeal(todayDateKey.value);
   }
 
+  await dailyGoalStore.loadProgress(todayDateKey.value);
   await scrollToBottom();
 }
 
@@ -360,11 +427,65 @@ async function confirmExerciseProposal(payload) {
 
   if (saved) {
     chatStore.completeExerciseProposal();
+    await dailyGoalStore.loadProgress(todayDateKey.value);
   } else {
-    chatStore.failExerciseProposal(exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.");
+    chatStore.failExerciseProposal(
+      exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.",
+    );
   }
 
   chatStore.finishConfirmingExercise();
+  await scrollToBottom();
+}
+
+async function confirmWeightProposal(payload) {
+  if (!chatStore.startConfirmingWeight()) {
+    return;
+  }
+
+  const saved = await weightRecordStore.saveRecord(payload);
+
+  if (!authStore.isAuthenticated) {
+    chatStore.finishConfirmingWeight();
+    router.replace("/login");
+    return;
+  }
+
+  if (saved) {
+    chatStore.completeWeightProposal();
+    await profileStore.loadProfile();
+  } else {
+    chatStore.failWeightProposal(
+      weightRecordStore.saveError || "몸무게 기록 저장에 실패했습니다.",
+    );
+  }
+
+  chatStore.finishConfirmingWeight();
+  await scrollToBottom();
+}
+
+async function recommendDailyGoal(goalType) {
+  if (dailyGoalStore.recommendations) {
+    dailyGoalStore.selectRecommendation(goalType);
+    return;
+  }
+
+  await dailyGoalStore.loadRecommendations(goalType);
+}
+
+async function saveDailyGoal(goal) {
+  const savedGoal = await dailyGoalStore.saveGoal(goal);
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
+  if (savedGoal) {
+    await dailyGoalStore.loadProgress(todayDateKey.value);
+    await profileStore.loadProfile();
+  }
+
   await scrollToBottom();
 }
 
@@ -376,8 +497,64 @@ async function scrollToBottom() {
   }
 }
 
+async function scrollToActiveProposal() {
+  await nextTick();
+
+  const thread = threadRef.value;
+  const proposalElement = getActiveProposalElement();
+
+  if (!thread || !proposalElement) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const threadRect = thread.getBoundingClientRect();
+    const proposalRect = proposalElement.getBoundingClientRect();
+    const topDelta = proposalRect.top - threadRect.top;
+    const bottomDelta = proposalRect.bottom - threadRect.bottom;
+
+    if (proposalElement.offsetHeight > thread.clientHeight) {
+      thread.scrollTop += topDelta;
+      return;
+    }
+
+    if (bottomDelta > 0) {
+      thread.scrollTop += bottomDelta;
+      return;
+    }
+
+    if (topDelta < 0) {
+      thread.scrollTop += topDelta;
+    }
+  });
+}
+
+function getActiveProposalElement() {
+  if (chatStore.mealProposal) {
+    return mealProposalRef.value;
+  }
+
+  if (chatStore.exerciseProposal) {
+    return exerciseProposalRef.value;
+  }
+
+  if (chatStore.weightProposal) {
+    return weightProposalRef.value;
+  }
+
+  return null;
+}
+
 function isUserMessage(chatMessage) {
   return chatMessage.role === "USER";
+}
+
+function pendingAssistantText(chatMessage) {
+  return chatMessage.pending ? `${COACH_NAME}가 답변을 준비하고 있어요...` : "";
+}
+
+function handleCoachAvatarError() {
+  isCoachAvatarUnavailable.value = true;
 }
 
 function formatMessageTime(value) {
@@ -389,27 +566,6 @@ function formatMessageTime(value) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function mealLabel(mealType) {
-  return mealTypeMeta[mealType]?.label || mealType;
-}
-
-function mealDot(mealType) {
-  return mealTypeMeta[mealType]?.dot || "yellow";
-}
-
-function mealFoodNames(meal) {
-  return meal.items?.map((item) => item.foodName).join(" + ") || mealLabel(meal.mealType);
-}
-
-function toNumber(value) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function formatNumber(value) {
-  return Math.round(toNumber(value)).toLocaleString("ko-KR");
 }
 
 function toDateKey(date) {
@@ -466,195 +622,229 @@ function sanitizeHtml(html = "") {
 </script>
 
 <template>
-  <main class="chat-home">
-    <AppSidebar />
-
-    <section class="chat-workspace">
-      <header class="chat-header">
+  <div class="chat-body">
+    <section
+      class="chat-thread"
+      :class="{ 'dragging-image': isDraggingImage }"
+      @dragenter.prevent="handleDragEnter"
+      @dragover.prevent="handleDragOver"
+      @dragleave.prevent="handleDragLeave"
+      @drop.prevent="handleDrop"
+    >
+      <header class="chat-header subtle">
         <div>
-          <p class="deco">Today's Coaching</p>
+          <p class="deco">TODAY'S COACHING</p>
           <h1>오늘의 코칭</h1>
         </div>
-        <div class="streak-chip api-required-chip">
+        <div class="chat-status-pill">
           <i></i>
-          연속 기록 API 연결 필요
+          <span>코칭 진행 중</span>
         </div>
       </header>
 
-      <div class="chat-body">
-        <section
-          class="chat-thread"
-          :class="{ 'dragging-image': isDraggingImage }"
-          @dragenter.prevent="handleDragEnter"
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop"
-        >
-          <div class="chat-scroll" ref="threadRef">
-            <div class="day-pill">오늘 · {{ todayLabel }}</div>
+      <div
+        class="chat-scroll"
+        :class="{ initializing: !isInitialScrollReady }"
+        ref="threadRef"
+      >
+        <div class="chat-message-stack">
+          <div v-if="chatStore.isLoading" class="chat-state-card">
+            채팅 기록을 불러오는 중입니다...
+          </div>
 
-            <div v-if="chatStore.isLoading" class="chat-state-card">
-              채팅 기록을 불러오는 중입니다...
+          <div v-else-if="chatStore.error" class="chat-state-card error">
+            {{ chatStore.error }}
+          </div>
+
+          <p
+            v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup"
+            class="chat-empty-text"
+          >
+            아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
+          </p>
+
+          <div v-if="dailyGoalStore.needsGoalSetup" class="message-row coach">
+            <div class="coach-icon">
+              <i class="pi pi-compass"></i>
             </div>
+            <DailyGoalSetupCard
+              :initial-goal-type="profileStore.profile?.goalType || 'WEIGHT_LOSS'"
+              :recommendation="dailyGoalStore.recommendation"
+              :is-loading-recommendation="dailyGoalStore.isLoadingRecommendation"
+              :is-saving="dailyGoalStore.isSavingGoal"
+              :recommendation-error="dailyGoalStore.recommendationError"
+              :save-error="dailyGoalStore.saveGoalError"
+              @recommend="recommendDailyGoal"
+              @save="saveDailyGoal"
+            />
+          </div>
 
-            <div v-else-if="chatStore.error" class="chat-state-card error">
-              {{ chatStore.error }}
-            </div>
-
-            <div v-else-if="!hasMessages" class="chat-state-card">
-              아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
-            </div>
-
-            <template v-for="chatMessage in displayMessages" :key="chatMessage.id || chatMessage.clientId">
-              <div v-if="isUserMessage(chatMessage)" class="message-row user">
+          <template
+            v-for="chatMessage in displayMessages"
+            :key="chatMessage.id || chatMessage.clientId"
+          >
+            <div v-if="isUserMessage(chatMessage)" class="message-row user">
+              <div class="user-message-line">
+                <time class="message-time">
+                  {{ formatMessageTime(chatMessage.createdAt) }}
+                </time>
                 <div class="message-bubble user-bubble">
                   {{ chatMessage.content }}
-                  <span>{{ formatMessageTime(chatMessage.createdAt) }}</span>
                 </div>
               </div>
+            </div>
 
-              <div v-else class="message-row coach">
-                <div class="coach-icon">
-                  <i class="pi pi-briefcase"></i>
+            <div v-else class="message-row coach">
+              <div class="coach-icon">
+                <img
+                  v-if="!isCoachAvatarUnavailable"
+                  :src="COACH_AVATAR_SRC"
+                  :alt="COACH_NAME"
+                  @error="handleCoachAvatarError"
+                />
+                <i v-else class="pi pi-briefcase"></i>
+              </div>
+              <div class="assistant-message-stack">
+                <div class="assistant-name">{{ COACH_NAME }}</div>
+                <div class="assistant-message-line">
+                  <article
+                    class="assistant-card"
+                    :class="{
+                      pending: chatMessage.pending,
+                      failed: chatMessage.failed,
+                    }"
+                  >
+                    <div
+                      class="markdown-content"
+                      v-html="
+                        renderMarkdown(
+                          chatMessage.content ||
+                            pendingAssistantText(chatMessage),
+                        )
+                      "
+                    ></div>
+                  </article>
+                  <time class="message-time">
+                    {{ formatMessageTime(chatMessage.createdAt) }}
+                  </time>
                 </div>
-                <article class="assistant-card" :class="{ pending: chatMessage.pending, failed: chatMessage.failed }">
-                  <div class="analysis-title">
-                    <i></i>
-                    <strong>AI 코치 답변</strong>
-                  </div>
-                  <div class="markdown-content" v-html="renderMarkdown(chatMessage.content)"></div>
-                  <time>{{ formatMessageTime(chatMessage.createdAt) }}</time>
-                </article>
               </div>
-            </template>
-
-            <div v-if="chatStore.mealProposal" class="message-row coach">
-              <div class="coach-icon">
-                <i class="pi pi-briefcase"></i>
-              </div>
-              <MealProposalCard
-                :proposal="chatStore.mealProposal"
-                :is-confirming="chatStore.isConfirmingMeal"
-                :error="chatStore.mealProposalError"
-                @confirm="confirmMealProposal"
-                @dismiss="chatStore.dismissMealProposal"
-              />
             </div>
+          </template>
 
-            <div v-if="chatStore.exerciseProposal" class="message-row coach">
-              <div class="coach-icon">
-                <i class="pi pi-bolt"></i>
-              </div>
-              <ExerciseProposalCard
-                :proposal="chatStore.exerciseProposal"
-                :is-confirming="chatStore.isConfirmingExercise"
-                :error="chatStore.exerciseProposalError"
-                @confirm="confirmExerciseProposal"
-                @dismiss="chatStore.dismissExerciseProposal"
-              />
+          <div
+            v-if="chatStore.mealProposal"
+            ref="mealProposalRef"
+            class="message-row coach"
+          >
+            <div class="coach-icon">
+              <i class="pi pi-briefcase"></i>
             </div>
-          </div>
-
-          <div v-if="attachedImages.length || imageAttachmentError" class="image-attachment-tray">
-            <div v-if="attachedImages.length" class="image-attachment-list">
-              <figure v-for="image in attachedImages" :key="image.id">
-                <img :src="image.previewUrl" :alt="image.file.name" />
-                <figcaption>{{ image.originalFile.name }} · {{ formatBytes(image.file.size) }}</figcaption>
-                <button type="button" aria-label="이미지 삭제" @click="removeAttachedImage(image.id)">
-                  <i class="pi pi-times"></i>
-                </button>
-              </figure>
-            </div>
-            <p v-if="imageAttachmentError" class="image-attachment-error">{{ imageAttachmentError }}</p>
-          </div>
-
-          <form class="chat-composer" @submit.prevent="sendMessage">
-            <input
-              ref="fileInputRef"
-              class="chat-image-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              @change="handleImageInput"
+            <MealProposalCard
+              :proposal="chatStore.mealProposal"
+              :is-confirming="chatStore.isConfirmingMeal"
+              :error="chatStore.mealProposalError"
+              @confirm="confirmMealProposal"
+              @dismiss="chatStore.dismissMealProposal"
             />
-            <input v-model="message" placeholder="식단이나 운동을 편하게 기록해보세요..." />
-            <button class="attach-image-button" type="button" aria-label="이미지 추가" @click="openImagePicker">
-              <i class="pi pi-plus"></i>
-            </button>
-            <button type="button" aria-label="음성 입력">
-              <i class="pi pi-microphone"></i>
-            </button>
-            <button class="send-button" type="submit" aria-label="전송" :disabled="chatStore.isSending">
-              <i class="pi pi-send"></i>
-            </button>
-          </form>
-
-          <p class="composer-note">AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.</p>
-        </section>
-
-        <aside class="today-panel">
-          <div class="today-head">
-            <p class="deco">Today</p>
-            <span>{{ todayLabel }}</span>
           </div>
 
-          <div v-if="mealStore.dailyError" class="api-needed-panel">
-            <strong>오늘 식단 정보를 불러오지 못했어요</strong>
-            <p>{{ mealStore.dailyError }}</p>
+          <div
+            v-if="chatStore.exerciseProposal"
+            ref="exerciseProposalRef"
+            class="message-row coach"
+          >
+            <div class="coach-icon">
+              <i class="pi pi-bolt"></i>
+            </div>
+            <ExerciseProposalCard
+              :proposal="chatStore.exerciseProposal"
+              :is-confirming="chatStore.isConfirmingExercise"
+              :error="chatStore.exerciseProposalError"
+              @confirm="confirmExerciseProposal"
+              @dismiss="chatStore.dismissExerciseProposal"
+            />
           </div>
 
-          <section class="calorie-card" :class="{ 'pending-api': !hasTodayMeals }">
-            <span>오늘 섭취 칼로리</span>
-            <strong>
-              {{ hasTodayMeals ? formatNumber(todayTotals.calories) : "-" }}<small>/ 목표 kcal API 필요</small>
-            </strong>
-            <div class="progress-track">
-              <i></i>
+          <div
+            v-if="chatStore.weightProposal"
+            ref="weightProposalRef"
+            class="message-row coach"
+          >
+            <div class="coach-icon">
+              <i class="pi pi-chart-line"></i>
             </div>
-            <p v-if="hasTodayMeals">일일 식단 조회 API 기준으로 계산됐어요.</p>
-            <p v-else>아직 오늘 식단 기록이 없어요.</p>
-          </section>
-
-          <div class="macro-grid" :class="{ 'pending-api': !hasTodayMeals }">
-            <div>
-              <span>단백질</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.protein) : "-" }}g</strong>
-              <i></i>
-            </div>
-            <div>
-              <span>탄수</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.carbohydrate) : "-" }}g</strong>
-              <i></i>
-            </div>
-            <div>
-              <span>지방</span>
-              <strong>{{ hasTodayMeals ? formatNumber(todayTotals.fat) : "-" }}g</strong>
-              <i></i>
-            </div>
+            <WeightProposalCard
+              :proposal="chatStore.weightProposal"
+              :is-confirming="chatStore.isConfirmingWeight"
+              :error="chatStore.weightProposalError"
+              @confirm="confirmWeightProposal"
+              @dismiss="chatStore.dismissWeightProposal"
+            />
           </div>
-
-          <section class="today-log">
-            <h2>오늘의 기록</h2>
-
-            <article v-for="meal in todayMeals" :key="meal.mealId">
-              <time>{{ mealLabel(meal.mealType) }}</time>
-              <i :class="['dot', mealDot(meal.mealType)]"></i>
-              <div>
-                <strong>{{ mealFoodNames(meal) }}</strong>
-                <span>{{ mealLabel(meal.mealType) }} · {{ formatNumber(meal.totalCalories) }} kcal</span>
-              </div>
-            </article>
-
-            <div v-if="!mealStore.isLoadingDaily && !hasTodayMeals" class="api-list-empty">
-              오늘 저장된 식단 기록이 없어요.
-            </div>
-
-            <div class="api-list-empty compact">
-              운동 기록 API 연결 필요
-            </div>
-          </section>
-        </aside>
+        </div>
       </div>
+
+      <div
+        v-if="attachedImages.length || imageAttachmentError"
+        class="image-attachment-tray"
+      >
+        <div v-if="attachedImages.length" class="image-attachment-list">
+          <figure v-for="image in attachedImages" :key="image.id">
+            <img :src="image.previewUrl" :alt="image.file.name" />
+            <figcaption>
+              {{ image.originalFile.name }} ·
+              {{ formatBytes(image.file.size) }}
+            </figcaption>
+            <button
+              type="button"
+              aria-label="이미지 삭제"
+              @click="removeAttachedImage(image.id)"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </figure>
+        </div>
+        <p v-if="imageAttachmentError" class="image-attachment-error">
+          {{ imageAttachmentError }}
+        </p>
+      </div>
+
+      <form class="chat-composer" @submit.prevent="sendMessage">
+        <input
+          ref="fileInputRef"
+          class="chat-image-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          @change="handleImageInput"
+        />
+        <input
+          v-model="message"
+          placeholder="식단이나 운동을 편하게 기록해보세요..."
+        />
+        <button
+          class="attach-image-button"
+          type="button"
+          aria-label="이미지 추가"
+          @click="openImagePicker"
+        >
+          <i class="pi pi-plus"></i>
+        </button>
+        <button
+          class="send-button"
+          type="submit"
+          aria-label="전송"
+          :disabled="chatStore.isSending"
+        >
+          <i class="pi pi-send"></i>
+        </button>
+      </form>
+
+      <p class="composer-note">
+        얌냠이는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.
+      </p>
     </section>
-  </main>
+
+  </div>
 </template>

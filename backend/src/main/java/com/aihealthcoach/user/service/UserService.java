@@ -23,6 +23,8 @@ public interface UserService {
 
     UserProfileResponse findProfile(Long userId);
 
+    UserProfileResponse findProfileIfExists(Long userId);
+
     UserProfileResponse updateProfile(Long userId, UserProfileUpdateRequest request);
 
     void updateNickname(Long userId, String nickname);
