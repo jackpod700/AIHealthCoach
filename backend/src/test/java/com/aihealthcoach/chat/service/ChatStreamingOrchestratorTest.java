@@ -185,10 +185,37 @@ class ChatStreamingOrchestratorTest {
     }
 
     @Test
+    void obviousGeneralChatSkipsToolLlm() {
+        assistantLlm.emit("점심 추천 답변");
+        ChatStreamingOrchestrator orchestrator = newOrchestrator();
+
+        orchestrator.stream(USER_ID, request("점심 뭐 먹을까 추천해줘"), sink);
+
+        assertThat(toolLlm.started.getCount()).isEqualTo(1);
+        assertThat(sink.eventNames()).containsExactly("delta", "assistant_done", "tool_result", "done");
+        ChatStreamToolResultEvent toolResult = (ChatStreamToolResultEvent) sink.event("tool_result").data();
+        assertThat(toolResult.status()).isEqualTo("SUCCESS");
+        assertThat(toolResult.mealProposal()).isNull();
+        assertThat(toolResult.exerciseProposal()).isNull();
+        assertThat(toolResult.weightProposal()).isNull();
+    }
+
+    @Test
+    void recordCueDoesNotSkipToolLlm() {
+        toolLlm.respondWith(noToolJson());
+        assistantLlm.emit("기록 후보를 확인할게요.");
+        ChatStreamingOrchestrator orchestrator = newOrchestrator();
+
+        orchestrator.stream(USER_ID, request("점심 라면 먹었어"), sink);
+
+        assertThat(toolLlm.started.getCount()).isEqualTo(0);
+        assertThat(toolLlm.lastRequest.userMessage()).isEqualTo("점심 라면 먹었어");
+    }
+
+    @Test
     void memorySaveFailureIsReportedInToolResultOnly() {
         toolLlm.respondWith("""
                 {
-                  "assistantMessage": "확인했어요.",
                   "memorySaveCommand": {
                     "memorySaveIntent": true,
                     "content": "유제품은 피하고 싶어"
@@ -238,7 +265,6 @@ class ChatStreamingOrchestratorTest {
     private String noToolJson() {
         return """
                 {
-                  "assistantMessage": "확인했어요.",
                   "mealExtraction": {"mealIntent": false},
                   "exerciseExtraction": {"exerciseIntent": false},
                   "weightExtraction": {"weightIntent": false},
@@ -278,7 +304,7 @@ class ChatStreamingOrchestratorTest {
 
         private final CountDownLatch started = new CountDownLatch(1);
         private String response = """
-                {"assistantMessage":"확인했어요."}
+                {"mealExtraction":{"mealIntent":false},"exerciseExtraction":{"exerciseIntent":false},"weightExtraction":{"weightIntent":false},"memorySaveCommand":{"memorySaveIntent":false}}
                 """;
         private RuntimeException exception;
         private LlmRequest lastRequest;

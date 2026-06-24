@@ -7,6 +7,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
@@ -46,6 +47,15 @@ public class ChatStreamingOrchestrator {
     private static final String EVENT_TOOL_RESULT = "tool_result";
     private static final String EVENT_ERROR = "error";
     private static final String EVENT_DONE = "done";
+    private static final Pattern WEIGHT_RECORD_CUE = Pattern.compile("\\d+(?:\\.\\d+)?\\s*kg", Pattern.CASE_INSENSITIVE);
+    private static final String[] RECORD_CUES = {
+            "기록", "저장", "추가", "먹었", "먹음", "먹었다", "마셨", "섭취", "운동했", "걸었", "뛰었", "달렸",
+            "몸무게", "체중", "기억해", "기억해줘", "기억해 줘", "메모리"
+    };
+    private static final String[] GENERAL_CHAT_CUES = {
+            "추천", "뭐 먹을까", "무엇을 먹을까", "어떻게 먹", "괜찮을까", "어때", "알려줘", "궁금", "질문",
+            "안녕", "고마워", "감사", "칼로리", "단백질", "영양", "식단"
+    };
 
     private final ChatService chatService;
     private final ContextBuilder contextBuilder;
@@ -125,6 +135,12 @@ public class ChatStreamingOrchestrator {
                 sink.send(EVENT_DELTA, new ChatStreamDeltaEvent(delta));
             });
             timing.markAssistantStreamCompleted();
+            log.info(
+                    "chat_stream_assistant_completed user_id={} elapsed_ms={} assistant_chars={}",
+                    userId,
+                    timing.elapsedFromStartMs(),
+                    assistantContent.length()
+            );
         } catch (RuntimeException exception) {
             log.warn("Failed to stream assistant chat message. user_id={}", userId, exception);
             toolFuture.cancel(true);
@@ -140,6 +156,12 @@ public class ChatStreamingOrchestrator {
                     .content(assistantContent.toString())
                     .build());
             timing.markAssistantSaved();
+            log.info(
+                    "chat_stream_assistant_saved user_id={} elapsed_ms={} assistant_chars={}",
+                    userId,
+                    timing.elapsedFromStartMs(),
+                    assistantMessage.content() == null ? 0 : assistantMessage.content().length()
+            );
         } catch (RuntimeException exception) {
             log.warn("Failed to save streamed assistant message. user_id={}", userId, exception);
             toolFuture.cancel(true);
@@ -149,8 +171,20 @@ public class ChatStreamingOrchestrator {
 
         try {
             sink.send(EVENT_ASSISTANT_DONE, new ChatStreamAssistantDoneEvent(assistantMessage));
-            sink.send(EVENT_TOOL_RESULT, toolFuture.join());
+            log.info(
+                    "chat_stream_tool_join_start user_id={} elapsed_ms={}",
+                    userId,
+                    timing.elapsedFromStartMs()
+            );
+            ChatStreamToolResultEvent toolResult = toolFuture.join();
             timing.markToolJoined();
+            log.info(
+                    "chat_stream_tool_join_completed user_id={} elapsed_ms={} tool_status={}",
+                    userId,
+                    timing.elapsedFromStartMs(),
+                    toolResult.status()
+            );
+            sink.send(EVENT_TOOL_RESULT, toolResult);
             sink.send(EVENT_DONE, ChatStreamDoneEvent.done());
             sink.complete();
             log.info(
@@ -195,35 +229,122 @@ public class ChatStreamingOrchestrator {
     }
 
     private ChatStreamToolResultEvent buildToolResult(Long userId, String userMessage, LocalDate contextDate) {
+        long startedAt = System.nanoTime();
+        long promptBuiltAt = 0L;
+        long llmGeneratedAt = 0L;
+        long parsedAt = 0L;
+        long proposalBuiltAt = 0L;
+        int responseChars = -1;
+        String status = "SUCCESS";
+        String failureReason = null;
+        if (shouldSkipToolGeneration(userMessage)) {
+            ChatStreamToolResultEvent skippedResult = ChatStreamToolResultEvent.success(
+                    null,
+                    null,
+                    null,
+                    ChatStreamMemorySaveResult.none()
+            );
+            logToolTiming(userId, "SKIPPED", "OBVIOUS_GENERAL_CHAT", startedAt, promptBuiltAt, llmGeneratedAt,
+                    parsedAt, proposalBuiltAt, responseChars);
+            return skippedResult;
+        }
+
         LlmResponse response;
         try {
             LlmRequest request = promptBuilder.buildToolJson(contextDate, userMessage);
+            promptBuiltAt = System.nanoTime();
             response = llmService.generate(request);
+            llmGeneratedAt = System.nanoTime();
+            responseChars = response.content() == null ? 0 : response.content().length();
         } catch (RuntimeException exception) {
             log.warn("Failed to generate tool JSON for chat stream. user_id={}", userId, exception);
+            status = "FAILED";
+            failureReason = "GENERATION_FAILED";
+            logToolTiming(userId, status, failureReason, startedAt, promptBuiltAt, llmGeneratedAt, parsedAt,
+                    proposalBuiltAt, responseChars);
             return ChatStreamToolResultEvent.failed("GENERATION_FAILED");
         }
 
         AiChatResult result;
         try {
             result = parseToolResult(response.content());
+            parsedAt = System.nanoTime();
         } catch (RuntimeException exception) {
             log.warn("Failed to parse tool JSON for chat stream. user_id={}", userId, exception);
+            status = "FAILED";
+            failureReason = "PARSE_FAILED";
+            logToolTiming(userId, status, failureReason, startedAt, promptBuiltAt, llmGeneratedAt, parsedAt,
+                    proposalBuiltAt, responseChars);
             return ChatStreamToolResultEvent.failed("PARSE_FAILED");
         }
 
         try {
             ChatStreamMemorySaveResult memorySave = saveMemoryIfRequested(userId, result.memorySaveCommand());
-            return ChatStreamToolResultEvent.success(
+            ChatStreamToolResultEvent toolResult = ChatStreamToolResultEvent.success(
                     aiMealProposalService.createProposal(result.mealExtraction()),
                     aiExerciseProposalService.createProposal(result.exerciseExtraction()),
                     WeightProposalResponse.fromExtraction(result.weightExtraction()),
                     memorySave
             );
+            proposalBuiltAt = System.nanoTime();
+            logToolTiming(userId, status, failureReason, startedAt, promptBuiltAt, llmGeneratedAt, parsedAt,
+                    proposalBuiltAt, responseChars);
+            return toolResult;
         } catch (RuntimeException exception) {
             log.warn("Failed to convert chat stream tool result. user_id={}", userId, exception);
+            status = "FAILED";
+            failureReason = "PROPOSAL_FAILED";
+            logToolTiming(userId, status, failureReason, startedAt, promptBuiltAt, llmGeneratedAt, parsedAt,
+                    proposalBuiltAt, responseChars);
             return ChatStreamToolResultEvent.failed("PROPOSAL_FAILED");
         }
+    }
+
+    private boolean shouldSkipToolGeneration(String userMessage) {
+        if (userMessage == null || userMessage.isBlank()) {
+            return true;
+        }
+
+        String normalized = userMessage.toLowerCase();
+        if (WEIGHT_RECORD_CUE.matcher(normalized).find() || containsAny(normalized, RECORD_CUES)) {
+            return false;
+        }
+
+        return containsAny(normalized, GENERAL_CHAT_CUES);
+    }
+
+    private boolean containsAny(String text, String[] cues) {
+        for (String cue : cues) {
+            if (text.contains(cue)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void logToolTiming(
+            Long userId,
+            String status,
+            String failureReason,
+            long startedAt,
+            long promptBuiltAt,
+            long llmGeneratedAt,
+            long parsedAt,
+            long proposalBuiltAt,
+            int responseChars
+    ) {
+        log.info(
+                "chat_stream_tool_timing user_id={} status={} reason={} tool_prompt_built_ms={} tool_llm_generate_ms={} tool_response_chars={} tool_parse_ms={} tool_proposal_ms={} tool_total_ms={}",
+                userId,
+                status,
+                failureReason,
+                elapsedMs(startedAt, promptBuiltAt),
+                elapsedMs(promptBuiltAt, llmGeneratedAt),
+                responseChars,
+                elapsedMs(llmGeneratedAt, parsedAt),
+                elapsedMs(parsedAt, proposalBuiltAt),
+                TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startedAt)
+        );
     }
 
     private AiChatResult parseToolResult(String content) {
@@ -291,6 +412,13 @@ public class ChatStreamingOrchestrator {
             log.warn("chat_stream_error_event_failed code={}", code, exception);
             sink.completeWithError(exception);
         }
+    }
+
+    private long elapsedMs(long fromNanos, long toNanos) {
+        if (fromNanos == 0L || toNanos == 0L) {
+            return -1L;
+        }
+        return TimeUnit.NANOSECONDS.toMillis(toNanos - fromNanos);
     }
 
     private static class ChatStreamTiming {
@@ -384,6 +512,10 @@ public class ChatStreamingOrchestrator {
 
         long totalMs() {
             return elapsedMs(startNanos, toolJoinedNanos);
+        }
+
+        long elapsedFromStartMs() {
+            return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
         }
 
         private long elapsedMs(long fromNanos, long toNanos) {

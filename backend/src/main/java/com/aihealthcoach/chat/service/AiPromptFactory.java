@@ -20,20 +20,12 @@ public class AiPromptFactory {
                 Return only the plain assistant message text.
                 Do not return JSON.
                 Do not wrap the answer in Markdown code fences.
-                Do not claim that a meal, exercise, weight, or memory record was saved.
-                Do not claim that a proposal was created. Proposal UI is shown separately by the server.
                 """
                 + healthCoachingRules();
     }
 
     public String toolExtractionPrompt() {
-        return commonPrompt() + textExtractionRules() + """
-
-                The assistantMessage field is ignored by the server in this flow.
-                Keep assistantMessage as a short neutral Korean acknowledgement.
-                Do not use user profile, daily meals, daily exercises, recent summaries, recent turns, or memories.
-                Extract only from the current user message.
-                """;
+        return toolExtractionCommonPrompt();
     }
 
     private String healthCoachingRules() {
@@ -42,8 +34,9 @@ public class AiPromptFactory {
                 Health coaching rules:
                 - When user context is relevant to the question, use it to personalize assistantMessage.
                 - Use only server-provided context values. If needed context is missing, say a precise assessment is not possible and give concise general guidance.
-                - When daily goals and today's records are available, compare them and give practical, non-judgmental feedback.
-                - If exercise, protein, or calorie progress is below goal, suggest realistic next actions.
+                - Use daily goals and today's records only when the user asks about progress, today's status, coaching feedback, meal or exercise planning, or goal-related advice.
+                - Do not proactively mention unmet calorie, protein, or exercise goals in greetings, casual chat, record acknowledgements, or unrelated questions.
+                - If the user asks for goal or progress feedback and exercise, protein, or calorie progress is below goal, suggest realistic next actions.
                 - Do not treat current extraction proposals as already saved records.
                 - Even when all extraction intents are false, assistantMessage must answer the user's question.
                 - Keep advice concise, specific, actionable, and non-medical.
@@ -75,6 +68,54 @@ public class AiPromptFactory {
                 If food is visible, extract likely food names and simple quantity multipliers.
                 Use the user's optional text to infer mealDate and mealType when possible.
                 Do not claim the meal has been saved. The user must confirm the proposal first.
+                """;
+    }
+
+    private String toolExtractionCommonPrompt() {
+        return """
+                You extract only record intents from the current user message.
+                Return only compact JSON. Start with { and end with }. No Markdown.
+                Do not include assistantMessage.
+
+                Return exactly this JSON shape:
+                {
+                  "mealExtraction": {
+                    "mealIntent": true,
+                    "mealDate": "yyyy-MM-dd or null",
+                    "mealType": "BREAKFAST|LUNCH|DINNER|SNACK or null",
+                    "items": [{"name": "food name", "quantity": 1}]
+                  },
+                  "exerciseExtraction": {
+                    "exerciseIntent": true,
+                    "activityKeyword": "exercise keyword or null",
+                    "intensityLevel": "LOW|MEDIUM|HIGH or null",
+                    "exerciseDate": "yyyy-MM-dd or null",
+                    "durationMinutes": 30,
+                    "memo": "short memo or null",
+                    "confidence": 0.0,
+                    "missingFields": ["exerciseDate", "durationMinutes"]
+                  },
+                  "weightExtraction": {
+                    "weightIntent": true,
+                    "recordDate": "yyyy-MM-dd or null",
+                    "weightKg": 68.4
+                  },
+                  "memorySaveCommand": {
+                    "memorySaveIntent": false,
+                    "content": "long-term detail to remember or null"
+                  }
+                }
+
+                For false intent sections, keep the same object shape with false, null, and empty arrays.
+                mealExtraction.items must always be an array of objects like [{"name":"사과","quantity":1}], never an array of strings like ["사과"].
+                Use null for unknown dates, mealType, duration, intensity, confidence, quantity, or content.
+                Convert relative dates using the provided reference_date.
+                Extract only from the current user message. Do not infer from profile, history, or memories.
+                Do not treat food grams, exercise weight, dumbbell weight, or target weight as body weight records unless the user clearly says it is their current body weight.
+                Normalize exercise intensity:
+                - LOW for light or easy exercise
+                - MEDIUM for normal or moderate exercise
+                - HIGH for hard or intense exercise
                 """;
     }
 

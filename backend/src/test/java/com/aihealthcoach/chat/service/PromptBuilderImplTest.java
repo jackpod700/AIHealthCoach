@@ -139,7 +139,9 @@ class PromptBuilderImplTest {
 
         assertThat(assistantRequest.stableSystemPrompt()).contains("Return only the plain assistant message text.");
         assertThat(assistantRequest.dynamicContextPrompt()).contains("user_memories");
-        assertThat(toolRequest.stableSystemPrompt()).contains("Return only JSON");
+        assertThat(toolRequest.stableSystemPrompt()).contains("Return only compact JSON");
+        assertThat(toolRequest.stableSystemPrompt()).contains("Do not include assistantMessage.");
+        assertThat(toolRequest.stableSystemPrompt()).doesNotContain("Health coaching rules");
         assertThat(toolRequest.dynamicContextPrompt()).contains("<reference_date>\n2026-06-08");
         assertThat(toolRequest.dynamicContextPrompt()).doesNotContain("user_memories");
         assertThat(toolRequest.dynamicContextPrompt()).doesNotContain("recent_chat_turns");
