@@ -4,6 +4,7 @@ import { useRoute, useRouter } from "vue-router";
 import FormField from "../../components/auth/FormField.vue";
 import SignupStepper from "../../components/auth/SignupStepper.vue";
 import { signupSteps } from "../../constants/authOptions";
+import { APP_START_LABEL } from "../../constants/brand";
 import { useAuthStore } from "../../stores/authStore";
 import { useProfileStore } from "../../stores/profileStore";
 
@@ -278,7 +279,7 @@ function isValidEmail(value) {
       <button type="button" class="auth-brand-link" @click="router.push('/')">
         <span class="brand-mark"><i class="pi pi-briefcase"></i></span>
         <span>
-          <strong>BabStroy 시작하기</strong>
+          <strong>{{ APP_START_LABEL }}</strong>
         </span>
       </button>
       <button type="button" class="auth-close-button" aria-label="랜딩으로 돌아가기" @click="router.push('/')">

@@ -1,5 +1,6 @@
 <script setup>
 import { useRouter } from "vue-router";
+import { APP_NAME } from "../../constants/brand";
 import { useAuthStore } from "../../stores/authStore";
 
 const router = useRouter();
@@ -41,7 +42,7 @@ function goSignup() {
       <button type="button" class="auth-brand-link" @click="router.push('/')">
         <span class="brand-mark"><i class="pi pi-briefcase"></i></span>
         <span>
-          <strong>BabStroy</strong>
+          <strong>{{ APP_NAME }}</strong>
         </span>
       </button>
     </header>
@@ -50,7 +51,7 @@ function goSignup() {
       <div class="landing-hero-copy">
         <div class="landing-kicker">
           <span></span>
-          BabStroy
+          {{ APP_NAME }}
         </div>
         <h1>
           기록만 하세요.<br />

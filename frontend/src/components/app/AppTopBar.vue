@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from "vue";
 import { useRouter } from "vue-router";
+import { APP_NAME } from "../../constants/brand";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
 import { useDailyGoalStore } from "../../stores/dailyGoalStore";
@@ -55,7 +56,7 @@ function logout() {
         <i class="pi pi-briefcase"></i>
       </div>
       <div>
-        <strong>BabStroy</strong>
+        <strong>{{ APP_NAME }}</strong>
       </div>
     </div>
 
