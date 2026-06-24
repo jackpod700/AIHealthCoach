@@ -86,6 +86,19 @@ public class FoodServiceImpl implements FoodService {
                 .toList();
     }
 
+    @Override
+    @Transactional(readOnly = true)
+    public long countFoods(String query) {
+        String trimmedQuery = FoodSearchQuery.normalize(query);
+        List<Token> tokens = FoodSearchQuery.tokens(trimmedQuery);
+
+        if (tokens.isEmpty()) {
+            return 0;
+        }
+
+        return mealMapper.countFoods(trimmedQuery, tokens);
+    }
+
     private List<FoodGroupResponse> toGroupResponses(List<String> sourceKeys, List<Food> rows) {
         Map<String, List<Food>> rowsBySourceKey = new LinkedHashMap<>();
 

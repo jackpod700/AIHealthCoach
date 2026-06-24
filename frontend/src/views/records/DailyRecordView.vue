@@ -816,16 +816,21 @@ function servingCalorieLabel(item) {
             {{ mealStore.foodSearchError }}
           </div>
 
-          <div v-else-if="mealStore.foodSearchResults.length" class="food-search-results">
-            <button
-              v-for="food in mealStore.foodSearchResults"
-              :key="food.foodId"
-              type="button"
-              @click="addFood(food)"
-            >
-              <strong>{{ food.foodName }}</strong>
-              <span>{{ food.brand || "제조사 정보 없음" }} · {{ servingLabel(food) }} · {{ formatNumber(food.calories) }} kcal</span>
-            </button>
+          <div v-else-if="mealStore.foodSearchResults.length" class="food-search-results-wrap">
+            <p class="food-search-count">
+              총 {{ formatNumber(mealStore.foodSearchTotalItems) }}개 중 {{ formatNumber(mealStore.foodSearchResults.length) }}개 표시
+            </p>
+            <div class="food-search-results">
+              <button
+                v-for="food in mealStore.foodSearchResults"
+                :key="food.foodId"
+                type="button"
+                @click="addFood(food)"
+              >
+                <strong>{{ food.foodName }}</strong>
+                <span>{{ food.brand || "제조사 정보 없음" }} · {{ servingLabel(food) }} · {{ formatNumber(food.calories) }} kcal</span>
+              </button>
+            </div>
           </div>
         </div>
 

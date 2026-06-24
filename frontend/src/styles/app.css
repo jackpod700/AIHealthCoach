@@ -3483,12 +3483,23 @@
   color: #ae4d42;
 }
 
+.food-search-results-wrap {
+  margin-top: 10px;
+}
+
+.food-search-count {
+  margin: 0;
+  color: #8a7560;
+  font-size: 12px;
+  font-weight: var(--font-bold);
+}
+
 .food-search-results {
   display: grid;
   max-height: 210px;
   overflow-y: auto;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid #eee5d8;
   border-radius: 12px;
   padding: 8px;

@@ -16,6 +16,11 @@ public class FoodDto {
     ) {
     }
 
+    public record FoodCandidateCountResponse(
+            long totalItems
+    ) {
+    }
+
     public record FoodGroupResponse(
             String sourceKey,
             String foodName,

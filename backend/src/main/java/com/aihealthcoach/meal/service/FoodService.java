@@ -10,4 +10,6 @@ public interface FoodService {
     FoodSearchPageResponse searchFoodGroups(String query, int page, int size);
 
     List<FoodCandidateResponse> searchFoods(String query);
+
+    long countFoods(String query);
 }

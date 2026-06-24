@@ -59,6 +59,8 @@ public interface MealMapper {
 
     List<Food> findFoodsBySourceKeys(@Param("sourceKeys") List<String> sourceKeys);
 
+    long countFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
+
     List<Food> searchFoods(@Param("query") String query, @Param("tokens") List<Token> tokens);
 
 }

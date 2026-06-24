@@ -116,6 +116,21 @@ class FoodControllerTest {
         verify(foodService).searchFoods(" chicken   brand ");
     }
 
+    @Test
+    void countFoodsReturnsCandidateSearchCount() throws Exception {
+        when(jwtTokenProvider.getUserId(TOKEN)).thenReturn(1L);
+        when(foodService.countFoods(" chicken   brand ")).thenReturn(42L);
+
+        mockMvc.perform(get("/api/foods/search/count")
+                        .header("Authorization", "Bearer " + TOKEN)
+                        .param("query", " chicken   brand "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.totalItems").value(42));
+
+        verify(foodService).countFoods(" chicken   brand ");
+    }
+
     private FoodServingResponse serving(
             Long foodId,
             String servingDescription,
