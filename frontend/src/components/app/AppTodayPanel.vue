@@ -1,12 +1,17 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { ApiRequestError } from "../../api/apiClient";
+import { fetchDailyGoalProgress } from "../../api/dailyGoalApi";
+import { fetchDailyMeals } from "../../api/mealApi";
 import { useAuthStore } from "../../stores/authStore";
-import { useDailyGoalStore } from "../../stores/dailyGoalStore";
-import { useMealStore } from "../../stores/mealStore";
 
 const authStore = useAuthStore();
-const dailyGoalStore = useDailyGoalStore();
-const mealStore = useMealStore();
+const todayMeal = ref(null);
+const todayProgress = ref(null);
+const todayMealError = ref("");
+const todayProgressError = ref("");
+const needsTodayGoalSetup = ref(false);
+const isLoadingTodayMeal = ref(false);
 const showExerciseGoalCelebration = ref(false);
 let exerciseGoalCelebrationTimer = null;
 
@@ -27,10 +32,10 @@ const todayLabel = computed(() => {
   }).format(new Date());
 });
 
-const todayMeals = computed(() => mealStore.dailyMeal?.meals || []);
+const todayMeals = computed(() => todayMeal.value?.meals || []);
 const hasTodayMeals = computed(() => todayMeals.value.length > 0);
 const dailyGoalProgress = computed(
-  () => dailyGoalStore.progress?.progress || null,
+  () => todayProgress.value?.progress || null,
 );
 const calorieProgress = computed(
   () => dailyGoalProgress.value?.calorieIntake || null,
@@ -41,7 +46,7 @@ const exerciseProgress = computed(
 const hasDailyGoalProgress = computed(() =>
   Boolean(calorieProgress.value && exerciseProgress.value),
 );
-const macroRatio = computed(() => dailyGoalStore.progress?.macroRatio || null);
+const macroRatio = computed(() => todayProgress.value?.macroRatio || null);
 const macroItems = computed(() => {
   const macros = macroRatio.value;
 
@@ -73,10 +78,7 @@ onMounted(async () => {
     return;
   }
 
-  await Promise.all([
-    mealStore.loadDailyMeal(todayDateKey.value),
-    dailyGoalStore.loadProgress(todayDateKey.value),
-  ]);
+  await Promise.all([loadTodayMeal(), loadTodayProgress()]);
 });
 
 onBeforeUnmount(() => {
@@ -131,6 +133,58 @@ function clearExerciseGoalCelebrationTimer() {
   }
 }
 
+async function loadTodayMeal() {
+  isLoadingTodayMeal.value = true;
+  todayMealError.value = "";
+
+  try {
+    todayMeal.value = await fetchDailyMeals(
+      authStore.accessToken,
+      todayDateKey.value,
+    );
+  } catch (error) {
+    if (authStore.handleAuthFailure(error)) {
+      todayMeal.value = null;
+      return;
+    }
+
+    todayMealError.value = error.message;
+  } finally {
+    isLoadingTodayMeal.value = false;
+  }
+}
+
+async function loadTodayProgress() {
+  todayProgressError.value = "";
+  needsTodayGoalSetup.value = false;
+
+  try {
+    todayProgress.value = await fetchDailyGoalProgress(
+      authStore.accessToken,
+      todayDateKey.value,
+    );
+  } catch (error) {
+    if (authStore.handleAuthFailure(error)) {
+      todayProgress.value = null;
+      return;
+    }
+
+    if (isMissingDailyGoal(error)) {
+      todayProgress.value = null;
+      needsTodayGoalSetup.value = true;
+      return;
+    }
+
+    todayProgressError.value = error.message;
+  }
+}
+
+function isMissingDailyGoal(error) {
+  return (
+    error instanceof ApiRequestError && error.code === "DAILY_GOAL_NOT_FOUND"
+  );
+}
+
 function toDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -147,12 +201,12 @@ function toDateKey(date) {
       <span>{{ todayLabel }}</span>
     </div>
 
-    <div v-if="dailyGoalStore.progressError" class="api-needed-panel">
+    <div v-if="todayProgressError" class="api-needed-panel">
       <strong>오늘 목표 진행률을 불러오지 못했어요</strong>
-      <p>{{ dailyGoalStore.progressError }}</p>
+      <p>{{ todayProgressError }}</p>
     </div>
 
-    <div v-else-if="dailyGoalStore.needsGoalSetup" class="api-needed-panel today-goal-empty">
+    <div v-else-if="needsTodayGoalSetup" class="api-needed-panel today-goal-empty">
       <i class="pi pi-sliders-h" aria-hidden="true"></i>
       <div>
         <strong>오늘 목표가 비어 있어요</strong>
@@ -208,9 +262,9 @@ function toDateKey(date) {
       <p v-else>운동 목표도 함께 추적해요.</p>
     </section>
 
-    <div v-if="mealStore.dailyError" class="api-needed-panel compact-panel">
+    <div v-if="todayMealError" class="api-needed-panel compact-panel">
       <strong>오늘 식단 정보를 불러오지 못했어요</strong>
-      <p>{{ mealStore.dailyError }}</p>
+      <p>{{ todayMealError }}</p>
     </div>
 
     <div class="macro-grid" :class="{ 'pending-api': !macroRatio }">
@@ -244,7 +298,7 @@ function toDateKey(date) {
       </article>
 
       <div
-        v-if="!mealStore.isLoadingDaily && !hasTodayMeals"
+        v-if="!isLoadingTodayMeal && !hasTodayMeals"
         class="api-list-empty today-meal-empty"
       >
         <i class="pi pi-bookmark" aria-hidden="true"></i>
