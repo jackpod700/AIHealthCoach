@@ -404,7 +404,7 @@ function isValidEmail(value) {
                   min="1"
                   max="999.99"
                   placeholder="65.2"
-                  step="0.1"
+                  step="any"
                   type="number"
                 />
                 <em>kg</em>

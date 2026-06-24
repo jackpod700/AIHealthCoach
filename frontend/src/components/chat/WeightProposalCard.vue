@@ -89,7 +89,7 @@ function toDateKey(date) {
 
       <label class="proposal-field">
         <span class="proposal-label">몸무게(kg)</span>
-        <input class="proposal-input" v-model="form.weightKg" type="number" min="0.1" max="500" step="0.1" />
+        <input class="proposal-input" v-model="form.weightKg" type="number" min="0.1" max="500" step="any" />
       </label>
     </div>
 

@@ -99,12 +99,10 @@ public class UserDto {
 
             @DecimalMin(value = "1.00", message = "현재 몸무게는 1kg 이상이어야 합니다.")
             @DecimalMax(value = "999.99", message = "현재 몸무게는 999.99kg 이하여야 합니다.")
-            @Digits(integer = 3, fraction = 2, message = "현재 몸무게는 최대 999.99 형식이어야 합니다.")
             BigDecimal currentWeightKg,
 
             @DecimalMin(value = "1.00", message = "목표 몸무게는 1kg 이상이어야 합니다.")
             @DecimalMax(value = "999.99", message = "목표 몸무게는 999.99kg 이하여야 합니다.")
-            @Digits(integer = 3, fraction = 2, message = "목표 몸무게는 최대 999.99 형식이어야 합니다.")
             BigDecimal targetWeightKg,
 
             String goalType,

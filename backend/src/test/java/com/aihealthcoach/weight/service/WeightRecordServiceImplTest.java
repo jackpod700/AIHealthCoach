@@ -26,6 +26,7 @@ import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -80,6 +81,46 @@ class WeightRecordServiceImplTest {
         assertThat(response.updatedAt()).isEqualTo(LocalDateTime.of(2026, 6, 17, 12, 0));
         verify(userMapper).updateUserProfileCurrentWeight(USER_ID, new BigDecimal("68.40"));
         verify(dailyChatSummaryStateService).markChanged(USER_ID, RECORD_DATE, DailyChatSummaryChangeSource.WEIGHT);
+    }
+
+    @Test
+    void upsertWeightRecordAllowsIntegerWeight() {
+        WeightRecord savedRecord = WeightRecord.builder()
+                .userId(USER_ID)
+                .recordDate(RECORD_DATE)
+                .weightKg(new BigDecimal("68"))
+                .build();
+        when(weightRecordMapper.upsertWeightRecord(any(WeightRecord.class))).thenReturn(savedRecord);
+        when(weightRecordMapper.findLatestWeightRecord(USER_ID)).thenReturn(savedRecord);
+
+        weightRecordService.upsertWeightRecord(
+                USER_ID,
+                new WeightRecordRequest(RECORD_DATE, new BigDecimal("68"))
+        );
+
+        ArgumentCaptor<WeightRecord> captor = ArgumentCaptor.forClass(WeightRecord.class);
+        verify(weightRecordMapper).upsertWeightRecord(captor.capture());
+        assertThat(captor.getValue().getWeightKg()).isEqualByComparingTo("68");
+    }
+
+    @Test
+    void upsertWeightRecordAllowsSingleDecimalWeight() {
+        WeightRecord savedRecord = WeightRecord.builder()
+                .userId(USER_ID)
+                .recordDate(RECORD_DATE)
+                .weightKg(new BigDecimal("68.4"))
+                .build();
+        when(weightRecordMapper.upsertWeightRecord(any(WeightRecord.class))).thenReturn(savedRecord);
+        when(weightRecordMapper.findLatestWeightRecord(USER_ID)).thenReturn(savedRecord);
+
+        weightRecordService.upsertWeightRecord(
+                USER_ID,
+                new WeightRecordRequest(RECORD_DATE, new BigDecimal("68.4"))
+        );
+
+        ArgumentCaptor<WeightRecord> captor = ArgumentCaptor.forClass(WeightRecord.class);
+        verify(weightRecordMapper).upsertWeightRecord(captor.capture());
+        assertThat(captor.getValue().getWeightKg()).isEqualByComparingTo("68.4");
     }
 
     @Test

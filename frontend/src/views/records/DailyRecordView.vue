@@ -1010,7 +1010,7 @@ function servingCalorieLabel(item) {
 
           <label>
             <span>몸무게 (kg)</span>
-            <input v-model="weightEditForm.weightKg" inputmode="decimal" max="500" min="0.01" step="0.1" type="number" />
+            <input v-model="weightEditForm.weightKg" inputmode="decimal" max="500" min="0.01" step="any" type="number" />
           </label>
         </div>
 
