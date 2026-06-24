@@ -24,6 +24,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,7 +67,7 @@ class DailyGoalServiceImplTest {
     }
 
     @Test
-    void recommendGoalUsesRequestedGoalTypeGenderAndAge() {
+    void recommendGoalsUseProfileGenderAndAgeForEveryGoalType() {
         when(userMapper.findUserProfileByUserId(USER_ID)).thenReturn(UserProfile.builder()
                 .heightCm(new BigDecimal("172.50"))
                 .currentWeightKg(new BigDecimal("68.40"))
@@ -75,20 +76,25 @@ class DailyGoalServiceImplTest {
                 .age(32)
                 .build());
 
-        DailyGoalRecommendationResponse response = dailyGoalService.recommendGoal(USER_ID, "MAINTENANCE");
+        Map<String, DailyGoalRecommendationResponse> response = dailyGoalService.recommendGoals(USER_ID);
 
-        assertThat(response.calorieIntakeGoal()).isEqualTo(1929);
-        assertThat(response.exerciseCalorieGoal()).isEqualTo(250);
+        assertThat(response).containsOnlyKeys("WEIGHT_LOSS", "MAINTENANCE", "MUSCLE_GAIN");
+        assertThat(response.get("WEIGHT_LOSS").calorieIntakeGoal()).isEqualTo(1429);
+        assertThat(response.get("WEIGHT_LOSS").exerciseCalorieGoal()).isEqualTo(300);
+        assertThat(response.get("MAINTENANCE").calorieIntakeGoal()).isEqualTo(1929);
+        assertThat(response.get("MAINTENANCE").exerciseCalorieGoal()).isEqualTo(250);
+        assertThat(response.get("MUSCLE_GAIN").calorieIntakeGoal()).isEqualTo(2229);
+        assertThat(response.get("MUSCLE_GAIN").exerciseCalorieGoal()).isEqualTo(300);
     }
 
     @Test
-    void recommendGoalRejectsMissingProfileFields() {
+    void recommendGoalsRejectMissingProfileFields() {
         when(userMapper.findUserProfileByUserId(USER_ID)).thenReturn(UserProfile.builder()
                 .heightCm(new BigDecimal("172.50"))
                 .currentWeightKg(new BigDecimal("68.40"))
                 .build());
 
-        assertThatThrownBy(() -> dailyGoalService.recommendGoal(USER_ID, "WEIGHT_LOSS"))
+        assertThatThrownBy(() -> dailyGoalService.recommendGoals(USER_ID))
                 .isInstanceOf(DailyGoalException.class)
                 .extracting("errorCode")
                 .isEqualTo(com.aihealthcoach.dailygoal.exception.DailyGoalErrorCode.PROFILE_REQUIRED);

@@ -5,9 +5,10 @@ import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalRecommendationRespo
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalResponse;
 import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalUpsertRequest;
 import java.time.LocalDate;
+import java.util.Map;
 
 public interface DailyGoalService {
-    DailyGoalRecommendationResponse recommendGoal(Long userId, String goalType);
+    Map<String, DailyGoalRecommendationResponse> recommendGoals(Long userId);
 
     DailyGoalResponse upsertCurrentGoal(Long userId, DailyGoalUpsertRequest request);
 

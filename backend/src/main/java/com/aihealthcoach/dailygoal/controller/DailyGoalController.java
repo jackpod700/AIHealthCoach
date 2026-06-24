@@ -7,6 +7,7 @@ import com.aihealthcoach.dailygoal.dto.DailyGoalDto.DailyGoalUpsertRequest;
 import com.aihealthcoach.dailygoal.service.DailyGoalService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -25,13 +26,12 @@ public class DailyGoalController {
 
     private final DailyGoalService dailyGoalService;
 
-    @GetMapping("/recommendation")
-    public ResponseEntity<DailyGoalRecommendationResponse> recommendGoal(
-            @RequestParam String goalType,
+    @GetMapping("/recommendations")
+    public ResponseEntity<Map<String, DailyGoalRecommendationResponse>> recommendGoals(
             Authentication authentication
     ) {
         Long userId = (Long) authentication.getPrincipal();
-        return ResponseEntity.ok(dailyGoalService.recommendGoal(userId, goalType));
+        return ResponseEntity.ok(dailyGoalService.recommendGoals(userId));
     }
 
     @PutMapping("/confirm")

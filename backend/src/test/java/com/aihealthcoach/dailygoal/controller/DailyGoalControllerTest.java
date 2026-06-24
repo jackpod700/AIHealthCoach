@@ -26,6 +26,7 @@ import com.aihealthcoach.dailygoal.service.DailyGoalService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -55,21 +56,24 @@ class DailyGoalControllerTest {
     private TokenRedisRepository tokenRedisRepository;
 
     @Test
-    void recommendGoalReturnsApiResponseWrappedBody() throws Exception {
+    void recommendGoalsReturnApiResponseWrappedBody() throws Exception {
         when(jwtTokenProvider.getUserId(TOKEN)).thenReturn(USER_ID);
-        when(dailyGoalService.recommendGoal(USER_ID, "WEIGHT_LOSS")).thenReturn(new DailyGoalRecommendationResponse(
-                1800,
-                300
+        when(dailyGoalService.recommendGoals(USER_ID)).thenReturn(Map.of(
+                "WEIGHT_LOSS", new DailyGoalRecommendationResponse(1600, 300),
+                "MAINTENANCE", new DailyGoalRecommendationResponse(2100, 250),
+                "MUSCLE_GAIN", new DailyGoalRecommendationResponse(2400, 300)
         ));
 
-        mockMvc.perform(get("/api/daily-goals/recommendation")
-                        .param("goalType", "WEIGHT_LOSS")
+        mockMvc.perform(get("/api/daily-goals/recommendations")
                 .header("Authorization", "Bearer " + TOKEN))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success", is(true)))
-                .andExpect(jsonPath("$.data.goalType").doesNotExist())
-                .andExpect(jsonPath("$.data.calorieIntakeGoal", is(1800)))
-                .andExpect(jsonPath("$.data.exerciseCalorieGoal", is(300)))
+                .andExpect(jsonPath("$.data.WEIGHT_LOSS.calorieIntakeGoal", is(1600)))
+                .andExpect(jsonPath("$.data.WEIGHT_LOSS.exerciseCalorieGoal", is(300)))
+                .andExpect(jsonPath("$.data.MAINTENANCE.calorieIntakeGoal", is(2100)))
+                .andExpect(jsonPath("$.data.MAINTENANCE.exerciseCalorieGoal", is(250)))
+                .andExpect(jsonPath("$.data.MUSCLE_GAIN.calorieIntakeGoal", is(2400)))
+                .andExpect(jsonPath("$.data.MUSCLE_GAIN.exerciseCalorieGoal", is(300)))
                 .andExpect(jsonPath("$.data.warnings").doesNotExist());
     }
 

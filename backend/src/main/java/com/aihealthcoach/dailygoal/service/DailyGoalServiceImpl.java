@@ -20,9 +20,11 @@ import com.aihealthcoach.user.mapper.UserMapper;
 import com.aihealthcoach.summary.service.DailyChatSummaryStateService;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDate;
 import java.time.Clock;
-import java.util.Set;
+import java.time.LocalDate;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +33,7 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DailyGoalServiceImpl implements DailyGoalService {
 
-    private static final Set<String> GOAL_TYPES = Set.of("WEIGHT_LOSS", "MAINTENANCE", "MUSCLE_GAIN");
+    private static final List<String> GOAL_TYPES = List.of("WEIGHT_LOSS", "MAINTENANCE", "MUSCLE_GAIN");
     // TODO: Add profile activity level input and replace this fixed factor with the saved value.
     private static final BigDecimal DEFAULT_ACTIVITY_FACTOR = new BigDecimal("1.2");
     private static final int MIN_HEALTHY_CALORIE_INTAKE = 1200;
@@ -48,17 +50,16 @@ public class DailyGoalServiceImpl implements DailyGoalService {
 
     @Override
     @Transactional(readOnly = true)
-    public DailyGoalRecommendationResponse recommendGoal(Long userId, String goalType) {
+    public Map<String, DailyGoalRecommendationResponse> recommendGoals(Long userId) {
         UserProfile profile = findRequiredProfile(userId);
-        validateGoalType(goalType);
         int maintenanceCalories = estimateMaintenanceCalories(profile);
-        int calorieIntakeGoal = adjustCalorieIntakeGoal(maintenanceCalories, goalType);
-        int exerciseCalorieGoal = recommendExerciseCalorieGoal(goalType);
+        Map<String, DailyGoalRecommendationResponse> recommendations = new LinkedHashMap<>();
 
-        return new DailyGoalRecommendationResponse(
-                calorieIntakeGoal,
-                exerciseCalorieGoal
-        );
+        for (String goalType : GOAL_TYPES) {
+            recommendations.put(goalType, buildRecommendation(maintenanceCalories, goalType));
+        }
+
+        return recommendations;
     }
 
     @Override
@@ -178,6 +179,13 @@ public class DailyGoalServiceImpl implements DailyGoalService {
             case "MUSCLE_GAIN" -> 300;
             default -> throw DailyGoalException.invalidGoalType();
         };
+    }
+
+    private DailyGoalRecommendationResponse buildRecommendation(int maintenanceCalories, String goalType) {
+        return new DailyGoalRecommendationResponse(
+                adjustCalorieIntakeGoal(maintenanceCalories, goalType),
+                recommendExerciseCalorieGoal(goalType)
+        );
     }
 
     private DailyGoalMetricProgressResponse toMetricProgress(BigDecimal current, Integer goal) {
