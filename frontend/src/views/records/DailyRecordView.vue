@@ -1,7 +1,6 @@
 <script setup>
 import { computed, nextTick, onMounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import AppSidebar from "../../components/app/AppSidebar.vue";
 import { useAuthStore } from "../../stores/authStore";
 import { useExerciseStore } from "../../stores/exerciseStore";
 import { useMealStore } from "../../stores/mealStore";
@@ -82,6 +81,9 @@ const exerciseCount = computed(() => exerciseRecords.value.length);
 const weightRecord = computed(() => weightRecordStore.calendarRecordsByDate[selectedDate.value] || null);
 const weightRecordCount = computed(() => (weightRecord.value ? 1 : 0));
 const totalRecordCount = computed(() => recordCount.value + exerciseCount.value + weightRecordCount.value);
+const isDailyRecordLoading = computed(
+  () => mealStore.isLoadingDaily || exerciseStore.isLoadingDaily,
+);
 
 const dailyTotals = computed(() => {
   const dailyMeal = mealStore.dailyMeal;
@@ -587,10 +589,6 @@ function servingCalorieLabel(item) {
 </script>
 
 <template>
-  <main class="record-home">
-    <AppSidebar />
-
-    <section class="record-workspace">
       <header class="record-header">
         <div>
           <p class="deco">Daily Log</p>
@@ -611,34 +609,41 @@ function servingCalorieLabel(item) {
           {{ exerciseStore.dailyError }}
         </div>
 
-        <div v-if="mealStore.isLoadingDaily || exerciseStore.isLoadingDaily" class="record-loading">
+        <div v-if="isDailyRecordLoading" class="record-loading">
           일일 기록을 불러오는 중입니다...
         </div>
 
-        <template v-else>
-          <section class="record-summary-card">
-            <div>
-              <span>섭취</span>
-              <strong>{{ formatNumber(dailyTotals.calories) }}<small>kcal</small></strong>
-            </div>
-            <div>
-              <span>운동 소모</span>
-              <strong>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
-            </div>
-            <div>
-              <span>총 칼로리</span>
-              <strong>{{ formatNumber(dailyTotals.calories - exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
-            </div>
-            <div>
-              <span>단백질 · 탄수 · 지방</span>
-              <strong>
-                {{ formatNumber(dailyTotals.protein) }} · {{ formatNumber(dailyTotals.carbohydrate) }} · {{ formatNumber(dailyTotals.fat) }}<small>g</small>
-              </strong>
-            </div>
-          </section>
+        <section class="record-summary-card">
+          <div>
+            <span>섭취</span>
+            <strong>{{ formatNumber(dailyTotals.calories) }}<small>kcal</small></strong>
+          </div>
+          <div>
+            <span>운동 소모</span>
+            <strong>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }}<small>kcal</small></strong>
+          </div>
+          <div>
+            <span>단백질</span>
+            <strong>{{ formatNumber(dailyTotals.protein) }}<small>g</small></strong>
+          </div>
+          <div>
+            <span>탄수화물</span>
+            <strong>{{ formatNumber(dailyTotals.carbohydrate) }}<small>g</small></strong>
+          </div>
+          <div>
+            <span>지방</span>
+            <strong>{{ formatNumber(dailyTotals.fat) }}<small>g</small></strong>
+          </div>
+        </section>
 
+        <div class="record-section-title">오늘의 기록</div>
+
+        <div class="record-timeline-scroll">
           <section class="record-timeline">
-            <article v-if="totalRecordCount === 0" class="record-timeline-row record-empty-row">
+            <article
+              v-if="totalRecordCount === 0 && !isDailyRecordLoading"
+              class="record-timeline-row record-empty-row"
+            >
               <div class="record-time"></div>
               <div class="record-line">
                 <span class="record-icon disabled">
@@ -651,29 +656,37 @@ function servingCalorieLabel(item) {
               </div>
             </article>
 
-            <article v-for="meal in meals" :key="meal.mealId" class="record-timeline-row">
-              <div class="record-time">{{ mealMeta(meal.mealType).label }}</div>
+            <article v-if="recordCount" class="record-timeline-row">
+              <div class="record-time">식사</div>
               <div class="record-line">
-                <span :class="['record-icon', mealMeta(meal.mealType).className]">
-                  <i :class="mealMeta(meal.mealType).icon"></i>
+                <span class="record-icon meal">
+                  <i class="pi pi-apple"></i>
                 </span>
               </div>
-              <button class="record-card editable" type="button" @click="openEditMeal(meal)">
+              <div class="record-card">
                 <div class="record-card-head">
                   <div>
-                    <strong>{{ mealMeta(meal.mealType).label }}</strong>
-                    <span>{{ meal.items.length }}개 항목</span>
+                    <strong>식사</strong>
+                    <span>{{ recordCount }}개 기록</span>
                   </div>
-                  <em>{{ formatNumber(meal.totalCalories) }} kcal</em>
-                  <i class="pi pi-pencil record-edit-cue"></i>
+                  <em>{{ formatNumber(dailyTotals.calories) }} kcal</em>
                 </div>
 
                 <div class="record-food-list">
-              <span v-for="item in meal.items" :key="`${meal.mealId}-${item.foodId}`">
-                {{ item.foodName }} <b>{{ itemCalories(item) }}</b>
-              </span>
+                  <button
+                    v-for="meal in meals"
+                    :key="meal.mealId"
+                    type="button"
+                    class="record-food-item"
+                    @click="openEditMeal(meal)"
+                  >
+                    <span>{{ mealMeta(meal.mealType).label }}</span>
+                    <strong>{{ meal.items.map((item) => item.foodName).join(" + ") }}</strong>
+                    <em>{{ formatNumber(meal.totalCalories) }} kcal</em>
+                    <i class="pi pi-pencil record-edit-cue"></i>
+                  </button>
                 </div>
-              </button>
+              </div>
             </article>
 
             <article v-if="exerciseCount" class="record-timeline-row">
@@ -687,7 +700,7 @@ function servingCalorieLabel(item) {
                 <div class="record-card-head">
                   <div>
                     <strong>운동</strong>
-                    <span>{{ exerciseCount }}건</span>
+                    <span>{{ exerciseCount }}개 기록</span>
                   </div>
                   <em>{{ formatNumber(exerciseStore.dailyCaloriesBurned) }} kcal</em>
                 </div>
@@ -702,7 +715,6 @@ function servingCalorieLabel(item) {
                   >
                     <div>
                       <strong>{{ record.activityNameKo }}</strong>
-                      <span>{{ exerciseMeta(record) }}</span>
                     </div>
                     <em>{{ formatNumber(record.caloriesBurned) }} kcal</em>
                     <i class="pi pi-pencil record-edit-cue"></i>
@@ -749,24 +761,22 @@ function servingCalorieLabel(item) {
               </div>
               <div class="record-add-panel" :class="{ open: addMenuOpen }">
                 <button type="button" @click="openAddMeal">
-                  <i class="pi pi-apple"></i>
+                  <i class="record-add-icon meal"></i>
                   식사
                 </button>
                 <button type="button" @click="openAddExercise">
-                  <i class="pi pi-bolt"></i>
+                  <i class="record-add-icon exercise"></i>
                   운동
                 </button>
                 <button type="button" @click="openAddWeight">
-                  <i class="pi pi-heart"></i>
+                  <i class="record-add-icon weight"></i>
                   몸무게 기록
                 </button>
               </div>
             </article>
           </section>
-        </template>
+        </div>
       </section>
-    </section>
-
     <div v-if="editForm.open" class="meal-edit-backdrop" @click.self="closeEditMeal">
       <section class="meal-edit-modal" role="dialog" aria-modal="true" aria-label="끼니 수정">
         <header>
@@ -1019,5 +1029,4 @@ function servingCalorieLabel(item) {
         </footer>
       </section>
     </div>
-  </main>
 </template>

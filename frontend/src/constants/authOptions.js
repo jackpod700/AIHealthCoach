@@ -1,7 +1,6 @@
 export const signupSteps = [
   { id: 1, label: "계정 만들기" },
   { id: 2, label: "기본 정보" },
-  { id: 3, label: "목표 설정" },
 ];
 
 export const goalOptions = [

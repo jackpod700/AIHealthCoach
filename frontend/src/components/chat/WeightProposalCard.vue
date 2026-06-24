@@ -66,38 +66,38 @@ function toDateKey(date) {
 </script>
 
 <template>
-  <article class="meal-proposal-card weight-proposal-card">
-    <header>
+  <article class="proposal-card weight-proposal-card">
+    <header class="proposal-head">
       <div>
-        <p class="deco">Weight Proposal</p>
-        <h2>몸무게 기록으로 저장할까요?</h2>
+        <p class="proposal-eyebrow">Weight Proposal</p>
+        <h2 class="proposal-title">몸무게 기록으로 저장할까요?</h2>
       </div>
-      <button type="button" aria-label="후보 닫기" @click="emit('dismiss')">
+      <button class="proposal-close" type="button" aria-label="후보 닫기" @click="emit('dismiss')">
         <i class="pi pi-times"></i>
       </button>
     </header>
 
-    <p class="meal-proposal-meta">
+    <p class="proposal-desc">
       대화에서 몸무게 {{ proposal.weightKg }}kg을 찾았어요. 날짜와 수치를 확인해 주세요.
     </p>
 
-    <div class="exercise-proposal-fields weight-proposal-fields">
-      <label>
-        <span>기록 날짜</span>
-        <input v-model="form.recordDate" :max="todayDateKey" type="date" />
+    <div class="proposal-fields weight-proposal-fields">
+      <label class="proposal-field">
+        <span class="proposal-label">기록 날짜</span>
+        <input class="proposal-input" v-model="form.recordDate" :max="todayDateKey" type="date" />
       </label>
 
-      <label>
-        <span>몸무게</span>
-        <input v-model="form.weightKg" type="number" min="0.1" max="500" step="0.1" />
+      <label class="proposal-field">
+        <span class="proposal-label">몸무게(kg)</span>
+        <input class="proposal-input" v-model="form.weightKg" type="number" min="0.1" max="500" step="0.1" />
       </label>
     </div>
 
-    <p v-if="error" class="meal-proposal-error">{{ error }}</p>
+    <p v-if="error" class="proposal-error">{{ error }}</p>
 
-    <footer>
-      <button class="meal-proposal-cancel" type="button" @click="emit('dismiss')">나중에</button>
-      <button class="meal-proposal-confirm" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
+    <footer class="proposal-actions">
+      <button class="proposal-btn proposal-btn--ghost" type="button" @click="emit('dismiss')">나중에</button>
+      <button class="proposal-btn proposal-btn--primary" type="button" :disabled="!canConfirm || isConfirming" @click="confirm">
         {{ isConfirming ? "기록 중..." : "몸무게 기록하기" }}
       </button>
     </footer>

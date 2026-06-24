@@ -2,7 +2,6 @@
 import { computed, reactive } from "vue";
 import { useRouter } from "vue-router";
 
-import LoginHero from "../../components/auth/LoginHero.vue";
 import FormField from "../../components/auth/FormField.vue";
 import { getOAuthLoginUrl } from "../../api/authApi";
 import { useAuthStore } from "../../stores/authStore";
@@ -13,7 +12,6 @@ const authStore = useAuthStore();
 const loginForm = reactive({
   email: "",
   password: "",
-  remember: true,
 });
 
 const loginButtonLabel = computed(() => {
@@ -42,9 +40,19 @@ function startOAuthLogin(provider) {
 
 <template>
   <main class="login-screen">
-    <LoginHero />
+    <header class="auth-topbar">
+      <button type="button" class="auth-brand-link" @click="router.push('/')">
+        <span class="brand-mark"><i class="pi pi-briefcase"></i></span>
+        <span>
+          <strong>BabStroy</strong>
+        </span>
+      </button>
+      <button type="button" class="auth-close-button" aria-label="랜딩으로 돌아가기" @click="router.push('/')">
+        <i class="pi pi-times"></i>
+      </button>
+    </header>
 
-    <section class="login-panel" aria-label="로그인">
+    <section class="login-panel auth-panel" aria-label="로그인">
       <div class="login-card">
         <p class="deco">Sign In</p>
 
@@ -73,11 +81,6 @@ function startOAuthLogin(provider) {
           />
 
           <div class="login-options">
-            <label class="remember-check">
-              <input v-model="loginForm.remember" type="checkbox" />
-              <span>로그인 상태 유지</span>
-            </label>
-
             <button type="button">비밀번호 찾기</button>
           </div>
 
@@ -98,19 +101,22 @@ function startOAuthLogin(provider) {
 
         <div class="social-actions">
           <button type="button" @click="startOAuthLogin('google')">
-            Google로 계속
+            <i class="pi pi-google"></i>
+            Google로 계속하기
           </button>
 
           <button type="button" @click="startOAuthLogin('naver')">
-            Naver로 계속
+            <span>N</span>
+            Naver로 계속하기
           </button>
         </div>
 
-        <p class="login-foot">
-          아직 계정이 없으신가요?
-          <button type="button" @click="router.push('/signup')">회원가입</button>
-        </p>
       </div>
+
+      <p class="login-foot">
+        아직 계정이 없으신가요?
+        <button type="button" @click="router.push('/signup')">회원가입</button>
+      </p>
     </section>
   </main>
 </template>

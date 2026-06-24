@@ -58,6 +58,12 @@ function isActive(item) {
   return item.to !== "#" && route.path === item.to;
 }
 
+function navigateTo(path) {
+  if (path !== "#" && route.path !== path) {
+    router.push(path);
+  }
+}
+
 function toggleLogoutPrompt() {
   logoutPromptOpen.value = !logoutPromptOpen.value;
 }
@@ -86,31 +92,33 @@ function logout() {
         <i class="pi pi-briefcase"></i>
       </div>
       <div>
-        <strong>헬스 코치</strong>
-        <span>AI Health Coach</span>
+        <strong>BabStroy</strong>
       </div>
     </div>
 
     <nav class="sidebar-nav" aria-label="메인 메뉴">
       <p>메뉴</p>
-      <RouterLink
+      <button
         v-for="item in navItems"
         :key="item.label"
+        type="button"
         :class="{ active: isActive(item), disabled: item.to === '#' }"
-        :to="item.to"
+        :disabled="item.to === '#'"
+        @click="navigateTo(item.to)"
       >
         <i :class="item.icon"></i>
         <span>{{ item.label }}</span>
         <em v-if="item.needsApi">API 필요</em>
-      </RouterLink>
-      <RouterLink
+      </button>
+      <button
         v-if="authStore.isAdmin"
+        type="button"
         :class="{ active: route.path === '/admin' }"
-        to="/admin"
+        @click="navigateTo('/admin')"
       >
         <i class="pi pi-chart-line"></i>
         <span>관리자</span>
-      </RouterLink>
+      </button>
     </nav>
 
     <div

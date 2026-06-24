@@ -1,11 +1,16 @@
 import { defineStore } from "pinia";
 import { ApiRequestError } from "../api/apiClient";
-import { confirmDailyGoal, fetchDailyGoalProgress, fetchDailyGoalRecommendation } from "../api/dailyGoalApi";
+import {
+  confirmDailyGoal,
+  fetchDailyGoalProgress,
+  fetchDailyGoalRecommendations,
+} from "../api/dailyGoalApi";
 import { useAuthStore } from "./authStore";
 
 export const useDailyGoalStore = defineStore("dailyGoal", {
   state: () => ({
     recommendation: null,
+    recommendations: null,
     currentGoal: null,
     progress: null,
     needsGoalSetup: false,
@@ -19,6 +24,7 @@ export const useDailyGoalStore = defineStore("dailyGoal", {
   actions: {
     clearDailyGoal() {
       this.recommendation = null;
+      this.recommendations = null;
       this.currentGoal = null;
       this.progress = null;
       this.needsGoalSetup = false;
@@ -26,19 +32,29 @@ export const useDailyGoalStore = defineStore("dailyGoal", {
       this.saveGoalError = "";
       this.progressError = "";
     },
-    async loadRecommendation(goalType) {
+    selectRecommendation(goalType) {
+      this.recommendation = this.recommendations?.[goalType] ?? null;
+      return this.recommendation;
+    },
+    async loadRecommendations(goalType, { force = false } = {}) {
       const authStore = useAuthStore();
 
       if (!authStore.isAuthenticated || this.isLoadingRecommendation) {
         return null;
       }
 
+      if (this.recommendations && !force) {
+        return this.selectRecommendation(goalType);
+      }
+
       this.isLoadingRecommendation = true;
       this.recommendationError = "";
 
       try {
-        this.recommendation = await fetchDailyGoalRecommendation(authStore.accessToken, goalType);
-        return this.recommendation;
+        this.recommendations = await fetchDailyGoalRecommendations(
+          authStore.accessToken,
+        );
+        return this.selectRecommendation(goalType);
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
           this.clearDailyGoal();
@@ -113,5 +129,7 @@ export const useDailyGoalStore = defineStore("dailyGoal", {
 });
 
 function isMissingDailyGoal(error) {
-  return error instanceof ApiRequestError && error.code === "DAILY_GOAL_NOT_FOUND";
+  return (
+    error instanceof ApiRequestError && error.code === "DAILY_GOAL_NOT_FOUND"
+  );
 }

@@ -16,10 +16,12 @@ const emit = defineEmits(["select"]);
 <template>
   <button class="goal-card" :class="{ selected }" type="button" @click="emit('select', goal.value)">
     <i :class="goal.icon"></i>
-    <span v-if="selected" class="goal-check">
-      <i class="pi pi-check"></i>
+    <span class="goal-card-copy">
+      <strong>{{ goal.title }}</strong>
+      <small>{{ goal.desc }}</small>
     </span>
-    <strong>{{ goal.title }}</strong>
-    <small>{{ goal.desc }}</small>
+    <span class="goal-check" :class="{ selected }">
+      <i v-if="selected" class="pi pi-check"></i>
+    </span>
   </button>
 </template>

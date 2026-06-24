@@ -117,32 +117,55 @@ export const useChatStore = defineStore("chat", {
 
       let savedAssistantMessage = null;
       let pendingToolResult = null;
+      const streamDebug = createChatStreamDebugLogger(requestId);
       const deltaRevealer = createDeltaRevealer((content) => {
         this.appendAssistantDelta(requestId, content);
       });
 
       try {
+        streamDebug.log("request_start");
         await postChatMessageStream(authStore.accessToken, trimmedContent, {
           delta: (event) => {
+            streamDebug.logDelta(event?.content || "");
             deltaRevealer.enqueue(event?.content || "");
           },
           assistant_done: (event) => {
+            streamDebug.log("assistant_done", {
+              contentLength: event?.message?.content?.length || 0,
+            });
             savedAssistantMessage = event?.message || null;
-            this.markStreamingUserSaved(requestId);
+            this.completeStreamingAssistant(requestId, savedAssistantMessage);
+            streamDebug.log("assistant_done_applied");
           },
           tool_result: (event) => {
+            streamDebug.log("tool_result", {
+              status: event?.status,
+              hasMeal: Boolean(event?.mealProposal?.items?.length),
+              hasExercise: Boolean(event?.exerciseProposal?.activityKeyword),
+              hasWeight: Boolean(event?.weightProposal?.weightKg),
+            });
             pendingToolResult = event;
           },
           error: (event) => {
+            streamDebug.log("stream_error", {
+              code: event?.code,
+              message: event?.message,
+            });
             throw new Error(event?.message || "답변 생성에 실패했습니다.");
           },
         });
+        streamDebug.log("stream_done");
         await deltaRevealer.flush();
+        streamDebug.log("flush_done");
         this.completeStreamingMessages(requestId, savedAssistantMessage);
         this.applyToolResult(pendingToolResult);
+        streamDebug.log("proposal_applied");
         this.refreshSummary();
       } catch (error) {
         await deltaRevealer.flush();
+        streamDebug.log("failed", {
+          message: error.message,
+        });
         if (authStore.handleAuthFailure(error)) {
           this.clearMessages();
           return;
@@ -312,6 +335,36 @@ export const useChatStore = defineStore("chat", {
         pendingAssistantMessage.content += content;
       }
     },
+    completeStreamingAssistant(requestId, assistantMessage) {
+      this.messages = this.messages.map((message) => {
+        if (message.clientId === `${requestId}-user`) {
+          return {
+            ...message,
+            pending: false,
+          };
+        }
+
+        if (message.clientId === `${requestId}-assistant`) {
+          if (!assistantMessage) {
+            return {
+              ...message,
+              pending: false,
+            };
+          }
+
+          return {
+            ...assistantMessage,
+            clientId: message.clientId,
+            clientOrder: message.clientOrder,
+            content: message.content || assistantMessage.content,
+            createdAt: message.createdAt,
+            pending: false,
+          };
+        }
+
+        return message;
+      });
+    },
     completeStreamingMessages(requestId, assistantMessage) {
       this.messages = this.messages.map((message) => {
         if (message.clientId === `${requestId}-user`) {
@@ -377,6 +430,53 @@ export const useChatStore = defineStore("chat", {
     },
   },
 });
+
+function createChatStreamDebugLogger(requestId) {
+  const enabled = import.meta.env.DEV;
+  const startedAt = performance.now();
+  let deltaCount = 0;
+  let deltaChars = 0;
+  let firstDeltaLogged = false;
+
+  function log(eventName, details = {}) {
+    if (!enabled) {
+      return;
+    }
+
+    console.debug("[chat-stream]", {
+      requestId,
+      event: eventName,
+      elapsedMs: Math.round(performance.now() - startedAt),
+      ...details,
+    });
+  }
+
+  function logDelta(content) {
+    deltaCount += 1;
+    deltaChars += content.length;
+
+    if (!firstDeltaLogged) {
+      firstDeltaLogged = true;
+      log("first_delta", {
+        deltaCount,
+        deltaChars,
+      });
+      return;
+    }
+
+    if (deltaCount % 20 === 0) {
+      log("delta_progress", {
+        deltaCount,
+        deltaChars,
+      });
+    }
+  }
+
+  return {
+    log,
+    logDelta,
+  };
+}
 
 function createDeltaRevealer(onReveal) {
   let queue = "";

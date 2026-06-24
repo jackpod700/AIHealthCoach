@@ -1,11 +1,7 @@
 import { apiRequest } from "./apiClient";
 
-export function fetchDailyGoalRecommendation(accessToken, goalType) {
-  const searchParams = new URLSearchParams({
-    goalType,
-  });
-
-  return apiRequest(`/api/daily-goals/recommendation?${searchParams.toString()}`, {
+export function fetchDailyGoalRecommendations(accessToken) {
+  return apiRequest("/api/daily-goals/recommendations", {
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },

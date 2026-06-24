@@ -1,5 +1,6 @@
 <script setup>
 import { computed, reactive, ref, watch } from "vue";
+import UserGoalSettingsCard from "../shared/UserGoalSettingsCard.vue";
 import { goalOptions } from "../../constants/authOptions";
 
 const props = defineProps({
@@ -56,71 +57,38 @@ const recommendationBase = reactive({
   exerciseCalorieGoal: 300,
 });
 
+const GOOD_TARGET_MIN_RATIO = 0.9;
+const GOOD_TARGET_MAX_RATIO = 1.1;
+
 const GOAL_RANGE_CONFIG = {
   WEIGHT_LOSS: {
     calorie: {
       minOffset: -500,
       maxOffset: 400,
-      recommendedMinOffset: -200,
-      recommendedMaxOffset: 100,
-      lowWarning:
-        "섭취 목표가 너무 낮아요. 너무 적은 섭취는 건강한 감량에 방해가 될 수 있어요.",
-      highWarning:
-        "섭취 목표가 감량 구간보다 넉넉해요. 감량 속도가 느려질 수 있어요.",
     },
     exercise: {
       minOffset: -150,
       maxOffset: 350,
-      recommendedMinOffset: -50,
-      recommendedMaxOffset: 150,
-      lowWarning:
-        "운동 목표가 감량 추천 구간보다 낮아요. 활동량을 조금 더 확보해보세요.",
-      highWarning:
-        "운동 목표가 높은 편이에요. 회복을 고려해 무리하지 않게 조절해 주세요.",
     },
   },
   MAINTENANCE: {
     calorie: {
       minOffset: -500,
       maxOffset: 500,
-      recommendedMinOffset: -150,
-      recommendedMaxOffset: 150,
-      lowWarning:
-        "섭취 목표가 유지 구간보다 낮아요. 체중이 의도보다 줄 수 있어요.",
-      highWarning:
-        "섭취 목표가 유지 구간보다 높아요. 체중이 서서히 늘 수 있어요.",
     },
     exercise: {
       minOffset: -150,
       maxOffset: 300,
-      recommendedMinOffset: -75,
-      recommendedMaxOffset: 125,
-      lowWarning:
-        "운동 목표가 유지 추천 구간보다 낮아요. 컨디션 유지가 어려울 수 있어요.",
-      highWarning:
-        "운동 목표가 높은 편이에요. 피로가 쌓이지 않게 조절해 주세요.",
     },
   },
   MUSCLE_GAIN: {
     calorie: {
       minOffset: -400,
       maxOffset: 700,
-      recommendedMinOffset: -100,
-      recommendedMaxOffset: 250,
-      lowWarning:
-        "섭취 목표가 근성장 추천 구간보다 낮아요. 회복과 근육 증가에 부족할 수 있어요.",
-      highWarning:
-        "섭취 목표가 높은 편이에요. 체지방 증가 속도가 빨라질 수 있어요.",
     },
     exercise: {
       minOffset: -100,
       maxOffset: 400,
-      recommendedMinOffset: -50,
-      recommendedMaxOffset: 200,
-      lowWarning:
-        "운동 목표가 근성장 추천 구간보다 낮아요. 충분한 운동 자극을 확보해보세요.",
-      highWarning:
-        "운동 목표가 높은 편이에요. 근성장에는 휴식과 회복도 중요해요.",
     },
   },
 };
@@ -140,11 +108,6 @@ const calorieRange = computed(() => {
   return {
     min: Math.max(1000, roundToStep(base + config.minOffset, 50)),
     max: roundToStep(base + config.maxOffset, 50),
-    recommendedMin: Math.max(
-      1000,
-      roundToStep(base + config.recommendedMinOffset, 50),
-    ),
-    recommendedMax: roundToStep(base + config.recommendedMaxOffset, 50),
   };
 });
 
@@ -155,17 +118,26 @@ const exerciseRange = computed(() => {
   return {
     min: Math.max(0, roundToStep(base + config.minOffset, 50)),
     max: roundToStep(base + config.maxOffset, 50),
-    recommendedMin: Math.max(
-      0,
-      roundToStep(base + config.recommendedMinOffset, 50),
-    ),
-    recommendedMax: roundToStep(base + config.recommendedMaxOffset, 50),
   };
 });
 
-const calorieBandStyle = computed(() => rangeBandStyle(calorieRange.value));
+const calorieSliderStyle = computed(() =>
+  goalSliderStyle(
+    form.calorieIntakeGoal,
+    calorieRange.value.min,
+    calorieRange.value.max,
+    calorieTone.value,
+  ),
+);
 
-const exerciseBandStyle = computed(() => rangeBandStyle(exerciseRange.value));
+const exerciseSliderStyle = computed(() =>
+  goalSliderStyle(
+    form.exerciseCalorieGoal,
+    exerciseRange.value.min,
+    exerciseRange.value.max,
+    exerciseTone.value,
+  ),
+);
 
 const displayCalorieIntakeGoal = computed({
   get() {
@@ -185,57 +157,96 @@ const displayExerciseCalorieGoal = computed({
   },
 });
 
-const warnings = computed(() => {
-  const result = [];
-  const calorieGoal = displayCalorieIntakeGoal.value;
-  const exerciseGoal = displayExerciseCalorieGoal.value;
-
-  if (calorieGoal < calorieRange.value.recommendedMin) {
-    result.push(activeRangeConfig.value.calorie.lowWarning);
-  }
-
-  if (calorieGoal > calorieRange.value.recommendedMax) {
-    result.push(activeRangeConfig.value.calorie.highWarning);
-  }
-
-  if (exerciseGoal < exerciseRange.value.recommendedMin) {
-    result.push(activeRangeConfig.value.exercise.lowWarning);
-  }
-
-  if (exerciseGoal > exerciseRange.value.recommendedMax) {
-    result.push(activeRangeConfig.value.exercise.highWarning);
-  }
-
-  return result;
-});
-
 const hasImpossibleValues = computed(() => {
   return form.calorieIntakeGoal <= 0 || form.exerciseCalorieGoal < 0;
 });
 
 const calorieTone = computed(() => {
-  if (displayCalorieIntakeGoal.value < calorieRange.value.recommendedMin) {
-    return "low";
-  }
-
-  if (displayCalorieIntakeGoal.value > calorieRange.value.recommendedMax) {
-    return "loose";
-  }
-
-  return "balanced";
+  return goalTargetStatus(
+    displayCalorieIntakeGoal.value,
+    recommendationBase.calorieIntakeGoal,
+  );
 });
 
 const exerciseTone = computed(() => {
-  if (displayExerciseCalorieGoal.value < exerciseRange.value.recommendedMin) {
+  return goalTargetStatus(
+    displayExerciseCalorieGoal.value,
+    recommendationBase.exerciseCalorieGoal,
+  );
+});
+
+const calorieStatusLabel = computed(() => goalStatusLabel(calorieTone.value));
+const exerciseStatusLabel = computed(() => goalStatusLabel(exerciseTone.value));
+
+const goalFooterMessage = computed(() => {
+  if (props.recommendationError) {
+    return "추천값을 불러오지 못했어요. 저장은 가능하지만 추천 범위 판단은 잠시 사용할 수 없어요.";
+  }
+
+  if (calorieTone.value === "good" && exerciseTone.value === "good") {
+    return "추천 범위 안의 좋은 목표예요.";
+  }
+
+  return "저장은 가능하지만 추천 범위를 벗어난 목표가 있어요.";
+});
+
+const calorieGoalGuideMessage = computed(() => {
+  return goalGuideMessage(calorieTone.value, "섭취");
+});
+
+const exerciseGoalGuideMessage = computed(() => {
+  return goalGuideMessage(exerciseTone.value, "운동");
+});
+
+function goalTargetStatus(value, recommended) {
+  const target = Number(recommended);
+
+  if (!Number.isFinite(target) || target <= 0) {
+    return "unavailable";
+  }
+
+  if (value < target * GOOD_TARGET_MIN_RATIO) {
     return "low";
   }
 
-  if (displayExerciseCalorieGoal.value > exerciseRange.value.recommendedMax) {
+  if (value > target * GOOD_TARGET_MAX_RATIO) {
     return "high";
   }
 
-  return "balanced";
-});
+  return "good";
+}
+
+function goalStatusLabel(status) {
+  if (status === "low") {
+    return "너무 낮음";
+  }
+
+  if (status === "high") {
+    return "너무 높음";
+  }
+
+  if (status === "unavailable") {
+    return "추천 확인 중";
+  }
+
+  return "좋은 목표";
+}
+
+function goalGuideMessage(status, metricLabel) {
+  if (status === "low") {
+    return `목표 ${metricLabel}가 추천보다 낮아요. 조금 올려보면 더 균형 잡힌 목표가 돼요.`;
+  }
+
+  if (status === "high") {
+    return `목표 ${metricLabel}가 추천보다 높아요. 부담이 크지 않도록 낮추는 것도 좋아요.`;
+  }
+
+  if (status === "unavailable") {
+    return "추천값을 기준으로 목표 범위를 확인하는 중이에요.";
+  }
+
+  return `목표 ${metricLabel}가 추천 범위 안에 있어요. 좋은 목표입니다.`;
+}
 
 watch(
   () => props.initialGoalType,
@@ -308,149 +319,113 @@ function roundToStep(value, step) {
   return Math.round(value / step) * step;
 }
 
-function rangeBandStyle(range) {
-  const size = Math.max(range.max - range.min, 1);
-  const left = ((range.recommendedMin - range.min) / size) * 100;
-  const right = 100 - ((range.recommendedMax - range.min) / size) * 100;
-
-  return {
-    "--band-left": `${Math.max(0, Math.min(100, left))}%`,
-    "--band-right": `${Math.max(0, Math.min(100, right))}%`,
-  };
+function goalSliderPercent(value, min, max) {
+  return Math.min(
+    Math.max(((Number(value) - min) / Math.max(max - min, 1)) * 100, 0),
+    100,
+  );
 }
 
-function rangeTickStyle(value, range) {
-  const size = Math.max(range.max - range.min, 1);
-  const left = ((value - range.min) / size) * 100;
+function goalSliderStyle(value, min, max, tone) {
+  const percent = goalSliderPercent(value, min, max);
+  const color =
+    tone === "high"
+      ? "#d6453f"
+      : tone === "low"
+        ? "#d89b2f"
+        : tone === "unavailable"
+          ? "#8a908a"
+        : "#2f8a55";
 
   return {
-    left: `${Math.max(0, Math.min(100, left))}%`,
+    "--goal-slider-percent": `${percent}%`,
+    "--goal-slider-color": color,
   };
 }
 </script>
 
 <template>
-  <article class="daily-goal-setup-card">
-    <div class="analysis-title">
-      <i></i>
-      <strong>목표 설정</strong>
-    </div>
-
-    <h2>{{ title }}</h2>
-    <p>{{ description }}</p>
-
-    <div class="goal-setup-options">
-      <button
-        v-for="goal in goalOptions"
-        :key="goal.value"
-        type="button"
-        :class="{ active: selectedGoalType === goal.value }"
-        @click="selectGoal(goal.value)"
-      >
-        <i :class="goal.icon"></i>
-        <span>{{ goal.title }}</span>
-      </button>
-    </div>
+  <UserGoalSettingsCard
+    :model-value="selectedGoalType"
+    :options="goalOptions"
+    :title="title"
+    compact
+    :show-edit-button="false"
+    :show-overview="false"
+    :selector-disabled="isLoadingRecommendation"
+    @select="selectGoal"
+  >
+    <template #after-selector>
+      <p class="daily-goal-card-description">{{ description }}</p>
+    </template>
 
     <div v-if="recommendationError" class="daily-goal-inline-error">
       {{ recommendationError }}
     </div>
 
-    <div class="goal-slider-list">
-      <label :class="['goal-slider-field', calorieTone]">
-        <span>
-          <b>하루 섭취 목표</b>
-          <strong>{{ formatNumber(displayCalorieIntakeGoal) }} kcal</strong>
-        </span>
-        <div class="goal-range-wrap">
+    <div class="profile-goal-inline-editor">
+      <label :class="calorieTone">
+        <div class="profile-goal-slider-copy">
+          <span>
+            하루 섭취 목표
+            <b class="profile-goal-status" :class="calorieTone">
+              {{ calorieStatusLabel }}
+            </b>
+          </span>
+          <p>{{ calorieGoalGuideMessage }}</p>
+        </div>
+        <strong>{{ formatNumber(displayCalorieIntakeGoal) }} kcal</strong>
+        <div class="profile-goal-slider" :style="calorieSliderStyle">
+          <div class="profile-goal-slider-track"></div>
+          <div class="profile-goal-slider-fill"></div>
+          <div class="profile-goal-slider-thumb">
+            <i></i>
+            <b>{{ formatNumber(displayCalorieIntakeGoal) }}</b>
+          </div>
           <input
             v-model.number="form.calorieIntakeGoal"
             :min="calorieRange.min"
             :max="calorieRange.max"
-            :style="calorieBandStyle"
             step="1"
             type="range"
           />
-          <div class="goal-range-ticks">
-            <small :style="rangeTickStyle(calorieRange.min, calorieRange)">{{
-              formatNumber(calorieRange.min)
-            }}</small>
-            <small
-              :style="
-                rangeTickStyle(calorieRange.recommendedMin, calorieRange)
-              "
-              >{{ formatNumber(calorieRange.recommendedMin) }}</small
-            >
-            <small
-              :style="
-                rangeTickStyle(calorieRange.recommendedMax, calorieRange)
-              "
-              >{{ formatNumber(calorieRange.recommendedMax) }}</small
-            >
-            <small :style="rangeTickStyle(calorieRange.max, calorieRange)">{{
-              formatNumber(calorieRange.max)
-            }}</small>
-          </div>
         </div>
-        <input
-          v-model.number="displayCalorieIntakeGoal"
-          min="1"
-          step="50"
-          type="number"
-        />
       </label>
 
-      <label :class="['goal-slider-field', exerciseTone]">
-        <span>
-          <b>하루 운동 목표</b>
-          <strong>{{ formatNumber(displayExerciseCalorieGoal) }} kcal</strong>
-        </span>
-        <div class="goal-range-wrap">
+      <label :class="exerciseTone">
+        <div class="profile-goal-slider-copy">
+          <span>
+            하루 운동 목표
+            <b class="profile-goal-status" :class="exerciseTone">
+              {{ exerciseStatusLabel }}
+            </b>
+          </span>
+          <p>{{ exerciseGoalGuideMessage }}</p>
+        </div>
+        <strong>{{ formatNumber(displayExerciseCalorieGoal) }} kcal</strong>
+        <div class="profile-goal-slider" :style="exerciseSliderStyle">
+          <div class="profile-goal-slider-track"></div>
+          <div class="profile-goal-slider-fill"></div>
+          <div class="profile-goal-slider-thumb">
+            <i></i>
+            <b>{{ formatNumber(displayExerciseCalorieGoal) }}</b>
+          </div>
           <input
             v-model.number="form.exerciseCalorieGoal"
             :min="exerciseRange.min"
             :max="exerciseRange.max"
-            :style="exerciseBandStyle"
             step="1"
             type="range"
           />
-          <div class="goal-range-ticks">
-            <small :style="rangeTickStyle(exerciseRange.min, exerciseRange)">{{
-              formatNumber(exerciseRange.min)
-            }}</small>
-            <small
-              :style="
-                rangeTickStyle(exerciseRange.recommendedMin, exerciseRange)
-              "
-              >{{ formatNumber(exerciseRange.recommendedMin) }}</small
-            >
-            <small
-              :style="
-                rangeTickStyle(exerciseRange.recommendedMax, exerciseRange)
-              "
-              >{{ formatNumber(exerciseRange.recommendedMax) }}</small
-            >
-            <small :style="rangeTickStyle(exerciseRange.max, exerciseRange)">{{
-              formatNumber(exerciseRange.max)
-            }}</small>
-          </div>
         </div>
-        <input
-          v-model.number="displayExerciseCalorieGoal"
-          min="0"
-          step="50"
-          type="number"
-        />
       </label>
-    </div>
-
-    <div v-if="warnings.length" class="daily-goal-warning-list">
-      <p v-for="warning in warnings" :key="warning">{{ warning }}</p>
     </div>
 
     <div v-if="saveError" class="daily-goal-inline-error">
       {{ saveError }}
     </div>
+
+    <p class="daily-goal-card-description">{{ goalFooterMessage }}</p>
 
     <button
       class="daily-goal-save-button"
@@ -460,5 +435,5 @@ function rangeTickStyle(value, range) {
     >
       {{ isSaving ? "저장 중..." : submitLabel }}
     </button>
-  </article>
+  </UserGoalSettingsCard>
 </template>

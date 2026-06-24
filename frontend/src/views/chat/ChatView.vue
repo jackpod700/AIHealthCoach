@@ -1,13 +1,18 @@
 <script setup>
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { marked } from "marked";
 import { useRouter } from "vue-router";
-import AppSidebar from "../../components/app/AppSidebar.vue";
 import DailyGoalSetupCard from "../../components/chat/DailyGoalSetupCard.vue";
 import ExerciseProposalCard from "../../components/chat/ExerciseProposalCard.vue";
 import MealProposalCard from "../../components/chat/MealProposalCard.vue";
 import WeightProposalCard from "../../components/chat/WeightProposalCard.vue";
-import { goalOptions } from "../../constants/authOptions";
 import { useAuthStore } from "../../stores/authStore";
 import { useChatStore } from "../../stores/chatStore";
 import { useDailyGoalStore } from "../../stores/dailyGoalStore";
@@ -30,27 +35,11 @@ const fileInputRef = ref(null);
 const attachedImages = ref([]);
 const imageAttachmentError = ref("");
 const isDraggingImage = ref(false);
-const showExerciseGoalCelebration = ref(false);
+const isInitialScrollReady = ref(false);
 const GMS_IMAGE_TARGET_BYTES = 7 * 1024;
 const GMS_IMAGE_MAX_DIMENSION = 512;
-let exerciseGoalCelebrationTimer = null;
-
-const mealTypeMeta = {
-  BREAKFAST: { label: "아침", dot: "yellow" },
-  LUNCH: { label: "점심", dot: "orange" },
-  DINNER: { label: "저녁", dot: "navy" },
-  SNACK: { label: "간식", dot: "yellow" },
-};
 
 const todayDateKey = computed(() => toDateKey(new Date()));
-
-const todayLabel = computed(() => {
-  return new Intl.DateTimeFormat("ko-KR", {
-    month: "long",
-    day: "numeric",
-    weekday: "long",
-  }).format(new Date());
-});
 
 const displayMessages = computed(() => {
   return chatStore.orderedMessages;
@@ -61,63 +50,14 @@ const hasMessages = computed(() => {
 });
 
 watch(
-  () => displayMessages.value.map((chatMessage) => chatMessage.content).join("\n"),
+  () =>
+    displayMessages.value.map((chatMessage) => chatMessage.content).join("\n"),
   () => {
-    void scrollToBottom();
+    if (chatStore.isSending) {
+      void scrollToBottom();
+    }
   },
 );
-
-const goalLabel = computed(() => {
-  return (
-    goalOptions.find((goal) => goal.value === profileStore.profile?.goalType)
-      ?.title || "목표 미설정"
-  );
-});
-
-const todayMeals = computed(() => {
-  return mealStore.dailyMeal?.meals || [];
-});
-
-const hasTodayMeals = computed(() => todayMeals.value.length > 0);
-
-const dailyGoalProgress = computed(
-  () => dailyGoalStore.progress?.progress || null,
-);
-
-const calorieProgress = computed(
-  () => dailyGoalProgress.value?.calorieIntake || null,
-);
-
-const exerciseProgress = computed(
-  () => dailyGoalProgress.value?.exerciseCalories || null,
-);
-
-const hasDailyGoalProgress = computed(() =>
-  Boolean(calorieProgress.value && exerciseProgress.value),
-);
-
-const macroRatio = computed(() => dailyGoalStore.progress?.macroRatio || null);
-
-const macroItems = computed(() => {
-  const macros = macroRatio.value;
-
-  return [
-    { key: "protein", label: "단백질", value: macros?.protein },
-    { key: "carbohydrate", label: "탄수화물", value: macros?.carbohydrate },
-    { key: "fat", label: "지방", value: macros?.fat },
-  ];
-});
-
-const todayTotals = computed(() => {
-  const dailyMeal = mealStore.dailyMeal;
-
-  return {
-    calories: toNumber(dailyMeal?.dailyTotalCalories),
-    carbohydrate: toNumber(dailyMeal?.dailyTotalCarbohydrate),
-    protein: toNumber(dailyMeal?.dailyTotalProtein),
-    fat: toNumber(dailyMeal?.dailyTotalFat),
-  };
-});
 
 marked.setOptions({
   breaks: true,
@@ -125,6 +65,7 @@ marked.setOptions({
 });
 
 onMounted(async () => {
+  isInitialScrollReady.value = false;
   window.addEventListener("paste", handlePaste);
 
   await Promise.all([
@@ -140,18 +81,18 @@ onMounted(async () => {
   }
 
   if (dailyGoalStore.needsGoalSetup) {
-    await dailyGoalStore.loadRecommendation(
+    await dailyGoalStore.loadRecommendations(
       profileStore.profile?.goalType || "WEIGHT_LOSS",
     );
   }
 
   await scrollToBottom();
+  isInitialScrollReady.value = true;
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener("paste", handlePaste);
   revokeAttachedImageUrls();
-  clearExerciseGoalCelebrationTimer();
 });
 
 async function sendMessage() {
@@ -172,8 +113,8 @@ async function sendMessage() {
 
   const hasProposal = Boolean(
     chatStore.mealProposal ||
-      chatStore.exerciseProposal ||
-      chatStore.weightProposal,
+    chatStore.exerciseProposal ||
+    chatStore.weightProposal,
   );
 
   if (!authStore.isAuthenticated) {
@@ -450,10 +391,6 @@ async function confirmExerciseProposal(payload) {
     return;
   }
 
-  const shouldCheckCelebration = payload.exerciseDate === todayDateKey.value;
-  const beforeProgress = shouldCheckCelebration
-    ? dailyGoalStore.progress || (await dailyGoalStore.loadProgress(todayDateKey.value))
-    : null;
   const saved = await exerciseStore.saveRecord(payload);
 
   if (!authStore.isAuthenticated) {
@@ -464,11 +401,7 @@ async function confirmExerciseProposal(payload) {
 
   if (saved) {
     chatStore.completeExerciseProposal();
-    const afterProgress = await dailyGoalStore.loadProgress(todayDateKey.value);
-
-    if (shouldCelebrateExerciseGoal(beforeProgress, afterProgress)) {
-      triggerExerciseGoalCelebration();
-    }
+    await dailyGoalStore.loadProgress(todayDateKey.value);
   } else {
     chatStore.failExerciseProposal(
       exerciseStore.saveRecordError || "운동 기록 저장에 실패했습니다.",
@@ -477,30 +410,6 @@ async function confirmExerciseProposal(payload) {
 
   chatStore.finishConfirmingExercise();
   await scrollToBottom();
-}
-
-function shouldCelebrateExerciseGoal(beforeProgress, afterProgress) {
-  const before = beforeProgress?.progress?.exerciseCalories;
-  const after = afterProgress?.progress?.exerciseCalories;
-  const goal = Number(after?.goal);
-
-  return goal > 0 && Number(before?.current || 0) < goal && Number(after?.current || 0) >= goal;
-}
-
-function triggerExerciseGoalCelebration() {
-  showExerciseGoalCelebration.value = true;
-  clearExerciseGoalCelebrationTimer();
-  exerciseGoalCelebrationTimer = window.setTimeout(() => {
-    showExerciseGoalCelebration.value = false;
-    exerciseGoalCelebrationTimer = null;
-  }, 2600);
-}
-
-function clearExerciseGoalCelebrationTimer() {
-  if (exerciseGoalCelebrationTimer) {
-    window.clearTimeout(exerciseGoalCelebrationTimer);
-    exerciseGoalCelebrationTimer = null;
-  }
 }
 
 async function confirmWeightProposal(payload) {
@@ -530,7 +439,12 @@ async function confirmWeightProposal(payload) {
 }
 
 async function recommendDailyGoal(goalType) {
-  await dailyGoalStore.loadRecommendation(goalType);
+  if (dailyGoalStore.recommendations) {
+    dailyGoalStore.selectRecommendation(goalType);
+    return;
+  }
+
+  await dailyGoalStore.loadRecommendations(goalType);
 }
 
 async function saveDailyGoal(goal) {
@@ -574,38 +488,6 @@ function formatMessageTime(value) {
     hour: "numeric",
     minute: "2-digit",
   }).format(new Date(value));
-}
-
-function mealLabel(mealType) {
-  return mealTypeMeta[mealType]?.label || mealType;
-}
-
-function mealDot(mealType) {
-  return mealTypeMeta[mealType]?.dot || "yellow";
-}
-
-function mealFoodNames(meal) {
-  return (
-    meal.items?.map((item) => item.foodName).join(" + ") ||
-    mealLabel(meal.mealType)
-  );
-}
-
-function toNumber(value) {
-  const numberValue = Number(value);
-  return Number.isFinite(numberValue) ? numberValue : 0;
-}
-
-function formatNumber(value) {
-  return Math.round(toNumber(value)).toLocaleString("ko-KR");
-}
-
-function progressWidth(metric) {
-  return `${Math.min(Math.max(toNumber(metric?.percent), 0), 100)}%`;
-}
-
-function macroStatusClass(macro) {
-  return (macro?.status || "LOW").toLowerCase();
 }
 
 function toDateKey(date) {
@@ -662,334 +544,211 @@ function sanitizeHtml(html = "") {
 </script>
 
 <template>
-  <main class="chat-home">
-    <AppSidebar />
-
-    <section class="chat-workspace">
-      <header class="chat-header">
+  <div class="chat-body">
+    <section
+      class="chat-thread"
+      :class="{ 'dragging-image': isDraggingImage }"
+      @dragenter.prevent="handleDragEnter"
+      @dragover.prevent="handleDragOver"
+      @dragleave.prevent="handleDragLeave"
+      @drop.prevent="handleDrop"
+    >
+      <header class="chat-header subtle">
         <div>
-          <p class="deco">Today's Coaching</p>
+          <p class="deco">TODAY'S COACHING</p>
           <h1>오늘의 코칭</h1>
         </div>
-        <div class="streak-chip">
+        <div class="chat-status-pill">
           <i></i>
-          {{ goalLabel }} 목표 진행 중
+          <span>코칭 진행 중</span>
         </div>
       </header>
 
-      <div class="chat-body">
-        <section
-          class="chat-thread"
-          :class="{ 'dragging-image': isDraggingImage }"
-          @dragenter.prevent="handleDragEnter"
-          @dragover.prevent="handleDragOver"
-          @dragleave.prevent="handleDragLeave"
-          @drop.prevent="handleDrop"
-        >
-          <div class="chat-scroll" ref="threadRef">
-            <div class="day-pill">오늘 · {{ todayLabel }}</div>
+      <div
+        class="chat-scroll"
+        :class="{ initializing: !isInitialScrollReady }"
+        ref="threadRef"
+      >
+        <div class="chat-message-stack">
+          <div v-if="chatStore.isLoading" class="chat-state-card">
+            채팅 기록을 불러오는 중입니다...
+          </div>
 
-            <div v-if="chatStore.isLoading" class="chat-state-card">
-              채팅 기록을 불러오는 중입니다...
+          <div v-else-if="chatStore.error" class="chat-state-card error">
+            {{ chatStore.error }}
+          </div>
+
+          <div
+            v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup"
+            class="chat-state-card"
+          >
+            아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
+          </div>
+
+          <div v-if="dailyGoalStore.needsGoalSetup" class="message-row coach">
+            <div class="coach-icon">
+              <i class="pi pi-compass"></i>
             </div>
+            <DailyGoalSetupCard
+              :initial-goal-type="profileStore.profile?.goalType || 'WEIGHT_LOSS'"
+              :recommendation="dailyGoalStore.recommendation"
+              :is-loading-recommendation="dailyGoalStore.isLoadingRecommendation"
+              :is-saving="dailyGoalStore.isSavingGoal"
+              :recommendation-error="dailyGoalStore.recommendationError"
+              :save-error="dailyGoalStore.saveGoalError"
+              @recommend="recommendDailyGoal"
+              @save="saveDailyGoal"
+            />
+          </div>
 
-            <div v-else-if="chatStore.error" class="chat-state-card error">
-              {{ chatStore.error }}
-            </div>
-
-            <div
-              v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup"
-              class="chat-state-card"
-            >
-              아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
-            </div>
-
-            <div v-if="dailyGoalStore.needsGoalSetup" class="message-row coach">
-              <div class="coach-icon">
-                <i class="pi pi-compass"></i>
-              </div>
-              <DailyGoalSetupCard
-                :initial-goal-type="
-                  profileStore.profile?.goalType || 'WEIGHT_LOSS'
-                "
-                :recommendation="dailyGoalStore.recommendation"
-                :is-loading-recommendation="
-                  dailyGoalStore.isLoadingRecommendation
-                "
-                :is-saving="dailyGoalStore.isSavingGoal"
-                :recommendation-error="dailyGoalStore.recommendationError"
-                :save-error="dailyGoalStore.saveGoalError"
-                @recommend="recommendDailyGoal"
-                @save="saveDailyGoal"
-              />
-            </div>
-
-            <template
-              v-for="chatMessage in displayMessages"
-              :key="chatMessage.id || chatMessage.clientId"
-            >
-              <div v-if="isUserMessage(chatMessage)" class="message-row user">
+          <template
+            v-for="chatMessage in displayMessages"
+            :key="chatMessage.id || chatMessage.clientId"
+          >
+            <div v-if="isUserMessage(chatMessage)" class="message-row user">
+              <div class="user-message-line">
+                <time class="message-time">
+                  {{ formatMessageTime(chatMessage.createdAt) }}
+                </time>
                 <div class="message-bubble user-bubble">
                   {{ chatMessage.content }}
-                  <span>{{ formatMessageTime(chatMessage.createdAt) }}</span>
                 </div>
               </div>
+            </div>
 
-              <div v-else class="message-row coach">
-                <div class="coach-icon">
-                  <i class="pi pi-briefcase"></i>
-                </div>
-                <article
-                  class="assistant-card"
-                  :class="{
-                    pending: chatMessage.pending,
-                    failed: chatMessage.failed,
-                  }"
-                >
-                  <div class="analysis-title">
-                    <i></i>
-                    <strong>AI 코치 답변</strong>
-                  </div>
-                  <div
-                    class="markdown-content"
-                    v-html="renderMarkdown(chatMessage.content || pendingAssistantText(chatMessage))"
-                  ></div>
-                  <time>{{ formatMessageTime(chatMessage.createdAt) }}</time>
-                </article>
-              </div>
-            </template>
-
-            <div v-if="chatStore.mealProposal" class="message-row coach">
+            <div v-else class="message-row coach">
               <div class="coach-icon">
                 <i class="pi pi-briefcase"></i>
               </div>
-              <MealProposalCard
-                :proposal="chatStore.mealProposal"
-                :is-confirming="chatStore.isConfirmingMeal"
-                :error="chatStore.mealProposalError"
-                @confirm="confirmMealProposal"
-                @dismiss="chatStore.dismissMealProposal"
-              />
-            </div>
-
-            <div v-if="chatStore.exerciseProposal" class="message-row coach">
-              <div class="coach-icon">
-                <i class="pi pi-bolt"></i>
+              <div class="assistant-message-stack">
+                <div class="assistant-name">AI 코치</div>
+                <div class="assistant-message-line">
+                  <article
+                    class="assistant-card"
+                    :class="{
+                      pending: chatMessage.pending,
+                      failed: chatMessage.failed,
+                    }"
+                  >
+                    <div
+                      class="markdown-content"
+                      v-html="
+                        renderMarkdown(
+                          chatMessage.content ||
+                            pendingAssistantText(chatMessage),
+                        )
+                      "
+                    ></div>
+                  </article>
+                  <time class="message-time">
+                    {{ formatMessageTime(chatMessage.createdAt) }}
+                  </time>
+                </div>
               </div>
-              <ExerciseProposalCard
-                :proposal="chatStore.exerciseProposal"
-                :is-confirming="chatStore.isConfirmingExercise"
-                :error="chatStore.exerciseProposalError"
-                @confirm="confirmExerciseProposal"
-                @dismiss="chatStore.dismissExerciseProposal"
-              />
             </div>
+          </template>
 
-            <div v-if="chatStore.weightProposal" class="message-row coach">
-              <div class="coach-icon">
-                <i class="pi pi-chart-line"></i>
-              </div>
-              <WeightProposalCard
-                :proposal="chatStore.weightProposal"
-                :is-confirming="chatStore.isConfirmingWeight"
-                :error="chatStore.weightProposalError"
-                @confirm="confirmWeightProposal"
-                @dismiss="chatStore.dismissWeightProposal"
-              />
+          <div v-if="chatStore.mealProposal" class="message-row coach">
+            <div class="coach-icon">
+              <i class="pi pi-briefcase"></i>
             </div>
-          </div>
-
-          <div
-            v-if="attachedImages.length || imageAttachmentError"
-            class="image-attachment-tray"
-          >
-            <div v-if="attachedImages.length" class="image-attachment-list">
-              <figure v-for="image in attachedImages" :key="image.id">
-                <img :src="image.previewUrl" :alt="image.file.name" />
-                <figcaption>
-                  {{ image.originalFile.name }} ·
-                  {{ formatBytes(image.file.size) }}
-                </figcaption>
-                <button
-                  type="button"
-                  aria-label="이미지 삭제"
-                  @click="removeAttachedImage(image.id)"
-                >
-                  <i class="pi pi-times"></i>
-                </button>
-              </figure>
-            </div>
-            <p v-if="imageAttachmentError" class="image-attachment-error">
-              {{ imageAttachmentError }}
-            </p>
-          </div>
-
-          <form class="chat-composer" @submit.prevent="sendMessage">
-            <input
-              ref="fileInputRef"
-              class="chat-image-input"
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              multiple
-              @change="handleImageInput"
+            <MealProposalCard
+              :proposal="chatStore.mealProposal"
+              :is-confirming="chatStore.isConfirmingMeal"
+              :error="chatStore.mealProposalError"
+              @confirm="confirmMealProposal"
+              @dismiss="chatStore.dismissMealProposal"
             />
-            <input
-              v-model="message"
-              placeholder="식단이나 운동을 편하게 기록해보세요..."
+          </div>
+
+          <div v-if="chatStore.exerciseProposal" class="message-row coach">
+            <div class="coach-icon">
+              <i class="pi pi-bolt"></i>
+            </div>
+            <ExerciseProposalCard
+              :proposal="chatStore.exerciseProposal"
+              :is-confirming="chatStore.isConfirmingExercise"
+              :error="chatStore.exerciseProposalError"
+              @confirm="confirmExerciseProposal"
+              @dismiss="chatStore.dismissExerciseProposal"
             />
-            <button
-              class="attach-image-button"
-              type="button"
-              aria-label="이미지 추가"
-              @click="openImagePicker"
-            >
-              <i class="pi pi-plus"></i>
-            </button>
-            <button type="button" aria-label="음성 입력">
-              <i class="pi pi-microphone"></i>
-            </button>
-            <button
-              class="send-button"
-              type="submit"
-              aria-label="전송"
-              :disabled="chatStore.isSending"
-            >
-              <i class="pi pi-send"></i>
-            </button>
-          </form>
-
-          <p class="composer-note">
-            AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와
-            상담하세요.
-          </p>
-        </section>
-
-        <aside class="today-panel">
-          <div class="today-head">
-            <p class="deco">Today</p>
-            <span>{{ todayLabel }}</span>
           </div>
 
-          <div v-if="dailyGoalStore.progressError" class="api-needed-panel">
-            <strong>오늘 목표 진행률을 불러오지 못했어요</strong>
-            <p>{{ dailyGoalStore.progressError }}</p>
+          <div v-if="chatStore.weightProposal" class="message-row coach">
+            <div class="coach-icon">
+              <i class="pi pi-chart-line"></i>
+            </div>
+            <WeightProposalCard
+              :proposal="chatStore.weightProposal"
+              :is-confirming="chatStore.isConfirmingWeight"
+              :error="chatStore.weightProposalError"
+              @confirm="confirmWeightProposal"
+              @dismiss="chatStore.dismissWeightProposal"
+            />
           </div>
-
-          <div
-            v-else-if="dailyGoalStore.needsGoalSetup"
-            class="api-needed-panel"
-          >
-            <strong>일일 목표를 먼저 설정해 주세요</strong>
-            <p>
-              채팅창의 목표 설정 카드에서 추천값을 확인하고 오늘의 기준을 저장할
-              수 있어요.
-            </p>
-          </div>
-
-          <section
-            class="calorie-card"
-            :class="{ 'pending-api': !hasDailyGoalProgress }"
-          >
-            <span>오늘 섭취 목표</span>
-            <strong>
-              {{ calorieProgress ? formatNumber(calorieProgress.current) : "-"
-              }}<small
-                >/
-                {{ calorieProgress ? formatNumber(calorieProgress.goal) : "-" }}
-                kcal</small
-              >
-            </strong>
-            <div class="progress-track">
-              <i :style="{ width: progressWidth(calorieProgress) }"></i>
-            </div>
-            <p v-if="calorieProgress">
-              남은 섭취량 {{ formatNumber(calorieProgress.remaining) }} kcal ·
-              {{ calorieProgress.percent }}%
-            </p>
-            <p v-else>목표를 설정하면 진행률을 볼 수 있어요.</p>
-          </section>
-
-          <section
-            class="exercise-goal-card"
-            :class="{
-              'pending-api': !hasDailyGoalProgress,
-              celebrating: showExerciseGoalCelebration,
-            }"
-          >
-            <div v-if="showExerciseGoalCelebration" class="exercise-goal-bursts" aria-hidden="true">
-              <i v-for="index in 16" :key="index"></i>
-            </div>
-            <span>오늘 운동 목표</span>
-            <strong>
-              {{
-                exerciseProgress ? formatNumber(exerciseProgress.current) : "-"
-              }}<small
-                >/
-                {{
-                  exerciseProgress ? formatNumber(exerciseProgress.goal) : "-"
-                }}
-                kcal</small
-              >
-            </strong>
-            <div class="progress-track">
-              <i :style="{ width: progressWidth(exerciseProgress) }"></i>
-            </div>
-            <p v-if="exerciseProgress">
-              남은 운동량 {{ formatNumber(exerciseProgress.remaining) }} kcal ·
-              {{ exerciseProgress.percent }}%
-            </p>
-            <p v-else>운동 목표도 함께 추적해요.</p>
-          </section>
-
-          <div
-            v-if="mealStore.dailyError"
-            class="api-needed-panel compact-panel"
-          >
-            <strong>오늘 식단 정보를 불러오지 못했어요</strong>
-            <p>{{ mealStore.dailyError }}</p>
-          </div>
-
-          <div class="macro-grid" :class="{ 'pending-api': !macroRatio }">
-            <div
-              v-for="macro in macroItems"
-              :key="macro.key"
-              :class="macroStatusClass(macro.value)"
-            >
-              <span>{{ macro.label }}</span>
-              <strong>
-                {{ macro.value ? formatNumber(macro.value.grams) : "-" }}g
-                <small>{{
-                  macro.value ? `${macro.value.percent}%` : ""
-                }}</small>
-              </strong>
-              <i :style="{ width: progressWidth(macro.value) }"></i>
-            </div>
-          </div>
-
-          <section class="today-log">
-            <h2>오늘의 기록</h2>
-
-            <article v-for="meal in todayMeals" :key="meal.mealId">
-              <time>{{ mealLabel(meal.mealType) }}</time>
-              <i :class="['dot', mealDot(meal.mealType)]"></i>
-              <div>
-                <strong>{{ mealFoodNames(meal) }}</strong>
-                <span
-                  >{{ mealLabel(meal.mealType) }} ·
-                  {{ formatNumber(meal.totalCalories) }} kcal</span
-                >
-              </div>
-            </article>
-
-            <div
-              v-if="!mealStore.isLoadingDaily && !hasTodayMeals"
-              class="api-list-empty"
-            >
-              오늘 저장된 식단 기록이 없어요.
-            </div>
-          </section>
-        </aside>
+        </div>
       </div>
+
+      <div
+        v-if="attachedImages.length || imageAttachmentError"
+        class="image-attachment-tray"
+      >
+        <div v-if="attachedImages.length" class="image-attachment-list">
+          <figure v-for="image in attachedImages" :key="image.id">
+            <img :src="image.previewUrl" :alt="image.file.name" />
+            <figcaption>
+              {{ image.originalFile.name }} ·
+              {{ formatBytes(image.file.size) }}
+            </figcaption>
+            <button
+              type="button"
+              aria-label="이미지 삭제"
+              @click="removeAttachedImage(image.id)"
+            >
+              <i class="pi pi-times"></i>
+            </button>
+          </figure>
+        </div>
+        <p v-if="imageAttachmentError" class="image-attachment-error">
+          {{ imageAttachmentError }}
+        </p>
+      </div>
+
+      <form class="chat-composer" @submit.prevent="sendMessage">
+        <input
+          ref="fileInputRef"
+          class="chat-image-input"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          @change="handleImageInput"
+        />
+        <input
+          v-model="message"
+          placeholder="식단이나 운동을 편하게 기록해보세요..."
+        />
+        <button
+          class="attach-image-button"
+          type="button"
+          aria-label="이미지 추가"
+          @click="openImagePicker"
+        >
+          <i class="pi pi-plus"></i>
+        </button>
+        <button
+          class="send-button"
+          type="submit"
+          aria-label="전송"
+          :disabled="chatStore.isSending"
+        >
+          <i class="pi pi-send"></i>
+        </button>
+      </form>
+
+      <p class="composer-note">
+        AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.
+      </p>
     </section>
-  </main>
+
+  </div>
 </template>

@@ -23,35 +23,49 @@ const props = defineProps({
     type: [Number, String],
     default: null,
   },
+  selectedRecordDate: {
+    type: String,
+    default: "",
+  },
 });
 
+const emit = defineEmits(["selectRecord"]);
+
+const sortedRecords = computed(() =>
+  [...props.records].sort((a, b) => a.recordDate.localeCompare(b.recordDate)),
+);
+
 const chartData = computed(() => {
-  const sortedRecords = [...props.records].sort((a, b) => a.recordDate.localeCompare(b.recordDate));
   const targetWeight = Number(props.targetWeightKg);
   const hasTargetWeight = Number.isFinite(targetWeight);
 
   return {
-    labels: sortedRecords.map((record) => formatShortDate(record.recordDate)),
+    labels: sortedRecords.value.map((record) => formatShortDate(record.recordDate)),
     datasets: [
       {
         label: "몸무게",
-        data: sortedRecords.map((record) => Number(record.weightKg)),
-        borderColor: "#2f4a3c",
-        backgroundColor: "rgba(47, 74, 60, 0.12)",
-        pointBackgroundColor: "#2f4a3c",
+        data: sortedRecords.value.map((record) => Number(record.weightKg)),
+        borderColor: "#2f6b4d",
+        backgroundColor: "rgba(90, 158, 120, 0.18)",
+        pointBackgroundColor: sortedRecords.value.map((record) =>
+          record.recordDate === props.selectedRecordDate ? "#e8814a" : "#4e8a66",
+        ),
         pointBorderColor: "#fff",
         pointBorderWidth: 2,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: sortedRecords.value.map((record) =>
+          record.recordDate === props.selectedRecordDate ? 6 : 5,
+        ),
+        pointHoverRadius: 7,
+        pointHitRadius: 12,
         borderWidth: 3,
         fill: true,
-        tension: 0.35,
+        tension: 0.28,
       },
       ...(hasTargetWeight
         ? [
             {
               label: "목표 몸무게",
-              data: sortedRecords.map(() => targetWeight),
+              data: sortedRecords.value.map(() => targetWeight),
               borderColor: "#d9805a",
               borderDash: [6, 6],
               pointRadius: 0,
@@ -65,28 +79,84 @@ const chartData = computed(() => {
   };
 });
 
+const yAxisBounds = computed(() => {
+  const targetWeight = Number(props.targetWeightKg);
+  const values = sortedRecords.value
+    .map((record) => Number(record.weightKg))
+    .filter(Number.isFinite);
+
+  if (Number.isFinite(targetWeight)) {
+    values.push(targetWeight);
+  }
+
+  if (!values.length) {
+    return {};
+  }
+
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = Math.max(max - min, 1);
+  const padding = Math.max(range * 0.22, 2);
+
+  return {
+    suggestedMin: Math.max(Math.floor((min - padding) * 2) / 2, 0),
+    suggestedMax: Math.ceil((max + padding) * 2) / 2,
+  };
+});
+
 const chartOptions = computed(() => ({
   responsive: true,
   maintainAspectRatio: false,
+  layout: {
+    padding: {
+      top: 8,
+      right: 12,
+      bottom: 14,
+      left: 8,
+    },
+  },
+  onClick(_event, elements) {
+    const point = elements.find((element) => element.datasetIndex === 0);
+
+    if (!point) {
+      return;
+    }
+
+    const record = sortedRecords.value[point.index];
+
+    if (record) {
+      emit("selectRecord", record);
+    }
+  },
+  onHover(event, elements) {
+    if (event.native?.target) {
+      event.native.target.style.cursor = elements.length ? "pointer" : "default";
+    }
+  },
   interaction: {
     intersect: false,
     mode: "index",
   },
   plugins: {
     legend: {
-      position: "bottom",
-      labels: {
-        boxWidth: 10,
-        boxHeight: 10,
-        color: "#6f7c8d",
-        font: {
-          size: 11,
-          weight: 700,
-        },
-      },
+      display: false,
     },
     tooltip: {
+      displayColors: false,
+      backgroundColor: "#2a2e2b",
+      padding: 12,
+      titleFont: {
+        size: 12,
+        weight: 800,
+      },
+      bodyFont: {
+        size: 12,
+        weight: 700,
+      },
       callbacks: {
+        title(items) {
+          return items[0]?.label || "";
+        },
         label(context) {
           return `${context.dataset.label}: ${Number(context.parsed.y).toFixed(1)}kg`;
         },
@@ -95,30 +165,41 @@ const chartOptions = computed(() => ({
   },
   scales: {
     x: {
+      border: {
+        display: false,
+      },
       grid: {
         display: false,
       },
       ticks: {
-        color: "#8b96a4",
+        color: "#a7aca4",
+        padding: 8,
         font: {
-          size: 11,
-          weight: 700,
+          size: 12,
+          weight: 600,
         },
       },
     },
     y: {
       beginAtZero: false,
+      ...yAxisBounds.value,
+      border: {
+        display: false,
+      },
       grid: {
-        color: "rgba(234, 223, 206, 0.72)",
+        color: "#eff1ed",
+        borderDash: [4, 4],
+        drawTicks: false,
       },
       ticks: {
-        color: "#8b96a4",
+        color: "#a7aca4",
+        padding: 10,
         callback(value) {
           return `${value}kg`;
         },
         font: {
-          size: 11,
-          weight: 700,
+          size: 12,
+          weight: 600,
         },
       },
     },
@@ -127,16 +208,31 @@ const chartOptions = computed(() => ({
 
 function formatShortDate(dateKey) {
   const [, month, day] = dateKey.split("-");
-  return `${Number(month)}/${Number(day)}`;
+  return `${Number(month)}/${day}`;
 }
 </script>
 
 <template>
   <div class="weight-chart-frame">
-    <Line v-if="records.length" :data="chartData" :options="chartOptions" />
+    <div v-if="records.length" class="weight-chart-canvas">
+      <Line
+        :data="chartData"
+        :options="chartOptions"
+      />
+    </div>
     <div v-else class="weight-chart-empty">
       <strong>아직 기록이 없습니다.</strong>
       <span>첫 몸무게를 입력하면 추세 그래프가 나타납니다.</span>
+    </div>
+    <div v-if="records.length" class="weight-chart-legend" aria-hidden="true">
+      <span>
+        <i class="weight-line-sample"></i>
+        기록된 체중
+      </span>
+      <span v-if="targetWeightKg">
+        <i class="target-line-sample"></i>
+        목표 체중
+      </span>
     </div>
   </div>
 </template>
