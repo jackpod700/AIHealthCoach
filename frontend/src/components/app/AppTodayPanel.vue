@@ -4,8 +4,14 @@ import { ApiRequestError } from "../../api/apiClient";
 import { fetchDailyGoalProgress } from "../../api/dailyGoalApi";
 import { fetchDailyMeals } from "../../api/mealApi";
 import { useAuthStore } from "../../stores/authStore";
+import { useDailyGoalStore } from "../../stores/dailyGoalStore";
+import { useMealStore } from "../../stores/mealStore";
+import { useProfileStore } from "../../stores/profileStore";
 
 const authStore = useAuthStore();
+const dailyGoalStore = useDailyGoalStore();
+const mealStore = useMealStore();
+const profileStore = useProfileStore();
 const todayMeal = ref(null);
 const todayProgress = ref(null);
 const todayMealError = ref("");
@@ -73,12 +79,53 @@ watch(
   },
 );
 
+watch(
+  () => ({
+    dailyMeal: mealStore.dailyMeal,
+    selectedDate: mealStore.selectedDate,
+  }),
+  ({ dailyMeal, selectedDate }) => {
+    if (selectedDate !== todayDateKey.value || !dailyMeal) {
+      return;
+    }
+
+    todayMeal.value = dailyMeal;
+    void loadTodayProgress();
+  },
+  { deep: true },
+);
+
+watch(
+  () => dailyGoalStore.progress,
+  (progress) => {
+    if (progress?.date !== todayDateKey.value) {
+      return;
+    }
+
+    todayProgress.value = progress;
+    todayProgressError.value = "";
+    needsTodayGoalSetup.value = false;
+  },
+  { deep: true },
+);
+
+watch(
+  () => profileStore.profile?.updatedAt,
+  (updatedAt, previousUpdatedAt) => {
+    if (!updatedAt || updatedAt === previousUpdatedAt) {
+      return;
+    }
+
+    void refreshTodayPanel();
+  },
+);
+
 onMounted(async () => {
   if (!authStore.isAuthenticated) {
     return;
   }
 
-  await Promise.all([loadTodayMeal(), loadTodayProgress()]);
+  await refreshTodayPanel();
 });
 
 onBeforeUnmount(() => {
@@ -177,6 +224,10 @@ async function loadTodayProgress() {
 
     todayProgressError.value = error.message;
   }
+}
+
+async function refreshTodayPanel() {
+  await Promise.all([loadTodayMeal(), loadTodayProgress()]);
 }
 
 function isMissingDailyGoal(error) {
