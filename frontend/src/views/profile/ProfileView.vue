@@ -36,6 +36,7 @@ const goalDetailForm = reactive({
   goalType: "WEIGHT_LOSS",
   calorieIntakeGoal: 1800,
   exerciseCalorieGoal: 300,
+  targetWeightKg: "",
 });
 
 const goalRecommendationBase = reactive({
@@ -182,6 +183,32 @@ const overviewExerciseGoal = computed(() => {
   return isGoalDetailEditing.value ? displayExerciseGoal.value : exerciseGoal.value;
 });
 
+const overviewTargetWeight = computed(() => {
+  return isGoalDetailEditing.value
+    ? displayTargetWeight.value
+    : profileStore.profile?.targetWeightKg;
+});
+
+const displayTargetWeight = computed(() => {
+  const targetWeightKg = Number(goalDetailForm.targetWeightKg);
+
+  return Number.isFinite(targetWeightKg) ? Math.round(targetWeightKg * 10) / 10 : "";
+});
+
+const isTargetWeightValid = computed(() => {
+  const targetWeightKg = Number(goalDetailForm.targetWeightKg);
+
+  return Number.isFinite(targetWeightKg) && targetWeightKg > 0 && targetWeightKg <= 500;
+});
+
+const canSaveGoalDetail = computed(() => {
+  return (
+    isTargetWeightValid.value &&
+    !dailyGoalStore.isSavingGoal &&
+    !profileStore.isSavingProfile
+  );
+});
+
 const activeGoalRangeConfig = computed(() => {
   return (
     GOAL_RANGE_CONFIG[goalDetailForm.goalType] || GOAL_RANGE_CONFIG.WEIGHT_LOSS
@@ -271,6 +298,18 @@ const calorieGoalStatusLabel = computed(() => goalStatusLabel(calorieGoalStatus.
 const exerciseGoalStatusLabel = computed(() => goalStatusLabel(exerciseGoalStatus.value));
 
 const goalFooterMessage = computed(() => {
+  if (!isTargetWeightValid.value) {
+    return "목표 체중은 1kg 이상 500kg 이하로 입력해 주세요.";
+  }
+
+  if (dailyGoalStore.saveGoalError) {
+    return dailyGoalStore.saveGoalError;
+  }
+
+  if (profileStore.profileError) {
+    return profileStore.profileError;
+  }
+
   if (dailyGoalStore.recommendationError) {
     return "추천값을 불러오지 못했어요. 저장은 가능하지만 추천 범위 판단은 잠시 사용할 수 없어요.";
   }
@@ -336,6 +375,9 @@ async function startGoalDetailEdit() {
   goalDetailForm.goalType = profileForm.goalType;
   goalDetailForm.calorieIntakeGoal = Number(calorieGoal.value) || 1800;
   goalDetailForm.exerciseCalorieGoal = Number(exerciseGoal.value) || 300;
+  goalDetailForm.targetWeightKg =
+    profileStore.profile?.targetWeightKg ??
+    recommendedTargetWeight(profileForm.goalType);
   goalRecommendationBase.calorieIntakeGoal = goalDetailForm.calorieIntakeGoal;
   goalRecommendationBase.exerciseCalorieGoal = goalDetailForm.exerciseCalorieGoal;
 
@@ -350,10 +392,11 @@ async function startGoalDetailEdit() {
 function cancelGoalDetailEdit() {
   isGoalDetailEditing.value = false;
   goalDetailForm.goalType = profileStore.profile?.goalType || "WEIGHT_LOSS";
+  goalDetailForm.targetWeightKg = profileStore.profile?.targetWeightKg ?? "";
   profileForm.goalType = profileStore.profile?.goalType || "WEIGHT_LOSS";
 }
 
-async function saveGoal(goal) {
+async function saveGoal(goal, targetWeightKg) {
   const savedGoal = await dailyGoalStore.saveGoal(goal);
 
   if (!authStore.isAuthenticated) {
@@ -365,7 +408,15 @@ async function saveGoal(goal) {
     return;
   }
 
-  await profileStore.loadProfile();
+  await profileStore.updateProfile({
+    targetWeightKg,
+  });
+
+  if (!authStore.isAuthenticated) {
+    router.replace("/login");
+    return;
+  }
+
   await dailyGoalStore.loadProgress(todayDateKey);
   profileForm.goalType = savedGoal.goalType;
   goalDetailForm.goalType = savedGoal.goalType;
@@ -386,14 +437,26 @@ function selectGoalDetail(goalType) {
 
   goalDetailForm.goalType = goalType;
   profileForm.goalType = goalType;
+  goalDetailForm.targetWeightKg = recommendedTargetWeight(goalType);
 }
 
 async function saveGoalDetail() {
-  await saveGoal({
-    goalType: goalDetailForm.goalType,
-    calorieIntakeGoal: displayCalorieGoal.value,
-    exerciseCalorieGoal: displayExerciseGoal.value,
-  });
+  if (!canSaveGoalDetail.value) {
+    return;
+  }
+
+  try {
+    await saveGoal(
+      {
+        goalType: goalDetailForm.goalType,
+        calorieIntakeGoal: displayCalorieGoal.value,
+        exerciseCalorieGoal: displayExerciseGoal.value,
+      },
+      displayTargetWeight.value,
+    );
+  } catch {
+    // Store actions expose the user-facing error in the footer.
+  }
 }
 
 function formatNumber(value) {
@@ -414,6 +477,21 @@ function applyGoalRecommendation(goalType, recommendation) {
   profileForm.goalType = goalType;
   goalDetailForm.calorieIntakeGoal = calorieIntakeGoal;
   goalDetailForm.exerciseCalorieGoal = exerciseCalorieGoal;
+  goalDetailForm.targetWeightKg = recommendedTargetWeight(goalType);
+}
+
+function recommendedTargetWeight(goalType) {
+  const currentWeightKg = Number(profileStore.profile?.currentWeightKg);
+
+  if (!Number.isFinite(currentWeightKg) || currentWeightKg <= 0) {
+    return "";
+  }
+
+  if (goalType === "WEIGHT_LOSS") {
+    return Math.max(Math.round((currentWeightKg - 5) * 10) / 10, 1);
+  }
+
+  return Math.round(currentWeightKg * 10) / 10;
 }
 
 function goalSliderStyle(value, min, max, status) {
@@ -788,8 +866,8 @@ function scrollToProfileSection(sectionId) {
             @select="selectGoalDetail"
           />
 
-          <div class="profile-goal-overview">
-            <div>
+          <div class="profile-goal-overview-row">
+            <div class="profile-goal-overview-card">
               <span class="profile-goal-overview-icon calorie">
                 <i class="pi pi-apple"></i>
               </span>
@@ -798,13 +876,24 @@ function scrollToProfileSection(sectionId) {
                 <strong>{{ formatNumber(overviewCalorieGoal) }} kcal</strong>
               </div>
             </div>
-            <div>
+            <div class="profile-goal-overview-card">
               <span class="profile-goal-overview-icon exercise">
                 <i class="pi pi-fire"></i>
               </span>
               <div>
                 <span>목표 소모 칼로리</span>
                 <strong>{{ formatNumber(overviewExerciseGoal) }} kcal</strong>
+              </div>
+            </div>
+            <div class="profile-goal-overview-card target">
+              <span class="profile-goal-overview-icon target">
+                <i class="pi pi-bullseye"></i>
+              </span>
+              <div>
+                <span>목표 체중</span>
+                <strong>
+                  {{ overviewTargetWeight ? `${overviewTargetWeight} kg` : "-" }}
+                </strong>
               </div>
             </div>
           </div>
@@ -864,6 +953,22 @@ function scrollToProfileSection(sectionId) {
                 />
               </div>
             </label>
+            <label class="profile-goal-target-editor">
+              <div class="profile-goal-slider-copy">
+                <span>목표 체중</span>
+                <p>목표 종류를 바꾸면 현재 체중 기준으로 기본값이 다시 잡혀요.</p>
+              </div>
+              <div class="profile-goal-target-input">
+                <input
+                  v-model.number="goalDetailForm.targetWeightKg"
+                  max="500"
+                  min="1"
+                  step="0.1"
+                  type="number"
+                />
+                <span>kg</span>
+              </div>
+            </label>
           </div>
 
           <div v-if="isGoalDetailEditing" class="profile-goal-footer">
@@ -875,10 +980,14 @@ function scrollToProfileSection(sectionId) {
               <button
                 type="button"
                 class="profile-save"
-                :disabled="dailyGoalStore.isSavingGoal"
+                :disabled="!canSaveGoalDetail"
                 @click="saveGoalDetail"
               >
-                {{ dailyGoalStore.isSavingGoal ? "저장 중..." : "목표 저장" }}
+                {{
+                  dailyGoalStore.isSavingGoal || profileStore.isSavingProfile
+                    ? "저장 중..."
+                    : "수정 완료"
+                }}
               </button>
             </div>
           </div>

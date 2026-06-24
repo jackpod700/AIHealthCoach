@@ -4066,16 +4066,49 @@
   line-height: 1.35;
 }
 
+.profile-goal-overview-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(88%, 760px);
+  max-width: 100%;
+  gap: 12px;
+  margin: 0 auto 16px;
+}
+
 .profile-goal-overview {
   display: flex;
   width: 80%;
-  max-width: 100%;
-  align-items: stretch;
+  min-width: 0;
   border: 1px solid #f0f1ed;
   border-radius: 16px;
   margin: 0 auto 16px;
   background: #fff;
   overflow: hidden;
+}
+
+.profile-goal-overview-row .profile-goal-overview {
+  flex: 1 1 auto;
+  width: auto;
+  margin: 0;
+}
+
+.profile-goal-overview-card {
+  display: flex;
+  min-width: 0;
+  min-height: 72px;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  border: 1px solid #f0f1ed;
+  border-radius: 16px;
+  padding: 14px 16px;
+  background: #fff;
+  text-align: center;
+}
+
+.profile-goal-overview-card.target {
+  border-color: #e1eadf;
+  background: #f7fbf6;
 }
 
 .profile-goal-inline-editor {
@@ -4092,6 +4125,13 @@
   align-items: center;
   gap: 10px 18px;
   padding: 2px 6px;
+}
+
+.profile-goal-inline-editor label.profile-goal-target-editor {
+  align-items: end;
+  border-top: 1px solid #f4f5f1;
+  margin-top: 2px;
+  padding-top: 14px;
 }
 
 .profile-goal-inline-editor span {
@@ -4252,7 +4292,17 @@
   color: #687d70;
 }
 
+.profile-goal-overview-icon.target {
+  color: #2f6b4d;
+}
+
 .profile-goal-overview span {
+  color: #8a908a;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.profile-goal-overview-card span {
   color: #8a908a;
   font-size: 13px;
   font-weight: 700;
@@ -4263,6 +4313,44 @@
   margin-top: 4px;
   color: #2a2e2b;
   font-size: 17px;
+  font-weight: 800;
+}
+
+.profile-goal-overview-card strong {
+  display: block;
+  margin-top: 4px;
+  color: #2a2e2b;
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.profile-goal-target-input {
+  display: inline-flex;
+  width: 132px;
+  height: 42px;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #e1eadf;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #fff;
+}
+
+.profile-goal-target-input input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: #2a2e2b;
+  font-size: 15px;
+  font-weight: 800;
+  outline: none;
+}
+
+.profile-goal-target-input span {
+  color: #7a8679;
+  font-size: 12px;
   font-weight: 800;
 }
 
@@ -5119,13 +5207,13 @@
 }
 
 .food-submission-panel-form {
-  width: min(700px, 100%);
+  width: min(900px, 100%);
   max-height: min(680px, calc(100% - 24px));
   overflow-y: auto;
   margin: 0 auto;
   border: 1px solid #fff;
   border-radius: 8px;
-  padding: 22px 24px 20px;
+  padding: 34px 38px 32px;
   background: #fff;
   box-shadow: 0 22px 58px rgb(25 45 34 / 20%);
 }
@@ -5138,6 +5226,7 @@
 }
 
 .food-submission-panel-form .food-submission-head h2 {
+  margin: 6px 0 8px;
   color: var(--ink);
   font-size: 26px;
   font-weight: var(--font-bold);
@@ -5169,14 +5258,14 @@
 
 .food-submission-panel-form .food-submission-form {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px 18px;
-  margin-top: 20px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 20px;
+  margin-top: 28px;
 }
 
 .food-submission-panel-form .food-submission-form label {
   display: grid;
-  gap: 5px;
+  gap: 8px;
   color: var(--ink);
   font-size: 12px;
   font-weight: var(--font-bold);
@@ -5184,10 +5273,10 @@
 }
 
 .food-submission-panel-form .food-submission-form input {
-  height: 38px;
+  height: 42px;
   border-color: #e0e3dd;
   border-radius: 8px;
-  padding: 0 12px;
+  padding: 0 14px;
   font-size: 13px;
   font-weight: var(--font-semibold);
   line-height: 1.4;
@@ -5206,7 +5295,7 @@
 
 .food-submission-panel-form .food-submission-form button {
   display: inline-flex;
-  height: 40px;
+  height: 42px;
   width: fit-content;
   grid-column: 1 / -1;
   justify-self: end;
@@ -5217,6 +5306,115 @@
   padding: 0 24px;
   background: #2f6b4d;
   color: #fff;
+}
+
+.food-submission-complete {
+  display: grid;
+  justify-items: center;
+  gap: 18px;
+  margin-top: 22px;
+  border: 1px solid #dce9de;
+  border-radius: 8px;
+  padding: 34px 28px 28px;
+  background: #fff;
+  text-align: center;
+}
+
+.food-submission-complete-icon {
+  display: inline-flex;
+  width: 48px;
+  height: 48px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: #2f6b4d;
+  color: #fff;
+  font-size: 18px;
+}
+
+.food-submission-complete strong {
+  display: block;
+  color: var(--ink);
+  font-size: 22px;
+  font-weight: var(--font-bold);
+  line-height: 1.2;
+}
+
+.food-submission-complete p {
+  max-width: 430px;
+  margin: 10px auto 0;
+  color: #5a6b5f;
+  font-size: 14px;
+  font-weight: var(--font-semibold);
+  line-height: 1.7;
+}
+
+.food-submission-complete p b {
+  color: var(--navy);
+}
+
+.food-submission-complete-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.food-submission-complete-actions button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  padding: 0 18px;
+  background: #2f6b4d;
+  color: #fff;
+  font-size: 13px;
+  font-weight: var(--font-bold);
+}
+
+.food-submission-complete-actions button.secondary {
+  border: 1px solid #dce4dc;
+  background: #fff;
+  color: #2f6b4d;
+}
+
+.food-submission-history .food-submission-history-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border-color: #e7e9e3;
+  background: #fff;
+}
+
+.food-submission-history-item b {
+  color: var(--ink);
+  font-weight: var(--font-bold);
+}
+
+.food-submission-history-item em {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: var(--font-bold);
+}
+
+.food-submission-history-item em.pending {
+  background: #fff6e8;
+  color: #9a642c;
+}
+
+.food-submission-history-item em.approved {
+  background: #e8f5ed;
+  color: #247347;
+}
+
+.food-submission-history-item em.rejected {
+  background: #fff1ef;
+  color: #ae4d42;
 }
 
 .food-detail-panel {
@@ -5517,22 +5715,25 @@
   min-width: 0;
   min-height: 0;
   overflow-y: auto;
+  scrollbar-gutter: stable;
+  background: #f7f8f5;
 }
 
 .admin-header {
   display: flex;
-  height: 86px;
+  min-height: 74px;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #eee5d8;
-  padding: 0 28px;
+  gap: 16px;
+  border-bottom: 1px solid #f1f2ee;
+  padding: 14px 28px;
   background: #fff;
 }
 
 .admin-header h1 {
   margin: 3px 0 0;
   color: var(--ink);
-  font-size: 25px;
+  font-size: 21px;
   font-weight: var(--font-bold);
   font-family: inherit;
   line-height: 1.15;
@@ -5542,33 +5743,89 @@
 .admin-home .section-eyebrow {
   margin: 0;
   color: var(--orange);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: var(--font-bold);
   line-height: 1.2;
-  letter-spacing: 0.26em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+
+.admin-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-security-badge {
+  display: inline-flex;
+  min-height: 34px;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #dfe7df;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #f1f6f2;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: var(--font-bold);
 }
 
 .admin-live-status {
   display: block;
   margin-top: 7px;
-  color: #7a8491;
+  color: #8a908a;
   font-size: 11px;
   font-weight: var(--font-semibold);
 }
 
 .admin-refresh-button {
+  position: relative;
   display: inline-flex;
-  min-height: 38px;
+  min-inline-size: 92px;
+  min-height: 34px;
   align-items: center;
-  gap: 8px;
-  border: 1px solid #eadfce;
+  justify-content: center;
+  gap: 7px;
+  border: 1px solid #e7e9e3;
   border-radius: 999px;
-  padding: 0 15px;
-  background: #fffaf3;
-  color: var(--navy);
-  font-size: 12px;
+  padding: 0 13px;
+  background: #fff;
+  color: #4a4f49;
+  font-size: 11px;
   font-weight: var(--font-bold);
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.admin-refresh-button::after {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 20;
+  width: max-content;
+  max-width: min(260px, calc(100vw - 32px));
+  border: 1px solid #dfe7df;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgb(40 50 40 / 12%);
+  color: #5a6b5f;
+  content: attr(data-tooltip);
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  line-height: 1.35;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-3px);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+}
+
+.admin-refresh-button:hover::after,
+.admin-refresh-button:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .admin-refresh-button:disabled {
@@ -5577,17 +5834,22 @@
 }
 
 .admin-content {
-  min-height: calc(100vh - 86px);
-  padding: 28px;
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  align-items: start;
+  justify-items: stretch;
+  min-height: calc(100vh - 134px);
+  padding: 18px 28px 28px;
 }
 
 .admin-loading,
 .admin-error {
-  border: 1px dashed #dfc8ad;
-  border-radius: 14px;
-  padding: 18px;
+  border: 1px dashed #e3d5c2;
+  border-radius: 12px;
+  padding: 16px;
   background: #fffaf3;
-  color: #8a7560;
+  color: #7c6754;
   font-size: 13px;
   font-weight: var(--font-bold);
 }
@@ -5598,34 +5860,493 @@
   color: #ae4d42;
 }
 
-.admin-user-status {
+.admin-overview-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-overview-card {
+  display: grid;
+  box-sizing: border-box;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "label value";
+  gap: 8px;
+  height: 60px;
+  align-items: center;
+  border: 1px solid #eceee9;
+  border-radius: 8px;
+  padding: 0 14px;
+  background: #fff;
+  box-shadow: 0 5px 12px rgb(40 50 40 / 3%);
+}
+
+.admin-overview-action {
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.admin-overview-action:hover,
+.admin-overview-action:focus-visible,
+.admin-overview-action.active {
+  background: #edf5ef;
+  outline: none;
+  box-shadow: 0 5px 12px rgb(40 50 40 / 4%);
+}
+
+.admin-overview-card-accent.admin-overview-action:hover,
+.admin-overview-card-accent.admin-overview-action:focus-visible,
+.admin-overview-card-accent.admin-overview-action.active {
+  background: #f6eadb;
+}
+
+.admin-overview-card-muted.admin-overview-action:hover,
+.admin-overview-card-muted.admin-overview-action:focus-visible,
+.admin-overview-card-muted.admin-overview-action.active {
+  background: #e7f1e9;
+}
+
+.admin-overview-card-accent {
+  border-color: #eadfd0;
+  background: #fffaf4;
+}
+
+.admin-overview-card-muted {
+  border-color: #dfe7df;
+  background: #f5faf6;
+}
+
+.admin-overview-card span,
+.admin-overview-card small {
+  grid-area: label;
+  min-width: 0;
+  overflow: hidden;
+  color: #7a807a;
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-overview-card strong {
+  grid-area: value;
+  color: var(--navy);
+  font-size: 22px;
+  font-weight: var(--font-bold);
+  line-height: 1;
+}
+
+.admin-overview-card small {
+  display: none;
+}
+
+.admin-review-section {
+  gap: 14px;
+  width: 100%;
+  justify-self: start;
+  padding: 0;
+}
+
+.admin-food-request-layout {
+  display: grid;
+  width: 100%;
+  grid-template-columns: minmax(240px, 0.9fr) minmax(0, 1.4fr);
+  align-items: start;
+  justify-items: stretch;
+}
+
+.admin-import-candidate-layout {
+  justify-self: stretch;
+  align-self: start;
+}
+
+.admin-review-list-panel,
+.admin-food-review-panel {
+  min-width: 0;
+  border: 1px solid #eceee9;
+  border-radius: 8px;
+  padding: 22px;
+  background: #fff;
+  box-shadow: 0 5px 12px rgb(40 50 40 / 3%);
+}
+
+.admin-review-list-panel,
+.admin-food-review-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.admin-review-list-panel {
+  position: relative;
+  min-height: 260px;
+  align-content: start;
+}
+
+.admin-food-review-panel {
+  min-height: 420px;
+  align-content: start;
+}
+
+.admin-import-review-panel {
+  min-height: 560px;
+}
+
+.admin-section-title {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.admin-food-request-item {
+  position: relative;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: center;
+  border: 1px solid #eceee9;
+  border-radius: 8px;
+  padding: 16px;
+  background: #fff;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.admin-candidate-request-item {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.admin-food-request-item:hover,
+.admin-food-request-item:focus-visible {
+  border-color: #dce9de;
+  background: #fbfcfa;
+  outline: none;
+}
+
+.admin-food-request-item.selected {
+  border-color: #dce9de;
+  background: #eaf4ed;
+  box-shadow: none;
+}
+
+.admin-request-icon {
+  grid-row: 1 / 4;
+  display: inline-flex;
+  width: 30px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: #edf4ef;
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.admin-food-request-item strong,
+.admin-food-request-item span,
+.admin-food-request-item small {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-section-title h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: var(--font-bold);
+  line-height: 1.2;
+}
+
+.admin-inline-refresh {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e7e9e3;
+  border-radius: 10px;
+  background: #fff;
+  color: #5a6b5f;
+}
+
+.admin-food-review-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 18px;
-}
-
-.admin-user-card {
-  display: grid;
   gap: 10px;
-  min-height: 180px;
-  border: 1px solid #eee5d8;
-  border-radius: 16px;
-  padding: 24px;
-  background: #fff;
-  box-shadow: 0 14px 36px rgb(32 63 102 / 6%);
 }
 
-.admin-user-card span,
-.admin-user-card small {
-  color: #7a8491;
+.admin-food-review-grid input,
+.admin-food-review-note textarea,
+.admin-food-reject-box textarea,
+.admin-status-select {
+  width: 100%;
+  min-height: 38px;
+  border-color: #e7e9e3;
+  border-radius: 8px;
+  padding: 0 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.admin-food-review-note textarea,
+.admin-food-reject-box textarea {
+  min-height: 76px;
+  padding: 10px;
+  resize: vertical;
+}
+
+.admin-food-review-grid label,
+.admin-food-review-note,
+.admin-food-reject-box label {
+  display: grid;
+  gap: 6px;
+  color: #5a6b5f;
   font-size: 12px;
   font-weight: var(--font-bold);
 }
 
-.admin-user-card strong {
-  color: var(--navy);
-  font-size: 38px;
+.admin-primary-button,
+.admin-secondary-button {
+  display: inline-flex;
+  min-height: 38px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 0 14px;
+  font-size: 13px;
   font-weight: var(--font-bold);
+}
+
+.admin-primary-button {
+  background: var(--navy);
+  color: #fff;
+}
+
+.admin-secondary-button {
+  border-color: #f0d0cb;
+  background: #fff6f4;
+  color: #ae4d42;
+}
+
+.admin-primary-button:disabled,
+.admin-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.admin-food-reject-box {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid #f1f2ee;
+  padding-top: 14px;
+}
+
+.admin-import-controls,
+.admin-food-review-actions {
+  display: flex;
+  min-height: 34px;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.admin-status-select {
+  height: 34px;
+  min-height: 34px;
+  width: auto;
+  min-width: 120px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.admin-import-candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.admin-import-candidate-card {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  border: 1px solid #eceee9;
+  border-radius: 8px;
+  padding: 14px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  transition:
+    border-color 140ms ease,
+    background 140ms ease,
+    box-shadow 140ms ease;
+}
+
+.admin-import-candidate-card:hover,
+.admin-import-candidate-card:focus-visible {
+  border-color: #dce9de;
+  background: #fbfcfa;
+  outline: none;
+}
+
+.admin-import-candidate-card.selected {
+  border-color: #dce9de;
+  background: #eaf4ed;
+  box-shadow: none;
+}
+
+.admin-import-status {
+  display: inline-flex;
+  width: fit-content;
+  min-height: 26px;
+  align-items: center;
+  border: 1px solid #dfe7df;
+  border-color: #dce9de;
+  border-radius: 999px;
+  padding: 0 9px;
+  background: #edf4ef;
+  color: var(--navy);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: var(--font-bold);
+}
+
+.admin-import-candidate-card > div {
+  padding-right: 76px;
+  display: grid;
+  gap: 3px;
+}
+
+.admin-candidate-source-link {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  border: 1px solid #dfe7df;
+  border-radius: 999px;
+  padding: 5px 9px;
+  background: #fff;
+  color: var(--navy);
+  font-size: 11px;
+  font-weight: var(--font-bold);
+  line-height: 1;
+  text-decoration: none;
+}
+
+.admin-candidate-source-link:hover,
+.admin-candidate-source-link:focus-visible {
+  background: #edf4ef;
+  outline: none;
+}
+
+.admin-import-candidate-card strong,
+.admin-import-selected strong {
+  color: var(--ink);
+  font-size: 13px;
+}
+
+.admin-import-candidate-card span,
+.admin-import-candidate-card p,
+.admin-import-selected span,
+.admin-import-selected small {
+  margin: 0;
+  color: #747a74;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.admin-import-candidate-card dl {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin: 0;
+}
+
+.admin-import-candidate-card dl div {
+  display: grid;
+  min-height: 58px;
+  align-content: center;
+  justify-items: center;
+  gap: 5px;
+  border-radius: 8px;
+  padding: 8px 6px;
+  background: #f7f8f5;
+  text-align: center;
+}
+
+.admin-import-candidate-card dt,
+.admin-import-candidate-card dd {
+  margin: 0;
+}
+
+.admin-import-candidate-card dt {
+  color: #3f4a42;
+  font-size: 11px;
+  font-weight: var(--font-bold);
+}
+
+.admin-import-candidate-card dd {
+  color: var(--navy);
+  font-size: 12px;
+  font-weight: var(--font-bold);
+  line-height: 1.2;
+}
+
+.admin-import-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border: 1px solid #dfe7df;
+  border-radius: 8px;
+  padding: 12px;
+  background: #f5faf6;
+}
+
+.admin-import-selected > div:first-child {
+  display: grid;
+  gap: 3px;
+}
+
+.admin-success {
+  border: 1px solid #dce9de;
+  border-radius: 8px;
+  background: #edf4ef;
+  color: var(--navy);
+  font-size: 13px;
+}
+
+.admin-empty {
+  border: 1px dashed #e3e5e1;
+  border-radius: 8px;
+  padding: 18px;
+  background: #fbfcfa;
+  color: #8a908a;
+  font-size: 13px;
+}
+
+.admin-list-empty {
+  position: absolute;
+  inset: 116px 22px 22px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  padding: 0 8px;
+  background: transparent;
+  pointer-events: none;
+  text-align: center;
 }
 
 .error-page {
@@ -5795,7 +6516,7 @@
   }
 
   .food-submission-panel-form .food-submission-form {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .food-add-fab {
@@ -5813,6 +6534,10 @@
 
   .record-summary-card > div:nth-child(3) {
     border-right: 0;
+  }
+
+  .admin-overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -5885,12 +6610,14 @@
   }
 
   .profile-goal-card-grid,
-  .profile-goal-overview {
+  .profile-goal-overview,
+  .profile-goal-overview-row {
     grid-template-columns: 1fr;
     flex-direction: column;
   }
 
-  .profile-goal-overview {
+  .profile-goal-overview,
+  .profile-goal-overview-row {
     width: 100%;
   }
 
@@ -5974,6 +6701,15 @@
     flex-direction: column;
   }
 
+  .food-submission-panel-form .food-submission-form {
+    grid-template-columns: 1fr;
+  }
+
+  .food-submission-complete-actions {
+    width: 100%;
+    flex-direction: column;
+  }
+
   .food-submission-panel-form .food-submission-form button {
     width: 100%;
   }
@@ -5986,12 +6722,23 @@
     padding: 18px;
   }
 
+  .admin-header-actions {
+    width: 100%;
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .admin-security-badge,
+  .admin-refresh-button {
+    justify-content: center;
+  }
+
   .admin-content {
     min-height: auto;
     padding: 16px;
   }
 
-  .admin-user-status {
+  .admin-overview-grid {
     grid-template-columns: 1fr;
   }
 
