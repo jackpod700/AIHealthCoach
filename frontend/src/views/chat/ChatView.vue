@@ -31,6 +31,9 @@ const weightRecordStore = useWeightRecordStore();
 const router = useRouter();
 const message = ref("");
 const threadRef = ref(null);
+const mealProposalRef = ref(null);
+const exerciseProposalRef = ref(null);
+const weightProposalRef = ref(null);
 const fileInputRef = ref(null);
 const attachedImages = ref([]);
 const imageAttachmentError = ref("");
@@ -49,6 +52,22 @@ const hasMessages = computed(() => {
   return displayMessages.value.length > 0;
 });
 
+const activeProposalType = computed(() => {
+  if (chatStore.mealProposal) {
+    return "meal";
+  }
+
+  if (chatStore.exerciseProposal) {
+    return "exercise";
+  }
+
+  if (chatStore.weightProposal) {
+    return "weight";
+  }
+
+  return "";
+});
+
 watch(
   () =>
     displayMessages.value.map((chatMessage) => chatMessage.content).join("\n"),
@@ -58,6 +77,12 @@ watch(
     }
   },
 );
+
+watch(activeProposalType, (proposalType) => {
+  if (proposalType) {
+    void scrollToActiveProposal();
+  }
+});
 
 marked.setOptions({
   breaks: true,
@@ -125,9 +150,7 @@ async function sendMessage() {
   await mealStore.loadDailyMeal(todayDateKey.value);
   await dailyGoalStore.loadProgress(todayDateKey.value);
 
-  if (!hasProposal) {
-    await scrollToBottom();
-  }
+  await (hasProposal ? scrollToActiveProposal() : scrollToBottom());
 }
 
 function openImagePicker() {
@@ -471,6 +494,54 @@ async function scrollToBottom() {
   }
 }
 
+async function scrollToActiveProposal() {
+  await nextTick();
+
+  const thread = threadRef.value;
+  const proposalElement = getActiveProposalElement();
+
+  if (!thread || !proposalElement) {
+    return;
+  }
+
+  window.requestAnimationFrame(() => {
+    const threadRect = thread.getBoundingClientRect();
+    const proposalRect = proposalElement.getBoundingClientRect();
+    const topDelta = proposalRect.top - threadRect.top;
+    const bottomDelta = proposalRect.bottom - threadRect.bottom;
+
+    if (proposalElement.offsetHeight > thread.clientHeight) {
+      thread.scrollTop += topDelta;
+      return;
+    }
+
+    if (bottomDelta > 0) {
+      thread.scrollTop += bottomDelta;
+      return;
+    }
+
+    if (topDelta < 0) {
+      thread.scrollTop += topDelta;
+    }
+  });
+}
+
+function getActiveProposalElement() {
+  if (chatStore.mealProposal) {
+    return mealProposalRef.value;
+  }
+
+  if (chatStore.exerciseProposal) {
+    return exerciseProposalRef.value;
+  }
+
+  if (chatStore.weightProposal) {
+    return weightProposalRef.value;
+  }
+
+  return null;
+}
+
 function isUserMessage(chatMessage) {
   return chatMessage.role === "USER";
 }
@@ -648,7 +719,11 @@ function sanitizeHtml(html = "") {
             </div>
           </template>
 
-          <div v-if="chatStore.mealProposal" class="message-row coach">
+          <div
+            v-if="chatStore.mealProposal"
+            ref="mealProposalRef"
+            class="message-row coach"
+          >
             <div class="coach-icon">
               <i class="pi pi-briefcase"></i>
             </div>
@@ -661,7 +736,11 @@ function sanitizeHtml(html = "") {
             />
           </div>
 
-          <div v-if="chatStore.exerciseProposal" class="message-row coach">
+          <div
+            v-if="chatStore.exerciseProposal"
+            ref="exerciseProposalRef"
+            class="message-row coach"
+          >
             <div class="coach-icon">
               <i class="pi pi-bolt"></i>
             </div>
@@ -674,7 +753,11 @@ function sanitizeHtml(html = "") {
             />
           </div>
 
-          <div v-if="chatStore.weightProposal" class="message-row coach">
+          <div
+            v-if="chatStore.weightProposal"
+            ref="weightProposalRef"
+            class="message-row coach"
+          >
             <div class="coach-icon">
               <i class="pi pi-chart-line"></i>
             </div>

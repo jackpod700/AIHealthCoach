@@ -18,3 +18,4 @@
 | 2026-06-22 | [Context intent routing experiment](2026-06-22-context-intent-routing-experiment.md) | fake embedding 기준 rule baseline 대비 intent accuracy 개선 확인 |
 | 2026-06-22 | [Embedding provider latency experiment](2026-06-22-embedding-provider-latency.md) | BGE-M3 sidecar warmed p95 328ms, hybrid/fallback 후보로 제한 |
 | 2026-06-23 | [Chat stream load executor experiment](2026-06-23-chat-stream-load-executor-experiment.md) | concurrency 10 tail latency 재현, executor 분리 단독 개선 가설 기각 |
+| 2026-06-24 | [Chat stream tool latency](2026-06-24-chat-stream-tool-latency.md) | tool prompt 압축과 일반 대화 skip으로 tool total 수동 샘플 6.3s -> 2.5-3.8s |
