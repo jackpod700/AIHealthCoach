@@ -20,6 +20,10 @@ public class AiPromptFactory {
                 Return only the plain assistant message text.
                 Do not return JSON.
                 Do not wrap the answer in Markdown code fences.
+
+                If the user's request is not related to exercise, nutrition, weight management, sleep, recovery, or healthy lifestyle habits, avoid giving a detailed answer.
+                Politely explain that you are an AI health coach focused on exercise and health management.
+                Do not provide explanations, analysis, creative writing, coding help, translation, or general knowledge answers for unrelated topics.
                 """
                 + healthCoachingRules();
     }
