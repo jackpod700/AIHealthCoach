@@ -1,4 +1,6 @@
 <script setup>
+import { APP_NAME, APP_START_LABEL } from "../../constants/brand";
+
 defineProps({
   compact: {
     type: Boolean,
@@ -6,7 +8,7 @@ defineProps({
   },
   subtitle: {
     type: String,
-    default: "BabStroy",
+    default: APP_NAME,
   },
 });
 </script>
@@ -17,9 +19,9 @@ defineProps({
       <i class="pi pi-briefcase"></i>
     </div>
     <div v-if="!compact">
-      <h1>BabStroy</h1>
+      <h1>{{ APP_NAME }}</h1>
       <p>{{ subtitle }}</p>
     </div>
-    <strong v-else>BabStroy 시작하기</strong>
+    <strong v-else>{{ APP_START_LABEL }}</strong>
   </div>
 </template>

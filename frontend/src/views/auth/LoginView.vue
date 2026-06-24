@@ -4,6 +4,7 @@ import { useRouter } from "vue-router";
 
 import FormField from "../../components/auth/FormField.vue";
 import { getOAuthLoginUrl } from "../../api/authApi";
+import { APP_NAME } from "../../constants/brand";
 import { useAuthStore } from "../../stores/authStore";
 
 const router = useRouter();
@@ -44,7 +45,7 @@ function startOAuthLogin(provider) {
       <button type="button" class="auth-brand-link" @click="router.push('/')">
         <span class="brand-mark"><i class="pi pi-briefcase"></i></span>
         <span>
-          <strong>BabStroy</strong>
+          <strong>{{ APP_NAME }}</strong>
         </span>
       </button>
       <button type="button" class="auth-close-button" aria-label="랜딩으로 돌아가기" @click="router.push('/')">
