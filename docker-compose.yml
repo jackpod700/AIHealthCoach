@@ -2,10 +2,13 @@ services:
   postgres:
     image: postgres:16-alpine
     container_name: ai-health-postgres
+    command: ["postgres", "-c", "timezone=Asia/Seoul"]
     environment:
       POSTGRES_DB: ai_health_coach
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
     ports:
       - "5432:5432"
     volumes:
@@ -29,6 +32,8 @@ services:
       PGDATABASE: ai_health_coach
       PGUSER: postgres
       PGPASSWORD: postgres
+      TZ: Asia/Seoul
+      PGTZ: Asia/Seoul
       FOOD_IMPORT_ENABLED: ${FOOD_IMPORT_ENABLED:-false}
     restart: "no"
 
@@ -40,10 +45,12 @@ services:
       data-importer:
         condition: service_completed_successfully
     environment:
-      DB_URL: jdbc:postgresql://postgres:5432/ai_health_coach
+      DB_URL: "jdbc:postgresql://postgres:5432/ai_health_coach?options=-c%20TimeZone=Asia/Seoul"
       DB_USERNAME: postgres
       DB_PASSWORD: postgres
       SERVER_PORT: 8080
+      TZ: Asia/Seoul
+      JAVA_TOOL_OPTIONS: "-Duser.timezone=Asia/Seoul"
       GMS_API_KEY: ${GMS_API_KEY}
       OPENROUTER_API_KEY: ${OPENROUTER_API_KEY}
       JWT_SECRET: ${JWT_SECRET}

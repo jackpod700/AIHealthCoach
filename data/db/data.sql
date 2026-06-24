@@ -11,14 +11,16 @@ INSERT INTO user_profiles (id, user_id, height_cm, current_weight_kg, target_wei
 VALUES
     (1, 1, 172.50, 68.40, 65.00, 'MAINTENANCE', 'MALE', 32, NOW()),
     (2, 2, 178.20, 82.10, 76.00, 'MUSCLE_GAIN', 'MALE', 29, NOW()),
-    (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', 'FEMALE', 27, NOW())
+    (3, 3, 164.00, 59.30, 55.00, 'WEIGHT_LOSS', 'FEMALE', 27, NOW()),
+    (4, 4, 175.00, 70.00, 68.00, 'MAINTENANCE', 'MALE', 35, NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO daily_goals (id, user_id, goal_type, calorie_intake_goal, exercise_calorie_goal, created_at, updated_at)
 VALUES
     (1, 1, 'MAINTENANCE', 2100, 250, NOW(), NOW()),
     (2, 2, 'MUSCLE_GAIN', 2800, 300, NOW(), NOW()),
-    (3, 3, 'WEIGHT_LOSS', 1600, 300, NOW(), NOW())
+    (3, 3, 'WEIGHT_LOSS', 1600, 300, NOW(), NOW()),
+    (4, 4, 'MAINTENANCE', 2100, 250, NOW(), NOW())
 ON CONFLICT (user_id) DO NOTHING;
 
 INSERT INTO weight_records (user_id, record_date, weight_kg, created_at, updated_at)
