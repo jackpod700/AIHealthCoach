@@ -58,7 +58,7 @@ function goSignup() {
         </h1>
         <p>
           먹은 음식과 운동을 말하듯 적기만 하면,<br />
-          AI 코치가 영양을 분석하고 매일의 목표를 함께 관리해줘요.
+          AI 헬스 코치 얌냠이가 영양을 분석하고 매일의 목표를 함께 관리해줘요.
         </p>
         <div class="landing-hero-actions">
           <button type="button" class="landing-primary" @click="goLogin">

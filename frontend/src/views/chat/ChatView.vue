@@ -39,8 +39,11 @@ const attachedImages = ref([]);
 const imageAttachmentError = ref("");
 const isDraggingImage = ref(false);
 const isInitialScrollReady = ref(false);
+const isCoachAvatarUnavailable = ref(false);
 const GMS_IMAGE_TARGET_BYTES = 7 * 1024;
 const GMS_IMAGE_MAX_DIMENSION = 512;
+const COACH_NAME = "얌냠이";
+const COACH_AVATAR_SRC = "/images/coach-yamnyami.png";
 
 const todayDateKey = computed(() => toDateKey(new Date()));
 
@@ -547,7 +550,11 @@ function isUserMessage(chatMessage) {
 }
 
 function pendingAssistantText(chatMessage) {
-  return chatMessage.pending ? "AI 코치가 답변을 준비하고 있어요..." : "";
+  return chatMessage.pending ? `${COACH_NAME}가 답변을 준비하고 있어요...` : "";
+}
+
+function handleCoachAvatarError() {
+  isCoachAvatarUnavailable.value = true;
 }
 
 function formatMessageTime(value) {
@@ -649,12 +656,12 @@ function sanitizeHtml(html = "") {
             {{ chatStore.error }}
           </div>
 
-          <div
+          <p
             v-else-if="!hasMessages && !dailyGoalStore.needsGoalSetup"
-            class="chat-state-card"
+            class="chat-empty-text"
           >
             아직 대화 기록이 없어요. 식단이나 운동을 편하게 입력해보세요.
-          </div>
+          </p>
 
           <div v-if="dailyGoalStore.needsGoalSetup" class="message-row coach">
             <div class="coach-icon">
@@ -689,10 +696,16 @@ function sanitizeHtml(html = "") {
 
             <div v-else class="message-row coach">
               <div class="coach-icon">
-                <i class="pi pi-briefcase"></i>
+                <img
+                  v-if="!isCoachAvatarUnavailable"
+                  :src="COACH_AVATAR_SRC"
+                  :alt="COACH_NAME"
+                  @error="handleCoachAvatarError"
+                />
+                <i v-else class="pi pi-briefcase"></i>
               </div>
               <div class="assistant-message-stack">
-                <div class="assistant-name">AI 코치</div>
+                <div class="assistant-name">{{ COACH_NAME }}</div>
                 <div class="assistant-message-line">
                   <article
                     class="assistant-card"
@@ -829,7 +842,7 @@ function sanitizeHtml(html = "") {
       </form>
 
       <p class="composer-note">
-        AI 코치는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.
+        얌냠이는 참고용 가이드를 제공해요. 의학적 진단은 전문가와 상담하세요.
       </p>
     </section>
 
