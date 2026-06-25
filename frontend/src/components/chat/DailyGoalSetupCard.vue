@@ -234,18 +234,18 @@ function goalStatusLabel(status) {
 
 function goalGuideMessage(status, metricLabel) {
   if (status === "low") {
-    return `목표 ${metricLabel}가 추천보다 낮아요. 조금 올려보면 더 균형 잡힌 목표가 돼요.`;
+    return `${metricLabel} 목표가 추천보다 낮아요. 조금 올려보면 더 균형 잡힌 목표가 돼요.`;
   }
 
   if (status === "high") {
-    return `목표 ${metricLabel}가 추천보다 높아요. 부담이 크지 않도록 낮추는 것도 좋아요.`;
+    return `${metricLabel} 목표가 추천보다 높아요. 부담이 크지 않도록 낮추는 것도 좋아요.`;
   }
 
   if (status === "unavailable") {
     return "추천값을 기준으로 목표 범위를 확인하는 중이에요.";
   }
 
-  return `목표 ${metricLabel}가 추천 범위 안에 있어요. 좋은 목표입니다.`;
+  return `${metricLabel} 목표가 추천 범위 안에 있어요. 좋은 목표입니다.`;
 }
 
 watch(

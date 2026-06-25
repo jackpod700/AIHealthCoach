@@ -2894,6 +2894,15 @@
   box-shadow: none;
 }
 
+.record-icon.disabled i {
+  display: block;
+  font-size: 18px;
+}
+
+.record-icon.disabled::before {
+  display: none;
+}
+
 .record-add-row .record-line::after {
   display: none;
 }
@@ -3235,6 +3244,7 @@
   min-height: 74px;
   align-content: center;
   gap: 5px;
+  background: #fff;
 }
 
 .record-empty-card strong {
