@@ -16,7 +16,7 @@ defineProps({
 <template>
   <div :class="compact ? 'signup-brand' : 'login-brand'">
     <div class="brand-mark">
-      <i class="pi pi-briefcase"></i>
+      <img src="/images/favicon.png" alt="" />
     </div>
     <div v-if="!compact">
       <h1>{{ APP_NAME }}</h1>

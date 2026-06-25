@@ -42,13 +42,19 @@
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: var(--accent);
-  color: #fff;
-  box-shadow: 0 8px 18px rgb(232 129 74 / 18%);
+  background: transparent;
+  color: inherit;
 }
 
 .brand-mark i {
   font-size: 15px;
+}
+
+.brand-mark img {
+  display: block;
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
 }
 
 .landing-nav {
