@@ -75,7 +75,6 @@ export const useAdminStore = defineStore("admin", {
 
       try {
         const response = await approveAdminFoodRequest(authStore.accessToken, requestId, payload);
-        this.foodRequestMessage = "Food request approved.";
         await this.loadFoodRequests();
         return response;
       } catch (error) {
@@ -92,7 +91,6 @@ export const useAdminStore = defineStore("admin", {
 
       try {
         const response = await rejectAdminFoodRequest(authStore.accessToken, requestId, { rejectionReason });
-        this.foodRequestMessage = "Food request rejected.";
         await this.loadFoodRequests();
         return response;
       } catch (error) {

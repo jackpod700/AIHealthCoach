@@ -8,6 +8,7 @@ const lastUpdatedAt = ref(null);
 const selectedRequestId = ref(null);
 const selectedImportSearchMissId = ref(null);
 const selectedImportCandidateIds = ref([]);
+const activeReviewPanel = ref("requests");
 const rejectionReason = ref("");
 const importRejectionReason = ref("");
 const reviewForm = reactive(emptyReviewForm());
@@ -24,6 +25,12 @@ const importStatusOptions = [
 const users = computed(() => adminStore.dashboard?.users);
 const requests = computed(() => adminStore.foodRequestPage?.items || []);
 const importGroups = computed(() => adminStore.importCandidatePage?.items || []);
+const pendingReviewCount = computed(() => {
+  return importGroups.value.filter((group) => group.status === "PENDING_REVIEW").length;
+});
+const selectedImportCandidateCount = computed(() => {
+  return selectedImportCandidates.value.length;
+});
 const selectedRequest = computed(() => {
   return requests.value.find((request) => request.id === selectedRequestId.value) || requests.value[0] || null;
 });
@@ -113,6 +120,10 @@ function selectRequest(request) {
   selectedRequestId.value = request.id;
   rejectionReason.value = "";
   fillReviewForm(request);
+}
+
+function showReviewPanel(panel) {
+  activeReviewPanel.value = panel;
 }
 
 function selectImportGroup(group) {
@@ -267,28 +278,19 @@ function importGroupStatusLabel(status) {
   return status || "-";
 }
 
-function candidateStatusLabel(status) {
-  if (status === "PENDING") {
-    return "검토 가능";
-  }
-  if (status === "DUPLICATE") {
-    return "기존 음식";
-  }
-  if (status === "APPROVED") {
-    return "승인";
-  }
-  if (status === "REJECTED") {
-    return "거절";
-  }
-  return status || "-";
-}
-
 function isImportCandidateApprovable(candidate) {
   return candidate?.status === "PENDING" || candidate?.status === "DUPLICATE";
 }
 
 function isImportCandidateSelected(candidate) {
   return selectedImportCandidateIds.value.includes(candidate.candidateId);
+}
+
+function hasDistinctNormalizedQuery(group) {
+  const query = String(group?.query || "").trim().toLowerCase();
+  const normalizedQuery = String(group?.normalizedQuery || "").trim().toLowerCase();
+
+  return Boolean(normalizedQuery && normalizedQuery !== query);
 }
 
 function defaultImportCandidateIds(group) {
@@ -330,16 +332,25 @@ function lastUpdatedLabel() {
 <template>
       <header class="admin-header">
         <div>
-          <p class="section-eyebrow">ADMIN DASHBOARD</p>
+          <p class="section-eyebrow">ADMIN ONLY</p>
           <h1>관리자 대시보드</h1>
-          <small class="admin-live-status">
-            5초마다 자동 갱신 · 마지막 갱신 {{ lastUpdatedLabel() }}
-          </small>
         </div>
-        <button type="button" class="admin-refresh-button" :disabled="adminStore.isLoading" @click="refreshAdminData">
-          <i class="pi pi-refresh"></i>
-          <span>{{ adminStore.isLoading ? "갱신 중" : "새로고침" }}</span>
-        </button>
+        <div class="admin-header-actions">
+          <span class="admin-security-badge">
+            <i class="pi pi-lock"></i>
+            관리자 권한
+          </span>
+          <button
+            type="button"
+            class="admin-refresh-button"
+            :data-tooltip="`5초마다 자동 갱신 · 마지막 갱신 ${lastUpdatedLabel()}`"
+            :disabled="adminStore.isLoading"
+            @click="refreshAdminData"
+          >
+            <i class="pi pi-refresh"></i>
+            <span>{{ adminStore.isLoading ? "갱신 중" : "새로고침" }}</span>
+          </button>
+        </div>
       </header>
 
       <section class="admin-content">
@@ -351,26 +362,49 @@ function lastUpdatedLabel() {
           사용자 현황을 불러오고 있어요.
         </div>
 
-        <section v-if="users" class="admin-user-status">
-          <article class="admin-user-card">
+        <section class="admin-overview-grid">
+          <article v-if="users" class="admin-overview-card">
             <span>전체 사용자</span>
             <strong>{{ number(users.totalUsers) }}</strong>
             <small>가입된 전체 계정 수</small>
           </article>
-          <article class="admin-user-card">
+          <article v-if="users" class="admin-overview-card">
             <span>오늘 가입</span>
             <strong>{{ number(users.todaySignups) }}</strong>
             <small>오늘 생성된 신규 계정</small>
           </article>
-          <article class="admin-user-card">
+          <article v-if="users" class="admin-overview-card">
             <span>최근 5분 활성</span>
             <strong>{{ number(users.activeUsers5m) }}</strong>
             <small>최근 5분 내 인증 API 요청 사용자</small>
           </article>
+          <button
+            type="button"
+            class="admin-overview-card admin-overview-card-accent admin-overview-action"
+            :class="{ active: activeReviewPanel === 'requests' }"
+            @click="showReviewPanel('requests')"
+          >
+            <span>등록 요청 대기</span>
+            <strong>{{ number(adminStore.foodRequestPage.totalItems) }}</strong>
+            <small>사용자가 직접 보낸 음식 등록 요청</small>
+          </button>
+          <button
+            type="button"
+            class="admin-overview-card admin-overview-card-muted admin-overview-action"
+            :class="{ active: activeReviewPanel === 'candidates' }"
+            @click="showReviewPanel('candidates')"
+          >
+            <span>후보 검수 대기</span>
+            <strong>{{ number(adminStore.importCandidatePage.totalItems || pendingReviewCount) }}</strong>
+            <small>검색 실패 후 수집된 음식 후보</small>
+          </button>
         </section>
 
-        <section class="admin-food-request-layout">
-          <section class="admin-food-request-list">
+        <section
+          v-if="activeReviewPanel === 'requests'"
+          class="admin-food-request-layout admin-review-section"
+        >
+          <section class="admin-review-list-panel">
             <div class="admin-section-title">
               <div>
                 <p class="section-eyebrow">FOOD REQUESTS</p>
@@ -381,6 +415,7 @@ function lastUpdatedLabel() {
                 class="admin-inline-refresh"
                 :disabled="adminStore.isLoadingFoodRequests"
                 @click="adminStore.loadFoodRequests()"
+                aria-label="음식 등록 요청 새로고침"
               >
                 <i class="pi pi-refresh"></i>
               </button>
@@ -398,12 +433,13 @@ function lastUpdatedLabel() {
               :class="{ selected: selectedRequest?.id === request.id }"
               @click="selectRequest(request)"
             >
+              <i class="pi pi-inbox admin-request-icon"></i>
               <strong>{{ request.name }}</strong>
               <span>{{ request.brand || "브랜드 없음" }} · {{ formatServing(request) }}</span>
               <small>{{ request.submitterNickname || request.submitterEmail }}</small>
             </button>
 
-            <div v-if="!requests.length && !adminStore.isLoadingFoodRequests" class="admin-empty">
+            <div v-if="!requests.length && !adminStore.isLoadingFoodRequests" class="admin-empty admin-list-empty">
               승인 대기 중인 요청이 없습니다.
             </div>
           </section>
@@ -461,7 +497,8 @@ function lastUpdatedLabel() {
             </label>
 
             <div class="admin-food-review-actions">
-              <button type="button" class="admin-primary-button" @click="approveSelectedRequest">
+              <button type="button" class="admin-primary-button" :disabled="adminStore.isLoadingFoodRequests" @click="approveSelectedRequest">
+                <i class="pi pi-check"></i>
                 승인하고 DB에 추가
               </button>
             </div>
@@ -472,14 +509,18 @@ function lastUpdatedLabel() {
                 <textarea v-model="rejectionReason" rows="3"></textarea>
               </label>
               <button type="button" class="admin-secondary-button" :disabled="!rejectionReason.trim()" @click="rejectSelectedRequest">
+                <i class="pi pi-times"></i>
                 반려
               </button>
             </div>
           </aside>
         </section>
 
-        <section class="admin-food-request-layout admin-import-candidate-layout">
-          <section class="admin-food-request-list">
+        <section
+          v-if="activeReviewPanel === 'candidates'"
+          class="admin-food-request-layout admin-import-candidate-layout admin-review-section"
+        >
+          <section class="admin-review-list-panel">
             <div class="admin-section-title">
               <div>
                 <p class="section-eyebrow">FATSECRET CANDIDATES</p>
@@ -500,6 +541,7 @@ function lastUpdatedLabel() {
                   class="admin-inline-refresh"
                   :disabled="adminStore.isLoadingImportCandidates"
                   @click="adminStore.loadImportCandidates()"
+                  aria-label="음식 후보 검수 새로고침"
                 >
                   <i class="pi pi-refresh"></i>
                 </button>
@@ -516,7 +558,7 @@ function lastUpdatedLabel() {
               v-for="group in importGroups"
               :key="group.searchMissId"
               type="button"
-              class="admin-food-request-item"
+              class="admin-food-request-item admin-candidate-request-item"
               :class="{ selected: selectedImportGroup?.searchMissId === group.searchMissId }"
               @click="selectImportGroup(group)"
             >
@@ -524,10 +566,10 @@ function lastUpdatedLabel() {
               <span>
                 {{ importGroupStatusLabel(group.status) }} · 후보 {{ (group.candidates || []).length }}개 · 누적 {{ number(group.missCount) }}회
               </span>
-              <small>{{ group.normalizedQuery }}</small>
+              <small v-if="hasDistinctNormalizedQuery(group)">{{ group.normalizedQuery }}</small>
             </button>
 
-            <div v-if="!importGroups.length && !adminStore.isLoadingImportCandidates" class="admin-empty">
+            <div v-if="!importGroups.length && !adminStore.isLoadingImportCandidates" class="admin-empty admin-list-empty">
               선택한 상태의 후보가 없습니다.
             </div>
           </section>
@@ -546,27 +588,38 @@ function lastUpdatedLabel() {
             </div>
 
             <div v-else class="admin-import-candidate-grid">
-              <button
+              <article
                 v-for="candidate in selectedImportGroup.candidates"
                 :key="candidate.candidateId"
-                type="button"
                 class="admin-import-candidate-card"
                 :class="{
                   selected: isImportCandidateSelected(candidate),
                   duplicate: candidate.status === 'DUPLICATE',
                 }"
+                role="button"
+                tabindex="0"
                 @click="toggleImportCandidate(candidate)"
+                @keydown.enter.prevent="toggleImportCandidate(candidate)"
+                @keydown.space.prevent="toggleImportCandidate(candidate)"
               >
                 <div>
                   <strong>{{ candidate.name }}</strong>
                   <span>{{ candidate.brand || "브랜드 없음" }} · {{ formatCandidateServing(candidate) }}</span>
                 </div>
-                <em>{{ isImportCandidateSelected(candidate) ? "선택됨" : candidateStatusLabel(candidate.status) }}</em>
-                <p>{{ candidate.foodDescription || "설명 없음" }}</p>
+                <a
+                  v-if="candidate.sourceUrl"
+                  class="admin-candidate-source-link"
+                  :href="candidate.sourceUrl"
+                  target="_blank"
+                  rel="noreferrer"
+                  @click.stop
+                >
+                  원본 보기
+                </a>
                 <dl>
                   <div>
-                    <dt>kcal</dt>
-                    <dd>{{ number(candidate.calories) }}</dd>
+                    <dt>칼로리</dt>
+                    <dd>{{ number(candidate.calories) }} kcal</dd>
                   </div>
                   <div>
                     <dt>탄수</dt>
@@ -581,28 +634,16 @@ function lastUpdatedLabel() {
                     <dd>{{ number(candidate.fat) }}g</dd>
                   </div>
                 </dl>
-              </button>
+              </article>
             </div>
 
             <div v-if="selectedImportCandidates.length" class="admin-import-selected">
               <div>
-                <span>선택 후보 {{ selectedImportCandidates.length }}개</span>
+                <span>선택 후보 {{ selectedImportCandidateCount }}개</span>
                 <strong>{{ selectedImportCandidateNames() }}</strong>
                 <small v-if="selectedImportCandidateDuplicateLabel()">
                   기존 음식 {{ selectedImportCandidateDuplicateLabel() }}에 연결됩니다.
                 </small>
-              </div>
-              <div class="admin-import-source-links">
-                <a
-                  v-for="candidate in selectedImportCandidates"
-                  :key="candidate.candidateId"
-                  v-show="candidate.sourceUrl"
-                  :href="candidate.sourceUrl"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  원본 보기
-                </a>
               </div>
             </div>
 
@@ -613,7 +654,8 @@ function lastUpdatedLabel() {
                 :disabled="!canApproveImportCandidates"
                 @click="approveSelectedImportCandidates"
               >
-                선택 후보 {{ selectedImportCandidates.length }}개 승인
+                <i class="pi pi-check"></i>
+                선택 후보 {{ selectedImportCandidateCount }}개 승인
               </button>
             </div>
 
@@ -628,6 +670,7 @@ function lastUpdatedLabel() {
                 :disabled="!importRejectionReason.trim() || selectedImportGroup.status !== 'PENDING_REVIEW'"
                 @click="rejectSelectedImportGroup"
               >
+                <i class="pi pi-times"></i>
                 검색어 후보 전체 거절
               </button>
             </div>

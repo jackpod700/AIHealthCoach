@@ -142,6 +142,10 @@ export const useFoodStore = defineStore("food", {
         }
       }
     },
+    clearSubmissionFeedback() {
+      this.submissionError = "";
+      this.submissionMessage = "";
+    },
     clearFoods() {
       this.foodPage = {
         items: [],

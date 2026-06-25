@@ -17,6 +17,8 @@ const mealType = ref(defaultMealType());
 const quantity = ref(1);
 const saveMessage = ref("");
 const foodAddOpen = ref(false);
+const submissionComplete = ref(false);
+const completedSubmissionName = ref("");
 const showNutritionPanel = ref(false);
 const isNutritionPanelClosing = ref(false);
 const submissionForm = reactive({
@@ -139,11 +141,13 @@ function applyExampleQuery(query) {
 }
 
 function openFoodAddForm() {
+  resetSubmissionState();
   foodAddOpen.value = true;
 }
 
 function closeFoodAddForm() {
   foodAddOpen.value = false;
+  resetSubmissionState();
 }
 
 function selectFood(food) {
@@ -233,8 +237,9 @@ async function submitMissingFood() {
     return;
   }
 
+  const submittedName = submissionForm.name.trim();
   const created = await foodStore.submitMissingFood({
-    name: submissionForm.name.trim(),
+    name: submittedName,
     brand: blankToNull(submissionForm.brand),
     servingDescription: blankToNull(submissionForm.servingDescription),
     servingSize: numberOrNull(submissionForm.servingSize),
@@ -246,6 +251,8 @@ async function submitMissingFood() {
   });
 
   if (created) {
+    submissionComplete.value = true;
+    completedSubmissionName.value = submittedName;
     Object.assign(submissionForm, {
       name: "",
       brand: "",
@@ -258,6 +265,10 @@ async function submitMissingFood() {
       fat: "",
     });
   }
+}
+
+function requestAnotherFood() {
+  resetSubmissionState();
 }
 
 function servingLabel(serving) {
@@ -283,6 +294,16 @@ function statusLabel(status) {
     return "반려";
   }
   return "대기";
+}
+
+function statusClass(status) {
+  if (status === "APPROVED") {
+    return "approved";
+  }
+  if (status === "REJECTED") {
+    return "rejected";
+  }
+  return "pending";
 }
 
 function formatBrand(brand) {
@@ -336,6 +357,12 @@ function blankToNull(value) {
 function numberOrNull(value) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) && numberValue > 0 ? numberValue : null;
+}
+
+function resetSubmissionState() {
+  submissionComplete.value = false;
+  completedSubmissionName.value = "";
+  foodStore.clearSubmissionFeedback();
 }
 
 function scheduleSearchMissRecord(query) {
@@ -585,7 +612,28 @@ function clearMissRecordTimer() {
                 </button>
               </div>
 
-              <form class="food-submission-form" @submit.prevent="submitMissingFood">
+              <div v-if="submissionComplete" class="food-submission-complete" role="status" aria-live="polite">
+                <div class="food-submission-complete-icon">
+                  <i class="pi pi-check" aria-hidden="true"></i>
+                </div>
+                <div>
+                  <strong>요청 완료</strong>
+                  <p>
+                    <b>{{ completedSubmissionName }}</b> 등록 요청을 보냈어요.
+                    관리자가 확인한 뒤 음식 DB에 반영됩니다.
+                  </p>
+                </div>
+                <div class="food-submission-complete-actions">
+                  <button type="button" class="secondary" @click="requestAnotherFood">
+                    다른 요청하기
+                  </button>
+                  <button type="button" @click="closeFoodAddForm">
+                    닫기
+                  </button>
+                </div>
+              </div>
+
+              <form v-else class="food-submission-form" @submit.prevent="submitMissingFood">
                 <label>
                   <span>음식명</span>
                   <input v-model="submissionForm.name" type="text" placeholder="예: 닭가슴살" required />
@@ -629,17 +677,15 @@ function clearMissRecordTimer() {
                 </button>
               </form>
 
-              <small v-if="foodStore.submissionMessage" class="food-meal-record-success">
-                {{ foodStore.submissionMessage }}
-              </small>
-              <small v-if="foodStore.submissionError" class="food-meal-record-error">
+              <small v-if="!submissionComplete && foodStore.submissionError" class="food-meal-record-error">
                 {{ foodStore.submissionError }}
               </small>
 
-              <div v-if="myRequests.length" class="food-submission-history">
+              <div v-if="!submissionComplete && myRequests.length" class="food-submission-history">
                 <strong>내 최근 요청</strong>
-                <span v-for="request in myRequests.slice(0, 3)" :key="request.id">
-                  {{ request.name }} · {{ statusLabel(request.status) }}
+                <span v-for="request in myRequests.slice(0, 3)" :key="request.id" class="food-submission-history-item">
+                  <b>{{ request.name }}</b>
+                  <em :class="statusClass(request.status)">{{ statusLabel(request.status) }}</em>
                 </span>
               </div>
             </section>
