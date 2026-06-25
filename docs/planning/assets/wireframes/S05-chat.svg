@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S05 AI 채팅 화면 와이어프레임</title>
+  <desc id="desc">사이드바, AI 채팅 메시지 영역, 제안 카드, 입력창, Today Panel로 구성된 채팅 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .header { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .user { fill: #2563eb; }
+    .ai { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 2; }
+    .proposal { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 16px Arial, sans-serif; }
+    .small { fill: #64748b; font: 13px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#334155"/>
+  <rect class="header" x="248" y="70" width="600" height="72" rx="18"/>
+  <text class="label" x="278" y="114">AI 코치 채팅</text>
+  <rect class="panel" x="248" y="166" width="600" height="380" rx="18"/>
+  <rect class="user" x="588" y="202" width="220" height="54" rx="18"/>
+  <text class="white" x="620" y="234">사용자 메시지</text>
+  <rect class="ai" x="288" y="280" width="330" height="68" rx="18"/>
+  <text class="text" x="316" y="320">AI 스트리밍 응답</text>
+  <rect class="proposal" x="288" y="378" width="500" height="118" rx="18"/>
+  <text class="text" x="318" y="418">AI 제안 카드</text>
+  <text class="small" x="318" y="450">식단 / 운동 / 체중 / 목표 확정</text>
+  <rect class="field" x="248" y="568" width="600" height="62" rx="18"/>
+  <text class="small" x="280" y="605">메시지 입력, 이미지 첨부, 전송</text>
+  <rect class="panel" x="884" y="70" width="236" height="560" rx="18"/>
+  <text class="label" x="914" y="114">Today</text>
+  <rect class="header" x="914" y="148" width="176" height="82" rx="16"/>
+  <text class="small" x="936" y="184">섭취 목표 진행률</text>
+  <rect class="header" x="914" y="252" width="176" height="82" rx="16"/>
+  <text class="small" x="936" y="288">운동 목표 진행률</text>
+  <rect class="panel" x="914" y="368" width="176" height="190" rx="16"/>
+  <text class="small" x="936" y="404">오늘 식단 목록</text>
+</svg>

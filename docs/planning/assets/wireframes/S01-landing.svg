@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S01 랜딩 화면 와이어프레임</title>
+  <desc id="desc">Babtory 랜딩 화면의 브랜드, 소개 문구, 로그인 및 회원가입 CTA, 기능 요약 섹션 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .page { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .nav { fill: #0f172a; }
+    .hero { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; rx: 14; }
+    .primary { fill: #2563eb; }
+    .secondary { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 28px Arial, sans-serif; }
+    .text { fill: #334155; font: 18px Arial, sans-serif; }
+    .small { fill: #64748b; font: 15px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 16px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="page" x="48" y="42" width="1104" height="636" rx="22"/>
+  <rect class="nav" x="48" y="42" width="1104" height="72" rx="22"/>
+  <text class="white" x="88" y="88">Babtory</text>
+  <rect class="secondary" x="900" y="64" width="84" height="28" rx="14"/>
+  <rect class="primary" x="1000" y="64" width="104" height="28" rx="14"/>
+  <text class="small" x="918" y="83">Login</text>
+  <text class="white" x="1022" y="83">Sign up</text>
+  <rect class="hero" x="96" y="158" width="1008" height="280" rx="24"/>
+  <text class="label" x="144" y="232">AI Health Coaching Landing</text>
+  <text class="text" x="144" y="270">서비스 소개, 핵심 가치, 회원가입 및 로그인 진입점</text>
+  <rect class="primary" x="144" y="322" width="132" height="46" rx="23"/>
+  <rect class="secondary" x="294" y="322" width="132" height="46" rx="23"/>
+  <text class="white" x="179" y="351">로그인</text>
+  <text class="text" x="326" y="351">회원가입</text>
+  <rect class="card" x="730" y="205" width="300" height="150"/>
+  <text class="text" x="758" y="250">Preview</text>
+  <rect x="758" y="272" width="230" height="16" rx="8" fill="#bfdbfe"/>
+  <rect x="758" y="302" width="180" height="16" rx="8" fill="#dbeafe"/>
+  <rect x="758" y="332" width="210" height="16" rx="8" fill="#dbeafe"/>
+  <rect class="card" x="96" y="486" width="304" height="120"/>
+  <rect class="card" x="448" y="486" width="304" height="120"/>
+  <rect class="card" x="800" y="486" width="304" height="120"/>
+  <text class="text" x="132" y="535">AI 채팅</text>
+  <text class="small" x="132" y="566">식단/운동/체중 대화</text>
+  <text class="text" x="484" y="535">기록 관리</text>
+  <text class="small" x="484" y="566">캘린더와 일별 기록</text>
+  <text class="text" x="836" y="535">목표 관리</text>
+  <text class="small" x="836" y="566">일일 목표와 진행률</text>
+</svg>

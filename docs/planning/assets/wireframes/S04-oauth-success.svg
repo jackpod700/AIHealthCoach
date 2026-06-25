@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S04 OAuth 완료 화면 와이어프레임</title>
+  <desc id="desc">OAuth 인증 완료 후 세션 저장, 프로필 확인, 다음 화면 이동을 안내하는 처리 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .status { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2; }
+    .success { fill: #dcfce7; stroke: #22c55e; stroke-width: 2; }
+    .warn { fill: #fef3c7; stroke: #f59e0b; stroke-width: 2; }
+    .error { fill: #fee2e2; stroke: #ef4444; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 28px Arial, sans-serif; }
+    .text { fill: #334155; font: 18px Arial, sans-serif; }
+    .small { fill: #64748b; font: 14px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="card" x="260" y="96" width="680" height="528" rx="30"/>
+  <text class="label" x="350" y="172">OAuth 로그인 완료 처리</text>
+  <text class="text" x="350" y="210">토큰 저장 후 프로필 완성 여부에 따라 이동</text>
+  <rect class="status" x="350" y="268" width="500" height="70" rx="18"/>
+  <text class="text" x="386" y="312">1. OAuth 세션 완료 처리</text>
+  <rect class="success" x="350" y="368" width="225" height="92" rx="18"/>
+  <text class="text" x="382" y="405">프로필 완성</text>
+  <text class="small" x="382" y="432">/chat 이동</text>
+  <rect class="warn" x="625" y="368" width="225" height="92" rx="18"/>
+  <text class="text" x="657" y="405">프로필 미완성</text>
+  <text class="small" x="657" y="432">/signup?oauth=true</text>
+  <rect class="error" x="350" y="496" width="500" height="70" rx="18"/>
+  <text class="text" x="386" y="540">실패 시 /login 이동 및 오류 안내</text>
+</svg>

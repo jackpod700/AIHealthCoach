@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S06 월간 캘린더 화면 와이어프레임</title>
+  <desc id="desc">월 이동 컨트롤, 캘린더 그리드, 식단/운동/체중 기록 배지, Today Panel 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .toolbar { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .cell { fill: #f8fafc; stroke: #cbd5e1; stroke-width: 1.5; }
+    .today { fill: #dbeafe; stroke: #2563eb; stroke-width: 2; }
+    .dot1 { fill: #22c55e; }
+    .dot2 { fill: #f97316; }
+    .dot3 { fill: #8b5cf6; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#334155"/>
+  <rect class="toolbar" x="248" y="70" width="600" height="74" rx="18"/>
+  <text class="label" x="300" y="115">2026년 6월</text>
+  <rect x="640" y="90" width="52" height="34" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+  <rect x="704" y="90" width="52" height="34" rx="12" fill="#ffffff" stroke="#93c5fd" stroke-width="2"/>
+  <rect x="768" y="90" width="52" height="34" rx="12" fill="#2563eb"/>
+  <text class="white" x="783" y="113">오늘</text>
+  <g transform="translate(248 172)">
+    <rect class="panel" width="600" height="420" rx="18"/>
+    <g>
+      <text class="small" x="36" y="36">Sun</text><text class="small" x="118" y="36">Mon</text><text class="small" x="200" y="36">Tue</text><text class="small" x="282" y="36">Wed</text><text class="small" x="364" y="36">Thu</text><text class="small" x="446" y="36">Fri</text><text class="small" x="528" y="36">Sat</text>
+    </g>
+    <g transform="translate(24 52)">
+      <rect class="cell" x="0" y="0" width="78" height="56" rx="10"/><rect class="cell" x="82" y="0" width="78" height="56" rx="10"/><rect class="cell" x="164" y="0" width="78" height="56" rx="10"/><rect class="cell" x="246" y="0" width="78" height="56" rx="10"/><rect class="cell" x="328" y="0" width="78" height="56" rx="10"/><rect class="cell" x="410" y="0" width="78" height="56" rx="10"/><rect class="cell" x="492" y="0" width="78" height="56" rx="10"/>
+      <rect class="cell" x="0" y="62" width="78" height="56" rx="10"/><rect class="today" x="82" y="62" width="78" height="56" rx="10"/><rect class="cell" x="164" y="62" width="78" height="56" rx="10"/><rect class="cell" x="246" y="62" width="78" height="56" rx="10"/><rect class="cell" x="328" y="62" width="78" height="56" rx="10"/><rect class="cell" x="410" y="62" width="78" height="56" rx="10"/><rect class="cell" x="492" y="62" width="78" height="56" rx="10"/>
+      <rect class="cell" x="0" y="124" width="78" height="56" rx="10"/><rect class="cell" x="82" y="124" width="78" height="56" rx="10"/><rect class="cell" x="164" y="124" width="78" height="56" rx="10"/><rect class="cell" x="246" y="124" width="78" height="56" rx="10"/><rect class="cell" x="328" y="124" width="78" height="56" rx="10"/><rect class="cell" x="410" y="124" width="78" height="56" rx="10"/><rect class="cell" x="492" y="124" width="78" height="56" rx="10"/>
+      <rect class="cell" x="0" y="186" width="78" height="56" rx="10"/><rect class="cell" x="82" y="186" width="78" height="56" rx="10"/><rect class="cell" x="164" y="186" width="78" height="56" rx="10"/><rect class="cell" x="246" y="186" width="78" height="56" rx="10"/><rect class="cell" x="328" y="186" width="78" height="56" rx="10"/><rect class="cell" x="410" y="186" width="78" height="56" rx="10"/><rect class="cell" x="492" y="186" width="78" height="56" rx="10"/>
+      <circle class="dot1" cx="112" cy="100" r="5"/><circle class="dot2" cx="128" cy="100" r="5"/><circle class="dot3" cx="182" cy="162" r="5"/><circle class="dot1" cx="276" cy="224" r="5"/><circle class="dot2" cx="292" cy="224" r="5"/>
+    </g>
+  </g>
+  <rect class="panel" x="884" y="70" width="236" height="560" rx="18"/>
+  <text class="label" x="914" y="114">Today</text>
+  <rect class="toolbar" x="914" y="150" width="176" height="82" rx="16"/>
+  <rect class="toolbar" x="914" y="252" width="176" height="82" rx="16"/>
+  <rect class="panel" x="914" y="368" width="176" height="190" rx="16"/>
+</svg>

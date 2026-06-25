@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S02 로그인 화면 와이어프레임</title>
+  <desc id="desc">이메일 로그인, OAuth 로그인, 회원가입 이동 링크를 포함한 로그인 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .hero { fill: #eef2ff; stroke: #a5b4fc; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .oauth { fill: #ffffff; stroke: #94a3b8; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 28px Arial, sans-serif; }
+    .text { fill: #334155; font: 18px Arial, sans-serif; }
+    .small { fill: #64748b; font: 15px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 16px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="hero" x="70" y="70" width="480" height="580" rx="28"/>
+  <text class="label" x="120" y="160">Babtory</text>
+  <text class="text" x="120" y="205">AI 코치와 건강 기록을 연결하는 서비스</text>
+  <rect x="120" y="280" width="340" height="22" rx="11" fill="#c7d2fe"/>
+  <rect x="120" y="324" width="280" height="22" rx="11" fill="#ddd6fe"/>
+  <rect x="120" y="368" width="310" height="22" rx="11" fill="#dbeafe"/>
+  <rect class="panel" x="650" y="100" width="430" height="520" rx="28"/>
+  <text class="label" x="710" y="170">로그인</text>
+  <text class="small" x="710" y="204">이메일과 비밀번호로 로그인</text>
+  <text class="small" x="710" y="252">Email</text>
+  <rect class="field" x="710" y="266" width="310" height="48" rx="10"/>
+  <text class="small" x="710" y="346">Password</text>
+  <rect class="field" x="710" y="360" width="310" height="48" rx="10"/>
+  <rect class="primary" x="710" y="442" width="310" height="50" rx="14"/>
+  <text class="white" x="842" y="473">Login</text>
+  <rect class="oauth" x="710" y="520" width="148" height="44" rx="12"/>
+  <rect class="oauth" x="872" y="520" width="148" height="44" rx="12"/>
+  <text class="text" x="754" y="548">Google</text>
+  <text class="text" x="925" y="548">Naver</text>
+  <text class="small" x="780" y="590">회원가입으로 이동</text>
+</svg>

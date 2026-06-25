@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S08 음식 검색 화면 와이어프레임</title>
+  <desc id="desc">음식 검색, 검색 결과, 영양 상세, 오늘 식단 저장, 음식 등록 요청 폼 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .search { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .detail { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .request { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <text class="label" x="252" y="90">음식 검색</text>
+  <rect class="search" x="248" y="122" width="872" height="76" rx="18"/>
+  <rect class="field" x="278" y="142" width="638" height="38" rx="12"/>
+  <rect class="primary" x="938" y="142" width="150" height="38" rx="12"/>
+  <text class="white" x="996" y="166">검색</text>
+  <rect class="panel" x="248" y="228" width="418" height="332" rx="18"/>
+  <text class="text" x="278" y="268">음식 그룹 목록</text>
+  <rect x="278" y="296" width="340" height="54" rx="14" fill="#f1f5f9"/>
+  <rect x="278" y="366" width="340" height="54" rx="14" fill="#f1f5f9"/>
+  <rect x="278" y="436" width="340" height="54" rx="14" fill="#f1f5f9"/>
+  <text class="small" x="332" y="535">이전 / 다음 페이지</text>
+  <rect class="detail" x="702" y="228" width="418" height="332" rx="18"/>
+  <text class="text" x="732" y="268">영양 상세 패널</text>
+  <rect x="732" y="300" width="310" height="16" rx="8" fill="#bbf7d0"/>
+  <rect x="732" y="332" width="260" height="16" rx="8" fill="#bbf7d0"/>
+  <rect class="field" x="732" y="380" width="150" height="38" rx="10"/>
+  <rect class="field" x="904" y="380" width="150" height="38" rx="10"/>
+  <rect class="primary" x="732" y="462" width="322" height="44" rx="14"/>
+  <text class="white" x="830" y="490">오늘 식단에 추가</text>
+  <rect class="request" x="248" y="590" width="872" height="58" rx="18"/>
+  <text class="text" x="278" y="625">음식 등록 요청 폼 열기 / 제출</text>
+</svg>

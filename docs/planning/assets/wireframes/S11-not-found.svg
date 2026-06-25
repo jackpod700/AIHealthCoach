@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S11 Not Found 화면 와이어프레임</title>
+  <desc id="desc">404 오류 안내, 홈 이동, 채팅 이동 버튼을 포함한 Not Found 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .accent { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .secondary { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 2; }
+    .code { fill: #1d4ed8; font: 800 104px Arial, sans-serif; }
+    .label { fill: #0f172a; font: 700 28px Arial, sans-serif; }
+    .text { fill: #334155; font: 18px Arial, sans-serif; }
+    .small { fill: #64748b; font: 14px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 16px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="card" x="260" y="82" width="680" height="556" rx="30"/>
+  <text class="label" x="350" y="150">Babtory</text>
+  <rect class="accent" x="390" y="202" width="420" height="156" rx="28"/>
+  <text class="code" x="480" y="318">404</text>
+  <text class="label" x="458" y="424">Page Not Found</text>
+  <text class="text" x="364" y="466">정의되지 않은 주소로 접근했을 때 복귀 동선을 제공한다.</text>
+  <rect class="primary" x="405" y="526" width="160" height="48" rx="16"/>
+  <rect class="secondary" x="595" y="526" width="200" height="48" rx="16"/>
+  <text class="white" x="452" y="556">홈으로</text>
+  <text class="text" x="642" y="556">AI 채팅으로</text>
+</svg>

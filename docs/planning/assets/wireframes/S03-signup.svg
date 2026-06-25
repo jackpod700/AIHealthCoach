@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S03 회원가입 및 온보딩 화면 와이어프레임</title>
+  <desc id="desc">계정 정보 단계와 건강 프로필 온보딩 단계를 포함한 회원가입 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .step { fill: #dbeafe; stroke: #60a5fa; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .choice { fill: #f1f5f9; stroke: #cbd5e1; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .muted { fill: #e2e8f0; stroke: #94a3b8; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 26px Arial, sans-serif; }
+    .text { fill: #334155; font: 17px Arial, sans-serif; }
+    .small { fill: #64748b; font: 14px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 16px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="card" x="92" y="62" width="1016" height="596" rx="28"/>
+  <text class="label" x="142" y="120">회원가입 / 온보딩</text>
+  <rect class="step" x="142" y="156" width="420" height="70" rx="18"/>
+  <text class="text" x="172" y="190">Step 1. 계정 정보</text>
+  <text class="small" x="172" y="214">닉네임, 이메일, 비밀번호</text>
+  <rect class="step" x="638" y="156" width="420" height="70" rx="18"/>
+  <text class="text" x="668" y="190">Step 2. 건강 프로필</text>
+  <text class="small" x="668" y="214">키, 체중, 성별, 나이, 목표 유형</text>
+  <rect class="field" x="142" y="278" width="420" height="52" rx="10"/>
+  <text class="small" x="166" y="310">Nickname</text>
+  <rect class="field" x="142" y="352" width="420" height="52" rx="10"/>
+  <text class="small" x="166" y="384">Email</text>
+  <rect class="field" x="142" y="426" width="420" height="52" rx="10"/>
+  <text class="small" x="166" y="458">Password, normal signup only</text>
+  <rect class="field" x="638" y="278" width="196" height="52" rx="10"/>
+  <rect class="field" x="862" y="278" width="196" height="52" rx="10"/>
+  <text class="small" x="662" y="310">Height</text>
+  <text class="small" x="886" y="310">Current weight</text>
+  <rect class="field" x="638" y="352" width="196" height="52" rx="10"/>
+  <rect class="field" x="862" y="352" width="196" height="52" rx="10"/>
+  <text class="small" x="662" y="384">Target weight</text>
+  <text class="small" x="886" y="384">Age</text>
+  <rect class="choice" x="638" y="430" width="126" height="58" rx="14"/>
+  <rect class="choice" x="786" y="430" width="126" height="58" rx="14"/>
+  <rect class="choice" x="934" y="430" width="126" height="58" rx="14"/>
+  <text class="small" x="670" y="464">감량</text>
+  <text class="small" x="818" y="464">유지</text>
+  <text class="small" x="958" y="464">근육 증가</text>
+  <rect class="muted" x="638" y="548" width="140" height="48" rx="14"/>
+  <rect class="primary" x="796" y="548" width="262" height="48" rx="14"/>
+  <text class="text" x="686" y="579">이전</text>
+  <text class="white" x="888" y="579">가입 완료</text>
+</svg>

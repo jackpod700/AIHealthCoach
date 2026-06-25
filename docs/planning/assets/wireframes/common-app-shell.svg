@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">공통 App Shell 구조 와이어프레임</title>
+  <desc id="desc">Top Bar, Sidebar, Workspace, Today Panel로 구성된 인증 후 공통 화면 레이아웃</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .top { fill: #0f172a; }
+    .side { fill: #1e293b; }
+    .work { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .today { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .navitem { fill: #334155; }
+    .active { fill: #2563eb; }
+    .card { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 24px Arial, sans-serif; }
+    .text { fill: #334155; font: 16px Arial, sans-serif; }
+    .small { fill: #64748b; font: 13px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="42" y="38" width="1116" height="644" rx="24"/>
+  <rect class="top" x="42" y="38" width="1116" height="72" rx="24"/>
+  <text class="white" x="82" y="83">Top Bar: Babtory / profile menu / logout</text>
+  <circle cx="1085" cy="74" r="22" fill="#334155"/>
+  <rect class="side" x="42" y="110" width="210" height="572"/>
+  <text class="white" x="82" y="158">Sidebar</text>
+  <rect class="active" x="82" y="196" width="128" height="30" rx="15"/>
+  <rect class="navitem" x="82" y="246" width="128" height="30" rx="15"/>
+  <rect class="navitem" x="82" y="296" width="128" height="30" rx="15"/>
+  <rect class="navitem" x="82" y="346" width="128" height="30" rx="15"/>
+  <rect class="navitem" x="82" y="396" width="128" height="30" rx="15"/>
+  <rect class="navitem" x="82" y="446" width="128" height="30" rx="15"/>
+  <text class="small" x="94" y="216" fill="#ffffff">AI Chat</text>
+  <text class="small" x="94" y="266" fill="#ffffff">Calendar</text>
+  <text class="small" x="94" y="316" fill="#ffffff">Daily Records</text>
+  <text class="small" x="94" y="366" fill="#ffffff">Foods</text>
+  <text class="small" x="94" y="416" fill="#ffffff">Profile</text>
+  <text class="small" x="94" y="466" fill="#ffffff">Admin, if ADMIN</text>
+  <rect class="work" x="292" y="150" width="560" height="492" rx="22"/>
+  <text class="label" x="332" y="204">Workspace</text>
+  <text class="text" x="332" y="238">Router view renders page content</text>
+  <rect class="card" x="332" y="292" width="476" height="80" rx="16"/>
+  <rect class="card" x="332" y="400" width="476" height="80" rx="16"/>
+  <rect class="card" x="332" y="508" width="476" height="80" rx="16"/>
+  <text class="small" x="362" y="338">Page header / controls</text>
+  <text class="small" x="362" y="446">Main content cards, lists, forms</text>
+  <text class="small" x="362" y="554">Screen-specific state and actions</text>
+  <rect class="today" x="892" y="150" width="226" height="492" rx="22"/>
+  <text class="label" x="922" y="204">Today Panel</text>
+  <rect class="card" x="922" y="250" width="166" height="74" rx="16"/>
+  <rect class="card" x="922" y="354" width="166" height="74" rx="16"/>
+  <rect class="card" x="922" y="458" width="166" height="124" rx="16"/>
+  <text class="small" x="948" y="292">calorie progress</text>
+  <text class="small" x="948" y="396">exercise progress</text>
+  <text class="small" x="948" y="510">today meals</text>
+</svg>
