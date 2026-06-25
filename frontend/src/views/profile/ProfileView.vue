@@ -46,6 +46,7 @@ const goalRecommendationBase = reactive({
 
 const GOOD_TARGET_MIN_RATIO = 0.9;
 const GOOD_TARGET_MAX_RATIO = 1.1;
+const LOGIN_ACCOUNT_BADGE_TYPE = "LOCAL"; // LOCAL | GOOGLE | NAVER | NONE
 
 const GOAL_RANGE_CONFIG = {
   WEIGHT_LOSS: {
@@ -122,6 +123,25 @@ const savedGoalLabel = computed(() => {
   );
 });
 
+const loginAccountBadge = computed(() => {
+  const badges = {
+    LOCAL: {
+      type: "local",
+      label: "일반 로그인 계정",
+    },
+    GOOGLE: {
+      type: "google",
+      label: "구글 로그인 계정",
+    },
+    NAVER: {
+      type: "naver",
+      label: "네이버 로그인 계정",
+    },
+  };
+
+  return badges[LOGIN_ACCOUNT_BADGE_TYPE] || null;
+});
+
 const selectedWeightRecord = computed(
   () => weightRecordStore.recordsByDate[selectedWeightRecordDate.value] || null,
 );
@@ -176,11 +196,15 @@ const exerciseGoal = computed(() => {
 });
 
 const overviewCalorieGoal = computed(() => {
-  return isGoalDetailEditing.value ? displayCalorieGoal.value : calorieGoal.value;
+  return isGoalDetailEditing.value
+    ? displayCalorieGoal.value
+    : calorieGoal.value;
 });
 
 const overviewExerciseGoal = computed(() => {
-  return isGoalDetailEditing.value ? displayExerciseGoal.value : exerciseGoal.value;
+  return isGoalDetailEditing.value
+    ? displayExerciseGoal.value
+    : exerciseGoal.value;
 });
 
 const overviewTargetWeight = computed(() => {
@@ -192,13 +216,19 @@ const overviewTargetWeight = computed(() => {
 const displayTargetWeight = computed(() => {
   const targetWeightKg = Number(goalDetailForm.targetWeightKg);
 
-  return Number.isFinite(targetWeightKg) ? Math.round(targetWeightKg * 10) / 10 : "";
+  return Number.isFinite(targetWeightKg)
+    ? Math.round(targetWeightKg * 10) / 10
+    : "";
 });
 
 const isTargetWeightValid = computed(() => {
   const targetWeightKg = Number(goalDetailForm.targetWeightKg);
 
-  return Number.isFinite(targetWeightKg) && targetWeightKg > 0 && targetWeightKg <= 500;
+  return (
+    Number.isFinite(targetWeightKg) &&
+    targetWeightKg > 0 &&
+    targetWeightKg <= 500
+  );
 });
 
 const canSaveGoalDetail = computed(() => {
@@ -279,7 +309,10 @@ const overallGoalStatus = computed(() => {
     return "unavailable";
   }
 
-  if (calorieGoalStatus.value === "good" && exerciseGoalStatus.value === "good") {
+  if (
+    calorieGoalStatus.value === "good" &&
+    exerciseGoalStatus.value === "good"
+  ) {
     return "good";
   }
 
@@ -294,8 +327,12 @@ const exerciseGoalGuideMessage = computed(() => {
   return goalGuideMessage(exerciseGoalStatus.value, "운동");
 });
 
-const calorieGoalStatusLabel = computed(() => goalStatusLabel(calorieGoalStatus.value));
-const exerciseGoalStatusLabel = computed(() => goalStatusLabel(exerciseGoalStatus.value));
+const calorieGoalStatusLabel = computed(() =>
+  goalStatusLabel(calorieGoalStatus.value),
+);
+const exerciseGoalStatusLabel = computed(() =>
+  goalStatusLabel(exerciseGoalStatus.value),
+);
 
 const goalFooterMessage = computed(() => {
   if (!isTargetWeightValid.value) {
@@ -375,11 +412,10 @@ async function startGoalDetailEdit() {
   goalDetailForm.goalType = profileForm.goalType;
   goalDetailForm.calorieIntakeGoal = Number(calorieGoal.value) || 1800;
   goalDetailForm.exerciseCalorieGoal = Number(exerciseGoal.value) || 300;
-  goalDetailForm.targetWeightKg =
-    profileStore.profile?.targetWeightKg ??
-    recommendedTargetWeight(profileForm.goalType);
+  goalDetailForm.targetWeightKg = profileStore.profile?.targetWeightKg ?? "";
   goalRecommendationBase.calorieIntakeGoal = goalDetailForm.calorieIntakeGoal;
-  goalRecommendationBase.exerciseCalorieGoal = goalDetailForm.exerciseCalorieGoal;
+  goalRecommendationBase.exerciseCalorieGoal =
+    goalDetailForm.exerciseCalorieGoal;
 
   await dailyGoalStore.loadRecommendations(goalDetailForm.goalType, {
     force: true,
@@ -434,7 +470,6 @@ function selectGoalDetail(goalType) {
 
   goalDetailForm.goalType = goalType;
   profileForm.goalType = goalType;
-  goalDetailForm.targetWeightKg = recommendedTargetWeight(goalType);
 }
 
 async function saveGoalDetail() {
@@ -460,6 +495,12 @@ function formatNumber(value) {
   return Math.round(Number(value) || 0).toLocaleString("ko-KR");
 }
 
+function formatMeasurement(value, unit) {
+  return value === null || value === undefined || value === ""
+    ? "-"
+    : `${value}${unit}`;
+}
+
 function roundToStep(value, step) {
   return Math.round(Number(value || 0) / step) * step;
 }
@@ -474,21 +515,6 @@ function applyGoalRecommendation(goalType, recommendation) {
   profileForm.goalType = goalType;
   goalDetailForm.calorieIntakeGoal = calorieIntakeGoal;
   goalDetailForm.exerciseCalorieGoal = exerciseCalorieGoal;
-  goalDetailForm.targetWeightKg = recommendedTargetWeight(goalType);
-}
-
-function recommendedTargetWeight(goalType) {
-  const currentWeightKg = Number(profileStore.profile?.currentWeightKg);
-
-  if (!Number.isFinite(currentWeightKg) || currentWeightKg <= 0) {
-    return "";
-  }
-
-  if (goalType === "WEIGHT_LOSS") {
-    return Math.max(Math.round((currentWeightKg - 5) * 10) / 10, 1);
-  }
-
-  return Math.round(currentWeightKg * 10) / 10;
 }
 
 function goalSliderStyle(value, min, max, status) {
@@ -658,337 +684,381 @@ function scrollToProfileSection(sectionId) {
 
 <template>
   <div class="profile-page">
-      <nav class="profile-tabbar" aria-label="프로필 섹션">
-        <button type="button" @click="scrollToProfileSection('sec-myinfo')">
-          내 정보
-        </button>
-        <button type="button" @click="scrollToProfileSection('sec-goal')">
-          목표
-        </button>
-        <button type="button" @click="scrollToProfileSection('sec-weight')">
-          체중
-        </button>
-      </nav>
+    <nav class="profile-tabbar" aria-label="프로필 섹션">
+      <button type="button" @click="scrollToProfileSection('sec-myinfo')">
+        내 정보
+      </button>
+      <button type="button" @click="scrollToProfileSection('sec-goal')">
+        목표
+      </button>
+      <button type="button" @click="scrollToProfileSection('sec-weight')">
+        체중
+      </button>
+    </nav>
 
-      <div class="profile-body">
-        <aside id="sec-myinfo" class="profile-summary-card">
-          <div class="profile-section-title">내 정보</div>
+    <div class="profile-body">
+      <aside id="sec-myinfo" class="profile-summary-card">
+        <div class="profile-section-title">내 정보</div>
 
-          <div class="profile-identity-row">
-            <div class="profile-avatar-large">{{ avatarInitial }}</div>
+        <div class="profile-identity-row">
+          <div class="profile-avatar-large">{{ avatarInitial }}</div>
 
-            <div class="profile-identity-copy">
-              <div class="profile-name-line">
-                <h2>{{ displayName }}</h2>
-                <span v-if="profileMetaLabel">{{ profileMetaLabel }}</span>
-              </div>
-
-              <span class="profile-email">{{ authStore.user?.email }}</span>
+          <div class="profile-identity-copy">
+            <div class="profile-name-line">
+              <h2>{{ displayName }}</h2>
+              <span v-if="profileMetaLabel">{{ profileMetaLabel }}</span>
             </div>
 
-            <div class="profile-status-stack">
-              <span class="goal-badge"> {{ savedGoalLabel }} 목표 </span>
-              <span v-if="authStore.isAuthenticated" class="auth-badge">
-                로그인 계정
+            <span class="profile-email">{{ authStore.user?.email }}</span>
+          </div>
+
+          <div class="profile-status-stack">
+            <span class="goal-badge"> {{ savedGoalLabel }} 목표 </span>
+            <span
+              v-if="authStore.isAuthenticated && loginAccountBadge"
+              class="auth-badge"
+              :class="loginAccountBadge.type"
+            >
+              <svg
+                v-if="loginAccountBadge.type === 'google'"
+                class="auth-badge-logo"
+                viewBox="0 0 18 18"
+                aria-hidden="true"
+              >
+                <path
+                  fill="#4285f4"
+                  d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62Z"
+                />
+                <path
+                  fill="#34a853"
+                  d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A8.99 8.99 0 0 0 9 18Z"
+                />
+                <path
+                  fill="#fbbc05"
+                  d="M3.97 10.72A5.41 5.41 0 0 1 3.69 9c0-.6.1-1.18.28-1.72V4.95H.96A8.99 8.99 0 0 0 0 9c0 1.45.35 2.82.96 4.05l3.01-2.33Z"
+                />
+                <path
+                  fill="#ea4335"
+                  d="M9 3.58c1.32 0 2.5.45 3.43 1.35l2.59-2.58C13.46.9 11.43 0 9 0A8.99 8.99 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58Z"
+                />
+              </svg>
+              <span
+                v-else-if="loginAccountBadge.type === 'naver'"
+                class="auth-badge-logo naver-logo"
+                aria-hidden="true"
+              >
+                N
               </span>
-            </div>
+              {{ loginAccountBadge.label }}
+            </span>
+          </div>
+        </div>
+
+        <div class="profile-divider"></div>
+
+        <div class="profile-stat-row">
+          <div>
+            <span>키</span>
+            <strong>{{
+              formatMeasurement(profileStore.profile?.heightCm, "cm")
+            }}</strong>
           </div>
 
-          <div class="profile-divider"></div>
-
-          <div class="profile-stat-row">
-            <div>
-              <span>키</span>
-              <strong>{{ profileStore.profile?.heightCm ?? "-" }}</strong>
-              <small>cm</small>
-            </div>
-
-            <div>
-              <span>현재 체중</span>
-              <strong>{{
-                profileStore.profile?.currentWeightKg ?? "-"
-              }}</strong>
-              <small>kg</small>
-            </div>
-
-            <div>
-              <span>목표 체중</span>
-              <strong>{{ profileStore.profile?.targetWeightKg ?? "-" }}</strong>
-              <small>kg</small>
-            </div>
+          <div>
+            <span>현재 체중</span>
+            <strong>{{
+              formatMeasurement(profileStore.profile?.currentWeightKg, "kg")
+            }}</strong>
           </div>
 
-        </aside>
-
-        <section id="sec-weight" class="profile-weight-card">
-          <header class="profile-weight-header">
-            <div>
-              <span>Weight Tracking</span>
-              <h2>체중 그래프</h2>
-            </div>
-          </header>
-
-          <div v-if="weightRecordStore.loadError" class="profile-error">
-            {{ weightRecordStore.loadError }}
+          <div>
+            <span>목표 체중</span>
+            <strong>{{
+              formatMeasurement(profileStore.profile?.targetWeightKg, "kg")
+            }}</strong>
           </div>
+        </div>
+      </aside>
 
-          <div class="weight-record-layout">
-            <div class="weight-chart-panel">
-              <div class="weight-range-tabs" aria-label="몸무게 기록 기간">
+      <section id="sec-weight" class="profile-weight-card">
+        <header class="profile-weight-header">
+          <div>
+            <span>Weight Tracking</span>
+            <h2>체중 그래프</h2>
+          </div>
+        </header>
+
+        <div v-if="weightRecordStore.loadError" class="profile-error">
+          {{ weightRecordStore.loadError }}
+        </div>
+
+        <div class="weight-record-layout">
+          <div class="weight-chart-panel">
+            <div class="weight-range-tabs" aria-label="몸무게 기록 기간">
+              <button
+                v-for="option in rangeOptions"
+                :key="option.value"
+                type="button"
+                :aria-pressed="weightRecordStore.selectedRange === option.value"
+                :class="{
+                  active: weightRecordStore.selectedRange === option.value,
+                }"
+                @click="changeWeightRange(option.value)"
+              >
+                {{ option.label }}
+              </button>
+            </div>
+
+            <WeightTrendChart
+              :records="weightRecordStore.records"
+              :target-weight-kg="profileStore.profile?.targetWeightKg"
+              :selected-record-date="selectedWeightRecordDate"
+              @select-record="selectWeightRecord"
+            />
+
+            <Transition name="weight-record-editor">
+              <aside
+                v-if="selectedWeightRecord"
+                class="weight-record-editor"
+                :class="selectedWeightRecordPoint.placement"
+                :style="selectedWeightPopoverStyle"
+                aria-live="polite"
+              >
                 <button
-                  v-for="option in rangeOptions"
-                  :key="option.value"
+                  class="weight-record-editor-close"
                   type="button"
-                  :aria-pressed="weightRecordStore.selectedRange === option.value"
-                  :class="{
-                    active: weightRecordStore.selectedRange === option.value,
-                  }"
-                  @click="changeWeightRange(option.value)"
+                  aria-label="체중 기록 수정 닫기"
+                  @click="closeWeightRecordEditor"
                 >
-                  {{ option.label }}
+                  <i class="pi pi-times"></i>
                 </button>
-              </div>
+                <div class="weight-record-editor-head">
+                  <span>{{ selectedWeightTitle }}</span>
+                </div>
 
-              <WeightTrendChart
-                :records="weightRecordStore.records"
-                :target-weight-kg="profileStore.profile?.targetWeightKg"
-                :selected-record-date="selectedWeightRecordDate"
-                @select-record="selectWeightRecord"
-              />
-
-              <Transition name="weight-record-editor">
-                <aside
-                  v-if="selectedWeightRecord"
-                  class="weight-record-editor"
-                  :class="selectedWeightRecordPoint.placement"
-                  :style="selectedWeightPopoverStyle"
-                  aria-live="polite"
+                <form
+                  class="weight-record-form"
+                  @submit.prevent="saveWeightRecord"
                 >
-                  <button
-                    class="weight-record-editor-close"
-                    type="button"
-                    aria-label="체중 기록 수정 닫기"
-                    @click="closeWeightRecordEditor"
-                  >
-                    <i class="pi pi-times"></i>
-                  </button>
-                  <div class="weight-record-editor-head">
-                    <span>{{ selectedWeightTitle }}</span>
+                  <label>
+                    <span>기록 날짜</span>
+                    <strong class="weight-record-date-display">
+                      {{ weightForm.recordDate }}
+                    </strong>
+                  </label>
+
+                  <label>
+                    <span>몸무게 (kg)</span>
+                    <input
+                      v-model="weightForm.weightKg"
+                      inputmode="decimal"
+                      max="500"
+                      min="0.01"
+                      step="any"
+                      type="number"
+                    />
+                  </label>
+
+                  <div class="weight-record-actions">
+                    <button
+                      type="submit"
+                      :disabled="
+                        !canSaveWeightRecord || weightRecordStore.isSavingRecord
+                      "
+                    >
+                      <i class="pi pi-check"></i>
+                      수정
+                    </button>
+                    <button
+                      type="button"
+                      class="danger"
+                      :disabled="weightRecordStore.isDeletingRecord"
+                      @click="
+                        deleteWeightRecord(selectedWeightRecord.recordDate)
+                      "
+                    >
+                      <i class="pi pi-trash"></i>
+                      삭제
+                    </button>
                   </div>
 
-                  <form class="weight-record-form" @submit.prevent="saveWeightRecord">
-                    <label>
-                      <span>기록 날짜</span>
-                      <strong class="weight-record-date-display">
-                        {{ weightForm.recordDate }}
-                      </strong>
-                    </label>
+                  <p v-if="weightRecordStore.saveError">
+                    {{ weightRecordStore.saveError }}
+                  </p>
+                  <p v-if="weightRecordStore.deleteError">
+                    {{ weightRecordStore.deleteError }}
+                  </p>
+                </form>
+              </aside>
+            </Transition>
 
-                    <label>
-                      <span>몸무게 (kg)</span>
-                      <input
-                        v-model="weightForm.weightKg"
-                        inputmode="decimal"
-                        max="500"
-                        min="0.01"
-                        step="any"
-                        type="number"
-                      />
-                    </label>
-
-                    <div class="weight-record-actions">
-                      <button
-                        type="submit"
-                        :disabled="
-                          !canSaveWeightRecord || weightRecordStore.isSavingRecord
-                        "
-                      >
-                        <i class="pi pi-check"></i>
-                        수정
-                      </button>
-                      <button
-                        type="button"
-                        class="danger"
-                        :disabled="weightRecordStore.isDeletingRecord"
-                        @click="deleteWeightRecord(selectedWeightRecord.recordDate)"
-                      >
-                        <i class="pi pi-trash"></i>
-                        삭제
-                      </button>
-                    </div>
-
-                    <p v-if="weightRecordStore.saveError">
-                      {{ weightRecordStore.saveError }}
-                    </p>
-                    <p v-if="weightRecordStore.deleteError">
-                      {{ weightRecordStore.deleteError }}
-                    </p>
-                  </form>
-                </aside>
-              </Transition>
-
-              <div
-                v-if="weightRecordStore.isLoadingRecords"
-                class="weight-chart-loading-text"
-              >
-                몸무게 기록을 불러오는 중입니다...
-              </div>
+            <div
+              v-if="weightRecordStore.isLoadingRecords"
+              class="weight-chart-loading-text"
+            >
+              몸무게 기록을 불러오는 중입니다...
             </div>
           </div>
+        </div>
+      </section>
 
-        </section>
+      <section id="sec-goal" class="profile-goal-card">
+        <div class="profile-section-head">
+          <div class="profile-section-title">목표 설정</div>
+          <button
+            type="button"
+            class="profile-section-edit"
+            :aria-pressed="isGoalDetailEditing"
+            aria-label="목표 수정"
+            @click="
+              isGoalDetailEditing
+                ? cancelGoalDetailEdit()
+                : startGoalDetailEdit()
+            "
+          >
+            <i
+              :class="isGoalDetailEditing ? 'pi pi-times' : 'pi pi-pencil'"
+            ></i>
+          </button>
+        </div>
 
-        <section id="sec-goal" class="profile-goal-card">
-          <div class="profile-section-head">
-            <div class="profile-section-title">목표 설정</div>
+        <GoalTypeSelector
+          v-model="profileForm.goalType"
+          :options="goalOptions"
+          :disabled="!isGoalDetailEditing"
+          @select="selectGoalDetail"
+        />
+
+        <div class="profile-goal-overview-row">
+          <div class="profile-goal-overview-card">
+            <span class="profile-goal-overview-icon calorie">
+              <i class="record-add-icon meal"></i>
+            </span>
+            <div>
+              <span>목표 섭취 칼로리</span>
+              <strong>{{ formatNumber(overviewCalorieGoal) }} kcal</strong>
+            </div>
+          </div>
+          <div class="profile-goal-overview-card">
+            <span class="profile-goal-overview-icon exercise">
+              <i class="record-add-icon exercise"></i>
+            </span>
+            <div>
+              <span>목표 소모 칼로리</span>
+              <strong>{{ formatNumber(overviewExerciseGoal) }} kcal</strong>
+            </div>
+          </div>
+          <div class="profile-goal-overview-card target">
+            <span class="profile-goal-overview-icon target">
+              <i class="record-add-icon weight"></i>
+            </span>
+            <div>
+              <span>목표 체중</span>
+              <strong>
+                {{ overviewTargetWeight ? `${overviewTargetWeight} kg` : "-" }}
+              </strong>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="isGoalDetailEditing" class="profile-goal-inline-editor">
+          <label>
+            <div class="profile-goal-slider-copy">
+              <span>
+                하루 섭취 목표
+                <b class="profile-goal-status" :class="calorieGoalStatus">
+                  {{ calorieGoalStatusLabel }}
+                </b>
+              </span>
+              <p>{{ calorieGoalGuideMessage }}</p>
+            </div>
+            <strong>{{ formatNumber(displayCalorieGoal) }} kcal</strong>
+            <div class="profile-goal-slider" :style="calorieSliderStyle">
+              <div class="profile-goal-slider-track"></div>
+              <div class="profile-goal-slider-fill"></div>
+              <div class="profile-goal-slider-thumb">
+                <i></i>
+                <b>{{ formatNumber(displayCalorieGoal) }}</b>
+              </div>
+              <input
+                v-model.number="goalDetailForm.calorieIntakeGoal"
+                :max="calorieRange.max"
+                :min="calorieRange.min"
+                step="1"
+                type="range"
+              />
+            </div>
+          </label>
+          <label>
+            <div class="profile-goal-slider-copy">
+              <span>
+                하루 운동 목표
+                <b class="profile-goal-status" :class="exerciseGoalStatus">
+                  {{ exerciseGoalStatusLabel }}
+                </b>
+              </span>
+              <p>{{ exerciseGoalGuideMessage }}</p>
+            </div>
+            <strong>{{ formatNumber(displayExerciseGoal) }} kcal</strong>
+            <div class="profile-goal-slider" :style="exerciseSliderStyle">
+              <div class="profile-goal-slider-track"></div>
+              <div class="profile-goal-slider-fill"></div>
+              <div class="profile-goal-slider-thumb">
+                <i></i>
+                <b>{{ formatNumber(displayExerciseGoal) }}</b>
+              </div>
+              <input
+                v-model.number="goalDetailForm.exerciseCalorieGoal"
+                :max="exerciseRange.max"
+                :min="exerciseRange.min"
+                step="1"
+                type="range"
+              />
+            </div>
+          </label>
+          <label class="profile-goal-target-editor">
+            <div class="profile-goal-slider-copy">
+              <span>목표 체중</span>
+              <p>목표 체중은 직접 입력한 값으로 저장돼요.</p>
+            </div>
+            <div class="profile-goal-target-input">
+              <input
+                v-model.number="goalDetailForm.targetWeightKg"
+                max="500"
+                min="1"
+                step="0.1"
+                type="number"
+              />
+              <span>kg</span>
+            </div>
+          </label>
+        </div>
+
+        <div v-if="isGoalDetailEditing" class="profile-goal-footer">
+          <span>{{ goalFooterMessage }}</span>
+          <div>
             <button
               type="button"
-              class="profile-section-edit"
-              :aria-pressed="isGoalDetailEditing"
-              aria-label="목표 수정"
-              @click="
-                isGoalDetailEditing
-                  ? cancelGoalDetailEdit()
-                  : startGoalDetailEdit()
-              "
+              class="profile-cancel"
+              @click="cancelGoalDetailEdit"
             >
-              <i :class="isGoalDetailEditing ? 'pi pi-times' : 'pi pi-pencil'"></i>
+              취소
+            </button>
+            <button
+              type="button"
+              class="profile-save"
+              :disabled="!canSaveGoalDetail"
+              @click="saveGoalDetail"
+            >
+              {{
+                dailyGoalStore.isSavingGoal || profileStore.isSavingProfile
+                  ? "저장 중..."
+                  : "수정 완료"
+              }}
             </button>
           </div>
-
-          <GoalTypeSelector
-            v-model="profileForm.goalType"
-            :options="goalOptions"
-            :disabled="!isGoalDetailEditing"
-            @select="selectGoalDetail"
-          />
-
-          <div class="profile-goal-overview-row">
-            <div class="profile-goal-overview-card">
-              <span class="profile-goal-overview-icon calorie">
-                <i class="pi pi-apple"></i>
-              </span>
-              <div>
-                <span>목표 섭취 칼로리</span>
-                <strong>{{ formatNumber(overviewCalorieGoal) }} kcal</strong>
-              </div>
-            </div>
-            <div class="profile-goal-overview-card">
-              <span class="profile-goal-overview-icon exercise">
-                <i class="pi pi-fire"></i>
-              </span>
-              <div>
-                <span>목표 소모 칼로리</span>
-                <strong>{{ formatNumber(overviewExerciseGoal) }} kcal</strong>
-              </div>
-            </div>
-            <div class="profile-goal-overview-card target">
-              <span class="profile-goal-overview-icon target">
-                <i class="pi pi-bullseye"></i>
-              </span>
-              <div>
-                <span>목표 체중</span>
-                <strong>
-                  {{ overviewTargetWeight ? `${overviewTargetWeight} kg` : "-" }}
-                </strong>
-              </div>
-            </div>
-          </div>
-
-          <div v-if="isGoalDetailEditing" class="profile-goal-inline-editor">
-            <label>
-              <div class="profile-goal-slider-copy">
-                <span>
-                  하루 섭취 목표
-                  <b class="profile-goal-status" :class="calorieGoalStatus">
-                    {{ calorieGoalStatusLabel }}
-                  </b>
-                </span>
-                <p>{{ calorieGoalGuideMessage }}</p>
-              </div>
-              <strong>{{ formatNumber(displayCalorieGoal) }} kcal</strong>
-              <div class="profile-goal-slider" :style="calorieSliderStyle">
-                <div class="profile-goal-slider-track"></div>
-                <div class="profile-goal-slider-fill"></div>
-                <div class="profile-goal-slider-thumb">
-                  <i></i>
-                  <b>{{ formatNumber(displayCalorieGoal) }}</b>
-                </div>
-                <input
-                  v-model.number="goalDetailForm.calorieIntakeGoal"
-                  :max="calorieRange.max"
-                  :min="calorieRange.min"
-                  step="1"
-                  type="range"
-                />
-              </div>
-            </label>
-            <label>
-              <div class="profile-goal-slider-copy">
-                <span>
-                  하루 운동 목표
-                  <b class="profile-goal-status" :class="exerciseGoalStatus">
-                    {{ exerciseGoalStatusLabel }}
-                  </b>
-                </span>
-                <p>{{ exerciseGoalGuideMessage }}</p>
-              </div>
-              <strong>{{ formatNumber(displayExerciseGoal) }} kcal</strong>
-              <div class="profile-goal-slider" :style="exerciseSliderStyle">
-                <div class="profile-goal-slider-track"></div>
-                <div class="profile-goal-slider-fill"></div>
-                <div class="profile-goal-slider-thumb">
-                  <i></i>
-                  <b>{{ formatNumber(displayExerciseGoal) }}</b>
-                </div>
-                <input
-                  v-model.number="goalDetailForm.exerciseCalorieGoal"
-                  :max="exerciseRange.max"
-                  :min="exerciseRange.min"
-                  step="1"
-                  type="range"
-                />
-              </div>
-            </label>
-            <label class="profile-goal-target-editor">
-              <div class="profile-goal-slider-copy">
-                <span>목표 체중</span>
-                <p>목표 종류를 바꾸면 현재 체중 기준으로 기본값이 다시 잡혀요.</p>
-              </div>
-              <div class="profile-goal-target-input">
-                <input
-                  v-model.number="goalDetailForm.targetWeightKg"
-                  max="500"
-                  min="1"
-                  step="0.1"
-                  type="number"
-                />
-                <span>kg</span>
-              </div>
-            </label>
-          </div>
-
-          <div v-if="isGoalDetailEditing" class="profile-goal-footer">
-            <span>{{ goalFooterMessage }}</span>
-            <div>
-              <button type="button" class="profile-cancel" @click="cancelGoalDetailEdit">
-                취소
-              </button>
-              <button
-                type="button"
-                class="profile-save"
-                :disabled="!canSaveGoalDetail"
-                @click="saveGoalDetail"
-              >
-                {{
-                  dailyGoalStore.isSavingGoal || profileStore.isSavingProfile
-                    ? "저장 중..."
-                    : "수정 완료"
-                }}
-              </button>
-            </div>
-          </div>
-        </section>
-      </div>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
