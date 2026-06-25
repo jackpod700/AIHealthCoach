@@ -381,12 +381,9 @@ async function startGoalDetailEdit() {
   goalRecommendationBase.calorieIntakeGoal = goalDetailForm.calorieIntakeGoal;
   goalRecommendationBase.exerciseCalorieGoal = goalDetailForm.exerciseCalorieGoal;
 
-  const recommendation = await dailyGoalStore.loadRecommendations(goalDetailForm.goalType, {
+  await dailyGoalStore.loadRecommendations(goalDetailForm.goalType, {
     force: true,
   });
-  if (recommendation) {
-    applyGoalRecommendation(goalDetailForm.goalType, recommendation);
-  }
 }
 
 function cancelGoalDetailEdit() {
