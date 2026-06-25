@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S07 일별 기록 화면 와이어프레임</title>
+  <desc id="desc">날짜별 식단, 운동, 체중 통합 관리와 작성/수정 폼을 포함한 일별 기록 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .toolbar { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .meal { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .exercise { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; }
+    .weight { fill: #f5f3ff; stroke: #8b5cf6; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#334155"/>
+  <rect class="toolbar" x="248" y="70" width="600" height="74" rx="18"/>
+  <text class="label" x="278" y="115">일별 기록</text>
+  <rect class="field" x="626" y="88" width="184" height="38" rx="12"/>
+  <text class="small" x="662" y="112">날짜 선택</text>
+  <rect class="meal" x="248" y="170" width="285" height="180" rx="18"/>
+  <text class="text" x="278" y="210">식단 기록</text>
+  <rect x="278" y="236" width="210" height="16" rx="8" fill="#bbf7d0"/>
+  <rect x="278" y="268" width="180" height="16" rx="8" fill="#bbf7d0"/>
+  <rect x="278" y="308" width="92" height="30" rx="12" fill="#22c55e"/>
+  <text class="white" x="300" y="328">추가</text>
+  <rect class="exercise" x="563" y="170" width="285" height="180" rx="18"/>
+  <text class="text" x="593" y="210">운동 기록</text>
+  <rect x="593" y="236" width="210" height="16" rx="8" fill="#fed7aa"/>
+  <rect x="593" y="268" width="160" height="16" rx="8" fill="#fed7aa"/>
+  <rect x="593" y="308" width="92" height="30" rx="12" fill="#f97316"/>
+  <text class="white" x="615" y="328">추가</text>
+  <rect class="weight" x="248" y="378" width="285" height="156" rx="18"/>
+  <text class="text" x="278" y="418">체중 기록</text>
+  <rect x="278" y="446" width="180" height="16" rx="8" fill="#ddd6fe"/>
+  <rect x="278" y="486" width="92" height="30" rx="12" fill="#8b5cf6"/>
+  <text class="white" x="300" y="506">저장</text>
+  <rect class="panel" x="563" y="378" width="285" height="156" rx="18"/>
+  <text class="text" x="593" y="418">편집 폼 영역</text>
+  <rect class="field" x="593" y="442" width="220" height="34" rx="10"/>
+  <rect class="field" x="593" y="490" width="220" height="34" rx="10"/>
+  <rect class="panel" x="884" y="70" width="236" height="560" rx="18"/>
+  <text class="label" x="914" y="114">Today</text>
+  <rect class="toolbar" x="914" y="150" width="176" height="82" rx="16"/>
+  <rect class="toolbar" x="914" y="252" width="176" height="82" rx="16"/>
+  <rect class="panel" x="914" y="368" width="176" height="190" rx="16"/>
+</svg>

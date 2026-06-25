@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S10 관리자 대시보드 화면 와이어프레임</title>
+  <desc id="desc">운영 지표 카드, 음식 등록 요청 목록, 외부 음식 후보 목록, 승인 및 반려 패널 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .metric { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .review { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .candidate { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; }
+    .danger { fill: #fee2e2; stroke: #ef4444; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="370" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <text class="label" x="248" y="86">관리자 대시보드</text>
+  <rect class="metric" x="248" y="116" width="260" height="96" rx="18"/>
+  <rect class="metric" x="526" y="116" width="260" height="96" rx="18"/>
+  <rect class="metric" x="804" y="116" width="260" height="96" rx="18"/>
+  <text class="text" x="278" y="158">전체 사용자</text>
+  <text class="text" x="556" y="158">오늘 가입자</text>
+  <text class="text" x="834" y="158">최근 활성 사용자</text>
+  <rect class="panel" x="248" y="244" width="400" height="186" rx="18"/>
+  <text class="text" x="278" y="284">음식 등록 요청 목록</text>
+  <rect x="278" y="312" width="310" height="28" rx="10" fill="#f1f5f9"/>
+  <rect x="278" y="354" width="310" height="28" rx="10" fill="#f1f5f9"/>
+  <rect class="review" x="680" y="244" width="384" height="186" rx="18"/>
+  <text class="text" x="710" y="284">요청 상세 / 승인 / 반려</text>
+  <rect class="primary" x="710" y="354" width="120" height="36" rx="12"/>
+  <rect class="danger" x="850" y="354" width="120" height="36" rx="12"/>
+  <text class="white" x="754" y="377">승인</text>
+  <text class="text" x="894" y="377">반려</text>
+  <rect class="panel" x="248" y="462" width="400" height="156" rx="18"/>
+  <text class="text" x="278" y="502">외부 음식 후보 그룹</text>
+  <rect x="278" y="530" width="310" height="28" rx="10" fill="#f1f5f9"/>
+  <rect x="278" y="572" width="310" height="28" rx="10" fill="#f1f5f9"/>
+  <rect class="candidate" x="680" y="462" width="384" height="156" rx="18"/>
+  <text class="text" x="710" y="502">후보 선택 / 그룹 승인 / 반려</text>
+  <rect class="primary" x="710" y="560" width="120" height="36" rx="12"/>
+  <rect class="danger" x="850" y="560" width="120" height="36" rx="12"/>
+</svg>

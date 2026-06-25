@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">S09 프로필 화면 와이어프레임</title>
+  <desc id="desc">사용자 요약, 건강 프로필, 목표 설정, 체중 추세, Today Panel로 구성된 프로필 화면 구조</desc>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .shell { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .side { fill: #0f172a; }
+    .panel { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .blue { fill: #eff6ff; stroke: #93c5fd; stroke-width: 2; }
+    .green { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .purple { fill: #f5f3ff; stroke: #8b5cf6; stroke-width: 2; }
+    .field { fill: #f8fafc; stroke: #94a3b8; stroke-width: 2; }
+    .primary { fill: #2563eb; }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+    .white { fill: #ffffff; font: 700 15px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="shell" x="36" y="34" width="1128" height="652" rx="22"/>
+  <rect class="side" x="36" y="34" width="180" height="652" rx="22"/>
+  <text class="white" x="70" y="86">Babtory</text>
+  <rect x="68" y="130" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="178" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="226" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="274" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="322" width="116" height="28" rx="14" fill="#334155"/>
+  <rect x="68" y="370" width="116" height="28" rx="14" fill="#1d4ed8"/>
+  <rect class="blue" x="248" y="70" width="285" height="158" rx="18"/>
+  <text class="text" x="278" y="110">사용자 요약</text>
+  <circle cx="308" cy="154" r="30" fill="#bfdbfe"/>
+  <rect x="358" y="132" width="130" height="16" rx="8" fill="#bfdbfe"/>
+  <rect x="358" y="164" width="100" height="16" rx="8" fill="#bfdbfe"/>
+  <rect class="panel" x="563" y="70" width="285" height="250" rx="18"/>
+  <text class="text" x="593" y="110">건강 프로필 편집</text>
+  <rect class="field" x="593" y="136" width="220" height="34" rx="10"/>
+  <rect class="field" x="593" y="184" width="220" height="34" rx="10"/>
+  <rect class="field" x="593" y="232" width="220" height="34" rx="10"/>
+  <rect class="primary" x="690" y="280" width="122" height="32" rx="12"/>
+  <text class="white" x="724" y="301">저장</text>
+  <rect class="green" x="248" y="258" width="285" height="226" rx="18"/>
+  <text class="text" x="278" y="298">일일 목표 설정</text>
+  <rect x="278" y="328" width="210" height="16" rx="8" fill="#bbf7d0"/>
+  <rect x="278" y="364" width="210" height="16" rx="8" fill="#bbf7d0"/>
+  <rect class="primary" x="278" y="420" width="210" height="36" rx="12"/>
+  <text class="white" x="344" y="443">목표 저장</text>
+  <rect class="purple" x="563" y="350" width="285" height="210" rx="18"/>
+  <text class="text" x="593" y="390">체중 추세 차트</text>
+  <polyline points="598,500 644,466 690,478 736,430 798,446" fill="none" stroke="#7c3aed" stroke-width="4"/>
+  <circle cx="598" cy="500" r="5" fill="#7c3aed"/><circle cx="644" cy="466" r="5" fill="#7c3aed"/><circle cx="690" cy="478" r="5" fill="#7c3aed"/><circle cx="736" cy="430" r="5" fill="#7c3aed"/><circle cx="798" cy="446" r="5" fill="#7c3aed"/>
+  <rect class="panel" x="884" y="70" width="236" height="560" rx="18"/>
+  <text class="label" x="914" y="114">Today</text>
+  <rect class="blue" x="914" y="150" width="176" height="82" rx="16"/>
+  <rect class="blue" x="914" y="252" width="176" height="82" rx="16"/>
+  <rect class="panel" x="914" y="368" width="176" height="190" rx="16"/>
+</svg>

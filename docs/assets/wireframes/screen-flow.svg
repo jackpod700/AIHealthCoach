@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">화면 전환 흐름도</title>
+  <desc id="desc">공개 화면, OAuth 완료, 인증 후 App Shell 화면, 관리자 화면, 로그아웃 및 Not Found 이동 흐름</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#475569"/>
+    </marker>
+  </defs>
+  <style>
+    .bg { fill: #f6f8fb; }
+    .group { fill: #ffffff; stroke: #cbd5e1; stroke-width: 2; }
+    .public { fill: #eff6ff; stroke: #60a5fa; stroke-width: 2; }
+    .auth { fill: #ecfdf5; stroke: #34d399; stroke-width: 2; }
+    .admin { fill: #fff7ed; stroke: #fb923c; stroke-width: 2; }
+    .error { fill: #fee2e2; stroke: #ef4444; stroke-width: 2; }
+    .line { fill: none; stroke: #475569; stroke-width: 2.5; marker-end: url(#arrow); }
+    .soft { fill: none; stroke: #94a3b8; stroke-width: 2; stroke-dasharray: 6 6; marker-end: url(#arrow); }
+    .label { fill: #0f172a; font: 700 22px Arial, sans-serif; }
+    .text { fill: #334155; font: 15px Arial, sans-serif; }
+    .small { fill: #64748b; font: 12px Arial, sans-serif; }
+  </style>
+  <rect class="bg" width="1200" height="720"/>
+  <rect class="group" x="58" y="54" width="1084" height="612" rx="28"/>
+  <text class="label" x="92" y="104">화면 전환 흐름</text>
+
+  <rect class="public" x="96" y="150" width="170" height="64" rx="18"/>
+  <text class="text" x="140" y="188">/ Landing</text>
+  <rect class="public" x="338" y="120" width="170" height="64" rx="18"/>
+  <text class="text" x="390" y="158">/login</text>
+  <rect class="public" x="338" y="216" width="170" height="64" rx="18"/>
+  <text class="text" x="386" y="254">/signup</text>
+  <rect class="public" x="580" y="168" width="190" height="64" rx="18"/>
+  <text class="text" x="622" y="206">/oauth/success</text>
+
+  <path class="line" d="M266 174 C294 160 306 152 338 152"/>
+  <path class="line" d="M266 190 C294 212 306 248 338 248"/>
+  <path class="line" d="M508 152 C540 158 548 178 580 190"/>
+  <text class="small" x="286" y="143">login</text>
+  <text class="small" x="282" y="234">signup</text>
+  <text class="small" x="512" y="142">OAuth</text>
+
+  <rect class="auth" x="440" y="360" width="170" height="64" rx="18"/>
+  <text class="text" x="492" y="398">/chat</text>
+  <rect class="auth" x="230" y="490" width="170" height="64" rx="18"/>
+  <text class="text" x="277" y="528">/calendar</text>
+  <rect class="auth" x="440" y="490" width="170" height="64" rx="18"/>
+  <text class="text" x="486" y="528">/records</text>
+  <rect class="auth" x="650" y="490" width="170" height="64" rx="18"/>
+  <text class="text" x="700" y="528">/foods</text>
+  <rect class="auth" x="860" y="490" width="170" height="64" rx="18"/>
+  <text class="text" x="904" y="528">/profile</text>
+  <rect class="admin" x="860" y="360" width="170" height="64" rx="18"/>
+  <text class="text" x="906" y="398">/admin</text>
+  <rect class="error" x="96" y="360" width="170" height="64" rx="18"/>
+  <text class="text" x="128" y="398">Not Found</text>
+
+  <path class="line" d="M423 184 C452 270 470 312 498 360"/>
+  <path class="line" d="M423 280 C452 322 470 342 498 360"/>
+  <path class="line" d="M770 200 C804 274 758 338 610 382"/>
+  <path class="soft" d="M770 210 C714 250 620 248 508 248"/>
+  <text class="small" x="426" y="326">success</text>
+  <text class="small" x="748" y="314">profile complete</text>
+  <text class="small" x="624" y="250">profile incomplete</text>
+
+  <path class="line" d="M486 424 C426 456 380 476 336 490"/>
+  <path class="line" d="M525 424 L525 490"/>
+  <path class="line" d="M564 424 C624 456 684 476 724 490"/>
+  <path class="line" d="M610 392 L860 392"/>
+  <path class="line" d="M610 414 C724 462 826 490 916 490"/>
+  <text class="small" x="318" y="472">date click</text>
+  <text class="small" x="782" y="382">ADMIN only</text>
+
+  <path class="soft" d="M440 392 L266 392"/>
+  <path class="soft" d="M525 360 C516 298 494 240 508 184"/>
+  <text class="small" x="298" y="382">unknown path</text>
+  <text class="small" x="500" y="302">logout -> /login</text>
+</svg>
