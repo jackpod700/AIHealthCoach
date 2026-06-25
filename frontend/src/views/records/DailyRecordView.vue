@@ -818,7 +818,7 @@ function servingCalorieLabel(item) {
 
           <div v-else-if="mealStore.foodSearchResults.length" class="food-search-results-wrap">
             <p class="food-search-count">
-              총 {{ formatNumber(mealStore.foodSearchTotalItems) }}개 중 {{ formatNumber(mealStore.foodSearchResults.length) }}개 표시
+              검색결과 {{ formatNumber(mealStore.foodSearchTotalItems) }}개
             </p>
             <div class="food-search-results">
               <button

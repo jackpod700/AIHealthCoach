@@ -69,6 +69,7 @@ watch(
     const goal = Number(exerciseProgress.value?.goal);
 
     if (
+      previous !== undefined &&
       Number.isFinite(goal) &&
       goal > 0 &&
       Number(previous || 0) < goal &&

@@ -84,9 +84,16 @@
   height: 36px;
   align-items: center;
   justify-content: center;
-  border-radius: 11px;
-  background: var(--orange);
-  color: #fff;
+  overflow: hidden;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.topbar-mark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .topbar-brand strong,
@@ -464,7 +471,7 @@
   border: 1px solid rgb(255 255 255 / 18%);
   border-radius: 12px;
   padding: 14px;
-  background: #fffaf3;
+  background: var(--accent-tint);
   color: var(--ink);
   box-shadow: 0 8px 16px rgb(16 24 20 / 10%);
   cursor: default;
@@ -974,7 +981,7 @@
 
 .proposal-eyebrow {
   margin: 0;
-  color: #e8814a;
+  color: var(--accent);
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0;
@@ -1026,7 +1033,7 @@
   border-radius: 999px;
   padding: 5px 8px;
   background: #fbf4ec;
-  color: #8a7560;
+  color: var(--accent-muted);
   font-size: 11px;
   font-weight: var(--font-bold);
 }
@@ -1304,11 +1311,11 @@
 .chat-api-note,
 .api-list-empty {
   width: min(430px, 100%);
-  border: 1px dashed #dfc8ad;
+  border: 1px dashed var(--accent-line);
   border-radius: 12px;
   padding: 16px 18px;
-  background: #fffaf3;
-  color: #8a7560;
+  background: var(--accent-tint);
+  color: var(--accent-muted);
   font-size: 12px;
   font-weight: var(--font-semibold);
   line-height: 1.6;
@@ -1378,7 +1385,7 @@
 
 .chat-empty-text {
   margin: 28px auto;
-  color: #8a7560;
+  color: var(--accent-muted);
   font-size: 13px;
   font-weight: var(--font-semibold);
   line-height: 1.6;
@@ -1414,7 +1421,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #f0c194;
+  background: var(--accent-line);
 }
 
 .typing p {
@@ -1470,11 +1477,11 @@
   align-items: center;
   justify-content: center;
   justify-self: center;
-  border: 1px solid #f0c194;
+  border: 1px solid var(--accent-line);
   border-radius: 999px;
   padding: 9px 14px;
-  background: #fffaf3;
-  color: #d97745;
+  background: var(--accent-tint);
+  color: var(--accent);
   content: "사진을 놓으면 첨부돼요";
   font-size: 11px;
   font-weight: var(--font-bold);
@@ -1532,7 +1539,7 @@
   height: 72px;
   border-radius: 10px;
   object-fit: cover;
-  border: 1px solid #eadfce;
+  border: 1px solid var(--accent-line);
 }
 
 .image-attachment-list figcaption {
@@ -1553,7 +1560,7 @@
   height: 24px;
   align-items: center;
   justify-content: center;
-  border: 1px solid #eadfce;
+  border: 1px solid var(--accent-line);
   border-radius: 50%;
   background: #fff;
   color: var(--navy);
@@ -1755,10 +1762,10 @@
 
 .api-needed-panel {
   margin-bottom: 16px;
-  border: 1px dashed #dfc8ad;
+  border: 1px dashed var(--accent-line);
   border-radius: 12px;
   padding: 14px;
-  background: #fffaf3;
+  background: var(--accent-tint);
 }
 
 .today-goal-empty {
@@ -1811,7 +1818,7 @@
 
 .api-needed-panel p {
   margin-top: 8px;
-  color: #8a7560;
+  color: var(--accent-muted);
   font-size: 11px;
   font-weight: var(--font-semibold);
   line-height: 1.6;
@@ -1902,7 +1909,8 @@
 }
 
 .calorie-card .progress-track i {
-  background: #e8814a;
+  background: var(--accent);
+  transition: width 0.9s cubic-bezier(0.18, 0.84, 0.28, 1);
 }
 
 .exercise-goal-card.celebrating {
@@ -1916,7 +1924,7 @@
 }
 
 .exercise-goal-card.celebrating .progress-track i {
-  background: linear-gradient(90deg, #2f6b4d, #5a9e78, #e8814a);
+  background: linear-gradient(90deg, #2f6b4d, #5a9e78, var(--accent));
   transform-origin: left center;
   animation: exercise-goal-refill 1.8s cubic-bezier(0.18, 0.84, 0.28, 1) both;
 }
@@ -2148,11 +2156,11 @@
   height: 5px;
   margin-top: 8px;
   border-radius: 999px;
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .macro-grid div.low i {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .macro-grid div.high i {
@@ -2206,11 +2214,11 @@
 }
 
 .dot.yellow {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .dot.orange {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .dot.navy {
@@ -2372,22 +2380,22 @@
 .calendar-legend i.meal,
 .calendar-legend i.breakfast,
 .calendar-dots i.breakfast {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .calendar-legend i.lunch,
 .calendar-dots i.lunch {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .calendar-legend i.dinner,
 .calendar-dots i.dinner {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .calendar-legend i.snack,
 .calendar-dots i.snack {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .calendar-legend i.exercise,
@@ -2730,7 +2738,7 @@
 }
 
 .record-summary-card > div:first-child strong {
-  color: #e8814a;
+  color: var(--accent-deep);
 }
 
 .record-summary-card > div:nth-child(2) strong {
@@ -2843,7 +2851,7 @@
 
 .record-icon.meal,
 .record-icon.breakfast {
-  background: #e8814a;
+  background: var(--accent-deep);
 }
 
 .record-icon.meal::before,
@@ -2855,12 +2863,12 @@
 }
 
 .record-icon.lunch {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .record-icon.dinner,
 .record-icon.snack {
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .record-icon.exercise {
@@ -2880,8 +2888,8 @@
 }
 
 .record-icon.disabled {
-  border: 1px dashed #eadfce;
-  background: #fffaf3;
+  border: 1px dashed var(--accent-line);
+  background: var(--accent-tint);
   color: #c7bba9;
   box-shadow: none;
 }
@@ -2892,8 +2900,8 @@
 
 .record-add-row:hover .record-add-toggle,
 .record-add-row.open .record-add-toggle {
-  border-color: var(--orange);
-  background: #fad3b2;
+  border-color: var(--accent-deep);
+  background: #ffd9ce;
 }
 
 .record-add-toggle {
@@ -2906,8 +2914,8 @@
   justify-content: center;
   border: 0;
   border-radius: 14px;
-  background: #fbf0e6;
-  color: #e8814a;
+  background: var(--accent-soft);
+  color: var(--accent);
   box-shadow: none;
   transition:
     transform 160ms ease,
@@ -2976,7 +2984,7 @@
 }
 
 .record-add-icon.meal {
-  color: #e8814a;
+  color: var(--accent);
   mask-image: url("data:image/svg+xml,%3Csvg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 3v8M5 3v4a2 2 0 0 0 4 0V3M7 11v10' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3Cpath d='M16 3c-1.4 0-2 2.4-2 5 0 2.4 2 3 2 3v10' stroke='black' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E");
 }
 
@@ -3054,7 +3062,7 @@
 }
 
 .record-timeline-row:has(.record-icon.meal) .record-card-head em {
-  color: #e8814a;
+  color: var(--accent-deep);
 }
 
 .record-timeline-row:has(.record-icon.exercise) .record-card-head em {
@@ -3433,9 +3441,9 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  border: 1px solid #eadfce;
+  border: 1px solid var(--accent-line);
   border-radius: 9px;
-  background: #fffaf3;
+  background: #fff;
   color: #7d8795;
   font-size: 11px;
   font-weight: var(--font-bold);
@@ -3483,11 +3491,11 @@
 
 .food-search-state {
   margin-top: 10px;
-  border: 1px dashed #dfc8ad;
+  border: 1px dashed var(--accent-line);
   border-radius: 10px;
   padding: 12px 14px;
-  background: #fffaf3;
-  color: #8a7560;
+  background: var(--accent-tint);
+  color: var(--accent-muted);
   font-size: 12px;
   font-weight: var(--font-bold);
 }
@@ -3505,7 +3513,7 @@
 
 .food-search-count {
   margin: 0;
-  color: #8a7560;
+  color: var(--accent-muted);
   font-size: 12px;
   font-weight: var(--font-bold);
 }
@@ -3555,18 +3563,23 @@
 
 .meal-edit-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 120px 40px;
-  align-items: end;
+  grid-template-columns: minmax(0, 1fr) 140px 40px;
+  align-items: center;
   gap: 12px;
   border: 1px solid #eee5d8;
   border-radius: 12px;
   padding: 12px;
-  background: #fffaf3;
+  background: #fff;
 }
 
 .meal-edit-item > div,
 .meal-edit-item label {
   min-width: 0;
+}
+
+.meal-edit-item > div {
+  padding-left: 6px;
+  text-align: left;
 }
 
 .meal-edit-item strong,
@@ -4446,9 +4459,9 @@
 }
 
 .profile-loading {
-  border: 1px dashed #dfc8ad;
-  background: #fffaf3;
-  color: #8a7560;
+  border: 1px dashed var(--accent-line);
+  background: var(--accent-tint);
+  color: var(--accent-muted);
 }
 
 .profile-cancel,
@@ -4838,7 +4851,7 @@
 
 .target-line-sample {
   width: 20px;
-  border-top: 3px dashed #e8814a;
+  border-top: 3px dashed var(--accent);
 }
 
 .food-count-chip {
@@ -5734,10 +5747,10 @@
 
 .food-detail-note {
   margin-top: 26px;
-  border: 1px dashed #dfc8ad;
+  border: 1px dashed var(--accent-line);
   border-radius: 12px;
   padding: 16px;
-  background: #fffaf3;
+  background: var(--accent-tint);
 }
 
 .food-detail-note strong {
@@ -5891,7 +5904,7 @@
   border: 1px dashed #e3d5c2;
   border-radius: 12px;
   padding: 16px;
-  background: #fffaf3;
+  background: var(--accent-tint);
   color: #7c6754;
   font-size: 13px;
   font-weight: var(--font-bold);

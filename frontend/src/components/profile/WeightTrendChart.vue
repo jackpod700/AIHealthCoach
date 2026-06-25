@@ -31,6 +31,14 @@ const props = defineProps({
 
 const emit = defineEmits(["selectRecord"]);
 
+function cssVariable(name, fallback) {
+  if (typeof window === "undefined") {
+    return fallback;
+  }
+
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
 const sortedRecords = computed(() =>
   [...props.records].sort((a, b) => a.recordDate.localeCompare(b.recordDate)),
 );
@@ -38,6 +46,7 @@ const sortedRecords = computed(() =>
 const chartData = computed(() => {
   const targetWeight = Number(props.targetWeightKg);
   const hasTargetWeight = Number.isFinite(targetWeight);
+  const accentColor = cssVariable("--accent", "#746c67");
 
   return {
     labels: sortedRecords.value.map((record) => formatShortDate(record.recordDate)),
@@ -48,7 +57,7 @@ const chartData = computed(() => {
         borderColor: "#2f6b4d",
         backgroundColor: "rgba(90, 158, 120, 0.18)",
         pointBackgroundColor: sortedRecords.value.map((record) =>
-          record.recordDate === props.selectedRecordDate ? "#e8814a" : "#4e8a66",
+          record.recordDate === props.selectedRecordDate ? accentColor : "#4e8a66",
         ),
         pointBorderColor: "#fff",
         pointBorderWidth: 2,
@@ -66,7 +75,7 @@ const chartData = computed(() => {
             {
               label: "목표 몸무게",
               data: sortedRecords.value.map(() => targetWeight),
-              borderColor: "#d9805a",
+              borderColor: accentColor,
               borderDash: [6, 6],
               pointRadius: 0,
               borderWidth: 2,
