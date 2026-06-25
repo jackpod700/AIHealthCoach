@@ -277,7 +277,9 @@ function isValidEmail(value) {
   <main class="signup-screen">
     <header class="auth-topbar">
       <button type="button" class="auth-brand-link" @click="router.push('/')">
-        <span class="brand-mark"><i class="pi pi-briefcase"></i></span>
+        <span class="brand-mark">
+          <img src="/images/favicon.png" alt="" />
+        </span>
         <span>
           <strong>{{ APP_START_LABEL }}</strong>
         </span>
