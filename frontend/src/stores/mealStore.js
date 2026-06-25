@@ -1,5 +1,6 @@
 import { defineStore } from "pinia";
-import { countSearchFoods, deleteMeal, fetchDailyMeals, fetchMonthlyMeals, saveMeal, searchFoods } from "../api/mealApi";
+import { fetchFoodGroups } from "../api/foodApi";
+import { deleteMeal, fetchDailyMeals, fetchMonthlyMeals, saveMeal } from "../api/mealApi";
 import { useAuthStore } from "./authStore";
 
 const today = new Date();
@@ -79,20 +80,13 @@ export const useMealStore = defineStore("meal", {
       this.isSearchingFoods = true;
 
       try {
-        const results = await searchFoods(authStore.accessToken, trimmedQuery);
-        this.foodSearchResults = results || [];
-        this.foodSearchTotalItems = results?.length || 0;
-        this.isSearchingFoods = false;
-
-        try {
-          const countResponse = await countSearchFoods(authStore.accessToken, trimmedQuery);
-          this.foodSearchTotalItems = countResponse?.totalItems || 0;
-        } catch (error) {
-          if (authStore.handleAuthFailure(error)) {
-            this.foodSearchResults = [];
-            this.foodSearchTotalItems = 0;
-          }
-        }
+        const page = await fetchFoodGroups(authStore.accessToken, {
+          query: trimmedQuery,
+          page: 1,
+          size: 20,
+        });
+        this.foodSearchResults = flattenFoodGroups(page?.items || []);
+        this.foodSearchTotalItems = page?.totalItems || 0;
       } catch (error) {
         if (authStore.handleAuthFailure(error)) {
           this.foodSearchResults = [];
@@ -204,6 +198,23 @@ export const useMealStore = defineStore("meal", {
     },
   },
 });
+
+function flattenFoodGroups(groups) {
+  return groups.flatMap((group) => {
+    return (group.servings || []).map((serving) => ({
+      foodId: serving.foodId,
+      foodName: group.foodName,
+      brand: group.brand,
+      servingDescription: serving.servingDescription,
+      servingSize: serving.servingSize,
+      servingUnit: serving.servingUnit,
+      calories: serving.calories,
+      carbohydrate: serving.carbohydrate,
+      protein: serving.protein,
+      fat: serving.fat,
+    }));
+  });
+}
 
 function toDateKey(date) {
   const year = date.getFullYear();

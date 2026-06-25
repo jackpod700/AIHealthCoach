@@ -53,7 +53,7 @@ function logout() {
   <header class="app-topbar">
     <div class="topbar-brand">
       <div class="topbar-mark">
-        <i class="pi pi-briefcase"></i>
+        <img src="/images/favicon.png" alt="" aria-hidden="true" />
       </div>
       <div>
         <strong>{{ APP_NAME }}</strong>

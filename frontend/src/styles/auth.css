@@ -42,7 +42,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 11px;
-  background: #e8814a;
+  background: var(--accent);
   color: #fff;
   box-shadow: 0 8px 18px rgb(232 129 74 / 18%);
 }
@@ -172,7 +172,7 @@
   margin-bottom: 22px;
   border-radius: 999px;
   padding: 0 14px;
-  background: #fbf0e6;
+  background: var(--accent-soft);
   color: #c2772e;
   font-size: 13px;
   font-weight: 900;
@@ -183,7 +183,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .landing-hero h1 {
@@ -237,7 +237,7 @@
 
 .landing-preview-head span,
 .landing-section-head span {
-  color: #e8814a;
+  color: var(--accent);
   font-size: 11px;
   font-weight: 900;
   letter-spacing: 0;
@@ -309,7 +309,7 @@
   width: 28%;
   height: 100%;
   border-radius: inherit;
-  background: #e8814a;
+  background: var(--accent);
 }
 
 .landing-coach-message {
@@ -390,8 +390,8 @@
 }
 
 .landing-feature-icon.orange {
-  background: #fbf0e6;
-  color: #e8814a;
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .landing-feature-card strong {
@@ -505,7 +505,7 @@
 
 .deco {
   margin: 0;
-  color: #e8814a;
+  color: var(--accent);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: 0;
@@ -936,7 +936,7 @@
 
 .period-stepper button:disabled {
   color: #b6c0cc;
-  background: #f4f0eb;
+  background: var(--accent-soft);
   opacity: 1;
 }
 
@@ -952,14 +952,14 @@
   align-items: flex-start;
   gap: 12px;
   margin-top: 18px;
-  border: 1px solid #f1dbc8;
+  border: 1px solid var(--accent-line);
   border-radius: 14px;
   padding: 14px;
-  background: #fff8ef;
+  background: var(--accent-tint);
 }
 
 .signup-info-card > i {
-  color: #e8814a;
+  color: var(--accent);
   font-size: 18px;
 }
 
@@ -1016,8 +1016,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 14px;
-  background: #fbf0e6;
-  color: #e8814a;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 18px;
 }
 
