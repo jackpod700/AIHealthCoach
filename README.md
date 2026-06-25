@@ -17,7 +17,12 @@ Babtory는 사용자의 식단, 운동, 체중, 건강 프로필을 기록하고
     - [Monitoring](#monitoring)
     - [External APIs](#external-apis)
   - [시스템 아키텍처](#시스템-아키텍처)
-  - [화면 구성 예시](#화면-구성-예시)
+  - [화면 예시](#화면-예시)
+    - [대화](#대화)
+    - [캘린더](#캘린더)
+    - [일일기록](#일일기록)
+    - [음식검색](#음식검색)
+    - [프로필](#프로필)
   - [실행 방법](#실행-방법)
     - [1. 환경 변수 준비](#1-환경-변수-준비)
     - [2. Docker Compose 실행](#2-docker-compose-실행)
@@ -96,17 +101,31 @@ Babtory는 건강 기록을 꾸준히 남기기 어렵다는 문제를 대화형
 
 ## 시스템 아키텍처
 
-![시스템 아키텍처](docs/planning/assets/readme/system-architecture.svg)
+![시스템 아키텍처](docs/assets/readme/system-architecture.svg)
 
-## 화면 구성 예시
+## 화면 예시
 
-화면 구성 예시 이미지는 아래 경로에 추가합니다.
+### 대화
 
-```text
-docs/planning/assets/readme/screens.png
-```
+![대화 화면](docs/assets/screens/대화.png)
 
-![화면 구성 예시](docs/planning/assets/readme/screens.png)
+### 캘린더
+
+![캘린더 화면](docs/assets/screens/캘린더.png)
+
+### 일일기록
+
+![일일기록 화면](docs/assets/screens/일일기록.png)
+
+### 음식검색
+
+![음식검색 화면](docs/assets/screens/음식검색.png)
+
+### 프로필
+
+![프로필 1 화면](docs/assets/screens/프로필1.png)
+
+![프로필 2 화면](docs/assets/screens/프로필2.png)
 
 ## 실행 방법
 
@@ -202,6 +221,7 @@ Babtory/
 
 - 대화 기반 건강 기록으로 사용자의 입력 부담을 줄일 수 있습니다.
 - AI 제안 확정 흐름을 통해 기록 편의성과 정확도를 함께 높일 수 있습니다.
+- AI의 사용자 정보 기반 답변 생성 기능을 통해 사용자 개개인에게 알맞은 식단과 운동을 추천받을 수 있습니다.
 - 식단, 운동, 체중, 목표를 통합 관리하여 자기 관리 지속성을 높일 수 있습니다.
 - 음식 검색 실패 기록과 관리자 승인 흐름으로 음식 데이터 품질을 점진적으로 개선할 수 있습니다.
 - 헬스 체크, Prometheus, Grafana 기반 모니터링으로 운영 안정성을 확보할 수 있습니다.

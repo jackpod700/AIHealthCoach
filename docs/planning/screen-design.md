@@ -25,7 +25,7 @@
 | Workspace | 라우터별 View | 각 화면의 주 콘텐츠가 렌더링되는 영역이다. |
 | Today Panel | 오늘 목표, 섭취/운동 진행률, 오늘 식단 | 채팅, 캘린더, 일별 기록, 프로필 화면에서 오늘 요약을 제공한다. |
 
-![공통 App Shell 구조 와이어프레임](assets/wireframes/common-app-shell.svg)
+![공통 App Shell 구조 와이어프레임](../assets/wireframes/common-app-shell.svg)
 
 ### 2.2 공통 라우팅/권한
 
@@ -87,7 +87,7 @@
 | 상태 처리 | 정적 화면이다. 링크 이동 실패 시 라우터 기본 오류 흐름을 따른다. |
 | 이동/전환 규칙 | 공개 화면이며 인증 상태와 무관하게 접근 가능하다. |
 
-![S01 랜딩 화면 와이어프레임](assets/wireframes/S01-landing.svg)
+![S01 랜딩 화면 와이어프레임](../assets/wireframes/S01-landing.svg)
 
 ### S02. 로그인
 
@@ -109,7 +109,7 @@
 | 상태 처리 | 로그인 요청 중 버튼 비활성화, `authStore.loginError` 표시, OAuth 실패 쿼리 처리 |
 | 이동/전환 규칙 | 일반 로그인 성공 시 `/chat`, OAuth 로그인 버튼 클릭 시 제공자 인증 페이지로 이동 |
 
-![S02 로그인 화면 와이어프레임](assets/wireframes/S02-login.svg)
+![S02 로그인 화면 와이어프레임](../assets/wireframes/S02-login.svg)
 
 ### S03. 회원가입/온보딩
 
@@ -131,7 +131,7 @@
 | 상태 처리 | 단계별 필드 검증, 이메일 형식 검증, 숫자 범위 검증, 저장 중 버튼 비활성화, 오류 메시지 표시 |
 | 이동/전환 규칙 | 일반 가입 성공 후 로그인 또는 채팅 화면으로 이동한다. OAuth 온보딩 완료 후 `/chat`으로 이동한다. |
 
-![S03 회원가입 및 온보딩 화면 와이어프레임](assets/wireframes/S03-signup.svg)
+![S03 회원가입 및 온보딩 화면 와이어프레임](../assets/wireframes/S03-signup.svg)
 
 ### S04. OAuth 완료
 
@@ -153,7 +153,7 @@
 | 상태 처리 | 처리 중 로딩 메시지, 실패 시 로그인 실패 안내와 `/login` 이동 |
 | 이동/전환 규칙 | 프로필 완성 시 `/chat`, 프로필 미완성 시 `/signup?oauth=true`, 실패 시 `/login` |
 
-![S04 OAuth 완료 화면 와이어프레임](assets/wireframes/S04-oauth-success.svg)
+![S04 OAuth 완료 화면 와이어프레임](../assets/wireframes/S04-oauth-success.svg)
 
 ### S05. AI 채팅
 
@@ -175,7 +175,7 @@
 | 상태 처리 | 메시지 로딩, 빈 대화, SSE 스트리밍 pending 텍스트, 전송 오류, 이미지 형식/용량 오류, 제안 확정 중/완료/실패, 목표 미설정 안내 |
 | 이동/전환 규칙 | 인증 사용자만 접근 가능하다. 로그아웃 시 `/login`으로 이동한다. |
 
-![S05 AI 채팅 화면 와이어프레임](assets/wireframes/S05-chat.svg)
+![S05 AI 채팅 화면 와이어프레임](../assets/wireframes/S05-chat.svg)
 
 ### S06. 월간 캘린더
 
@@ -197,7 +197,7 @@
 | 상태 처리 | 월간 데이터 로딩, 데이터 없음, API 오류, 월 이동 애니메이션 상태 |
 | 이동/전환 규칙 | 날짜 클릭 시 `/records?date=YYYY-MM-DD`로 이동한다. |
 
-![S06 월간 캘린더 화면 와이어프레임](assets/wireframes/S06-calendar.svg)
+![S06 월간 캘린더 화면 와이어프레임](../assets/wireframes/S06-calendar.svg)
 
 ### S07. 일별 기록
 
@@ -219,7 +219,7 @@
 | 상태 처리 | 일별 기록 로딩, 선택 날짜 데이터 없음, 검색 결과 없음, 저장/삭제 중 버튼 비활성화, 검증 오류, 삭제 확인창 |
 | 이동/전환 규칙 | 캘린더에서 전달된 `date` 쿼리를 기준으로 초기 날짜를 설정한다. 날짜 변경 시 해당 날짜 데이터를 재조회한다. |
 
-![S07 일별 기록 화면 와이어프레임](assets/wireframes/S07-records.svg)
+![S07 일별 기록 화면 와이어프레임](../assets/wireframes/S07-records.svg)
 
 ### S08. 음식 검색
 
@@ -241,7 +241,7 @@
 | 상태 처리 | 검색 로딩, 검색 결과 없음, 페이지 이동 로딩, 저장 성공/실패 메시지, 등록 요청 성공 화면, 등록 요청 검증 오류 |
 | 이동/전환 규칙 | 화면 내 작업 중심이다. 식단 저장 후 현재 화면에 머무르며 결과 메시지를 표시한다. |
 
-![S08 음식 검색 화면 와이어프레임](assets/wireframes/S08-foods.svg)
+![S08 음식 검색 화면 와이어프레임](../assets/wireframes/S08-foods.svg)
 
 ### S09. 프로필
 
@@ -263,7 +263,7 @@
 | 상태 처리 | 프로필 로딩, 저장 중 버튼 비활성화, 목표 추천 로딩, 체중 기록 없음, 차트 데이터 없음, 저장/삭제 오류 |
 | 이동/전환 규칙 | 인증 사용자만 접근한다. 저장 후 현재 화면에서 최신 프로필과 Today Panel 데이터를 갱신한다. |
 
-![S09 프로필 화면 와이어프레임](assets/wireframes/S09-profile.svg)
+![S09 프로필 화면 와이어프레임](../assets/wireframes/S09-profile.svg)
 
 ### S10. 관리자 대시보드
 
@@ -285,7 +285,7 @@
 | 상태 처리 | 대시보드 로딩, 목록 없음, 승인/반려 처리 중, 검증 오류, 처리 성공 후 목록 재조회 |
 | 이동/전환 규칙 | `ADMIN` 권한이 없으면 `/chat`으로 이동한다. 관리자 화면 내부에서 탭/목록 선택으로 검토 대상을 전환한다. |
 
-![S10 관리자 대시보드 화면 와이어프레임](assets/wireframes/S10-admin.svg)
+![S10 관리자 대시보드 화면 와이어프레임](../assets/wireframes/S10-admin.svg)
 
 ### S11. Not Found
 
@@ -307,7 +307,7 @@
 | 상태 처리 | 정적 오류 화면이다. 채팅 이동은 인증 라우팅 규칙에 따라 비인증 사용자를 `/login`으로 보낼 수 있다. |
 | 이동/전환 규칙 | 홈 버튼은 `/`, 채팅 버튼은 `/chat`으로 이동한다. |
 
-![S11 Not Found 화면 와이어프레임](assets/wireframes/S11-not-found.svg)
+![S11 Not Found 화면 와이어프레임](../assets/wireframes/S11-not-found.svg)
 
 ## 5. 공통 컴포넌트/모달 설계
 
@@ -325,7 +325,7 @@
 
 ## 6. 화면 전환 흐름
 
-![화면 전환 흐름도](assets/wireframes/screen-flow.svg)
+![화면 전환 흐름도](../assets/wireframes/screen-flow.svg)
 
 ## 7. 요구사항 매핑표
 
