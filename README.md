@@ -236,8 +236,8 @@ Babtory/
 | [요구사항 정의서](docs/planning/requirements.md) | 기능/비기능 요구사항 정리 |
 | [Use-case Diagram](docs/planning/use-case-diagram.md) | Actor와 기능 단위 Use-case 정리 |
 | [화면 설계서](docs/planning/screen-design.md) | 화면 목록, 상세 설계, 와이어프레임, 요구사항 매핑 |
-| [시스템 아키텍처](docs/planning/assets/readme/system-architecture.svg) | 전체 시스템 구성 이미지 |
-| [ERD](docs/planning/assets/readme/erd.png) | 전체 테이블 구조 이미지|
+| [시스템 아키텍처](docs/assets/readme/system-architecture.svg) | 전체 시스템 구성 이미지 |
+| [ERD](docs/assets/readme/erd.png) | 전체 테이블 구조 이미지|
 
 ## 기대효과
 
