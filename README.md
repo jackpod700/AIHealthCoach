@@ -105,7 +105,7 @@ Babtory는 건강 기록을 꾸준히 남기기 어렵다는 문제를 대화형
 
 ## 시스템 아키텍처
 
-![시스템 아키텍처](docs/assets/readme/system-architecture.svg)
+![시스템 아키텍처](docs/assets/readme/Architecture.png)
 
 ## 화면 예시
 
